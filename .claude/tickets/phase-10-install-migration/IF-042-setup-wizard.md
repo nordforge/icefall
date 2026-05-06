@@ -1,8 +1,10 @@
 # IF-042: First-run setup wizard
 
+> **SUPERSEDED** — Replaced by Phase 13 Onboarding (IF-050 through IF-058), which breaks this wizard into individual step tickets with full acceptance criteria.
+
 **Phase:** 10 — Install & Migration
-**Priority:** High
-**Estimate:** M
+**Priority:** ~~High~~ — Superseded
+**Estimate:** ~~M~~
 
 ## Description
 

@@ -1,2 +1,6 @@
 rules/
 skills/
+.claude/settings.json
+.claude/settings.local.json
+.stitch/
+.mcp.json

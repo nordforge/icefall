@@ -86,7 +86,7 @@
 |--------|-------|----------|------|--------------|
 | [IF-040](tickets/phase-10-install-migration/IF-040-install-script.md) | Installation script | High | M | IF-007 |
 | [IF-041](tickets/phase-10-install-migration/IF-041-server-migration-export-import.md) | Server migration (export/import) | Medium | L | IF-002, IF-004, IF-029, IF-030 |
-| [IF-042](tickets/phase-10-install-migration/IF-042-setup-wizard.md) | First-run setup wizard | High | M | IF-016, IF-032, IF-024, IF-004 |
+| ~~[IF-042](tickets/phase-10-install-migration/IF-042-setup-wizard.md)~~ | ~~First-run setup wizard~~ — **Superseded by Phase 13 (IF-050–IF-058)** | — | — | — |
 
 ### Phase 11 — MCP & Notifications
 | Ticket | Title | Priority | Size | Dependencies |
@@ -94,6 +94,27 @@
 | [IF-043](tickets/phase-11-mcp-notifications/IF-043-notification-system.md) | Notification system | Medium | M | IF-002, IF-006 |
 | [IF-044](tickets/phase-11-mcp-notifications/IF-044-mcp-server.md) | MCP server | Medium | M | IF-006, IF-035 |
 | [IF-045](tickets/phase-11-mcp-notifications/IF-045-settings-page.md) | Global settings page | Medium | M | IF-016, IF-032 |
+
+### Phase 12 — Landing Page & Documentation
+| Ticket | Title | Priority | Size | Dependencies |
+|--------|-------|----------|------|--------------|
+| [IF-046](tickets/phase-12-landing-docs/IF-046-landing-page.md) | Landing page (icefall.dev) | High | M | — |
+| [IF-047](tickets/phase-12-landing-docs/IF-047-documentation-site.md) | Documentation site | High | L | IF-046, IF-036 |
+| [IF-048](tickets/phase-12-landing-docs/IF-048-framework-guides.md) | Per-framework deployment guides | Medium | M | IF-047 |
+| [IF-049](tickets/phase-12-landing-docs/IF-049-social-assets.md) | Logo, social card & brand assets | Medium | S | — |
+
+### Phase 13 — Onboarding
+| Ticket | Title | Priority | Size | Dependencies |
+|--------|-------|----------|------|--------------|
+| [IF-050](tickets/phase-13-onboarding/IF-050-onboarding-state-machine.md) | Onboarding state machine & route guard | Critical | M | IF-002, IF-006, IF-007 |
+| [IF-051](tickets/phase-13-onboarding/IF-051-onboarding-ui-shell.md) | Onboarding UI shell & step navigation | Critical | M | IF-050, IF-016 |
+| [IF-052](tickets/phase-13-onboarding/IF-052-step-admin-account.md) | Step 1 — Create admin account | Critical | M | IF-050, IF-051, IF-032 |
+| [IF-053](tickets/phase-13-onboarding/IF-053-step-server-check.md) | Step 2 — Server environment check | Critical | M | IF-050, IF-051, IF-004 |
+| [IF-054](tickets/phase-13-onboarding/IF-054-step-base-domain.md) | Step 3 — Base domain configuration | High | M | IF-050, IF-051, IF-005, IF-023 |
+| [IF-055](tickets/phase-13-onboarding/IF-055-step-git-provider.md) | Step 4 — Connect Git provider | High | M | IF-050, IF-051, IF-033, IF-012 |
+| [IF-056](tickets/phase-13-onboarding/IF-056-step-first-app.md) | Step 5 — Create first app | Critical | M | IF-050, IF-051, IF-018, IF-008 |
+| [IF-057](tickets/phase-13-onboarding/IF-057-step-first-deploy.md) | Step 6 — Watch first deploy | Critical | M | IF-050, IF-051, IF-011, IF-015, IF-022 |
+| [IF-058](tickets/phase-13-onboarding/IF-058-onboarding-completion.md) | Onboarding completion & dashboard handoff | High | S | IF-050, IF-057, IF-017 |
 
 ---
 
@@ -125,18 +146,18 @@
 
 | Metric | Count |
 |--------|-------|
-| Total tickets | 45 |
-| Critical | 14 |
-| High | 20 |
-| Medium | 11 |
-| Phases | 11 |
+| Total tickets | 57 |
+| Critical | 20 |
+| High | 24 |
+| Medium | 13 |
+| Phases | 13 |
 
 ### Size breakdown
 | Size | Count | Estimated effort |
 |------|-------|-----------------|
-| S | 8 | 1-2 days each |
-| M | 29 | 3-5 days each |
-| L | 8 | 1-2 weeks each |
+| S | 9 | 1-2 days each |
+| M | 39 | 3-5 days each |
+| L | 9 | 1-2 weeks each |
 
 ### Critical path (must complete in order)
 ```
@@ -145,4 +166,5 @@ IF-001 → IF-004 (docker) → IF-010 (build) → IF-011 (deploy) → IF-012 (we
 IF-001 → IF-008 (detect) → IF-009 (dockerfile) → IF-010 (build)
 IF-001 → IF-003 (config) → IF-005 (caddy) → IF-023 (domains)
 IF-006 → IF-016 (dashboard) → IF-017 (home) → IF-019 (app detail)
+IF-050 (onboarding state) → IF-051 (UI shell) → IF-052…IF-057 (steps) → IF-058 (completion)
 ```
