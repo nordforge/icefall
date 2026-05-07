@@ -9,20 +9,22 @@ interface Props {
 }
 
 export default function SettingsTab({ app }: Props) {
-  const [form, setForm] = useState({
-    name: app.name,
-    git_repo: app.git_repo || '',
-    git_branch: app.git_branch,
-    build_command: '',
+  const [form, setForm] = useState(() => {
+    let buildCommand = '';
+    try {
+      const parsed = app.build_config ? JSON.parse(app.build_config) : {};
+      buildCommand = parsed.build_command || '';
+    } catch { /* malformed build_config JSON */ }
+    return {
+      name: app.name,
+      git_repo: app.git_repo || '',
+      git_branch: app.git_branch,
+      build_command: buildCommand,
+    };
   });
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
-
-  const buildConfig = app.build_config ? JSON.parse(app.build_config) : {};
-  if (!form.build_command && buildConfig.build_command) {
-    form.build_command = buildConfig.build_command;
-  }
 
   async function handleSave() {
     setSaving(true);

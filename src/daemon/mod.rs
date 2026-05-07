@@ -8,6 +8,9 @@ use thiserror::Error;
 use tokio::net::TcpListener;
 use tracing::{error, info, warn};
 
+use tokio::sync::RwLock;
+
+use crate::api::routes::server::{spawn_metrics_collector, ServerMetrics};
 use crate::api::{self, AppState, BuildLockMap};
 use crate::caddy::CaddyClient;
 use crate::config::IcefallConfig;
@@ -102,9 +105,11 @@ impl DaemonRunner {
             Err(e) => warn!("Caddy unreachable (will retry): {e}"),
         }
 
-        // Create event bus and build locks
+        // Create event bus, build locks, and server metrics
         let event_bus = Arc::new(EventBus::new(1024));
         let build_locks = Arc::new(BuildLockMap::new());
+        let server_metrics = Arc::new(RwLock::new(ServerMetrics::default()));
+        spawn_metrics_collector(server_metrics.clone());
 
         // Build app state and router
         let state = AppState {
@@ -114,6 +119,7 @@ impl DaemonRunner {
             config: Arc::new(config.clone()),
             event_bus,
             build_locks,
+            server_metrics,
         };
 
         let app = api::build_router(state);

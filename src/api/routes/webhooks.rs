@@ -258,9 +258,17 @@ async fn trigger_deploy(
                     state.event_bus.clone(),
                 );
 
+                let current_deploy = match state.db.get_deploy(&deploy_id).await {
+                    Ok(Some(d)) => d,
+                    other => {
+                        tracing::error!("Failed to re-fetch deploy {deploy_id}: {other:?}");
+                        return;
+                    }
+                };
+
                 if let Err(e) = manager
                     .deploy(
-                        &state.db.get_deploy(&deploy_id).await.unwrap().unwrap(),
+                        &current_deploy,
                         &app,
                         &env_clone,
                         &result.image_ref,

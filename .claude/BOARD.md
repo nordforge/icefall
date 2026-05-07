@@ -6,12 +6,6 @@
 
 ## Backlog
 
-### Phase 5 — Domains & Proxy
-| Ticket | Title | Priority | Size | Dependencies |
-|--------|-------|----------|------|--------------|
-| [IF-023](tickets/phase-5-domains-proxy/IF-023-domain-management.md) | Domain management | High | M | IF-005, IF-006, IF-002 |
-| [IF-024](tickets/phase-5-domains-proxy/IF-024-wildcard-domain-setup.md) | Base domain & wildcard setup | High | S | IF-005, IF-003 |
-
 ### Phase 6 — Monitoring
 | Ticket | Title | Priority | Size | Dependencies |
 |--------|-------|----------|------|--------------|
@@ -19,6 +13,7 @@
 | [IF-026](tickets/phase-6-monitoring/IF-026-container-metrics.md) | Container metrics collection | Medium | M | IF-004, IF-015 |
 | [IF-027](tickets/phase-6-monitoring/IF-027-log-search.md) | Log storage and search | Medium | M | IF-004, IF-002 |
 | [IF-028](tickets/phase-6-monitoring/IF-028-uptime-timeline-ui.md) | Uptime timeline UI | Medium | S | IF-025, IF-019 |
+| [REVIEW](tickets/phase-6-monitoring/REVIEW-phase-6.md) | Phase 6 code review & audit | High | S | all above |
 
 ### Phase 7 — Databases
 | Ticket | Title | Priority | Size | Dependencies |
@@ -26,6 +21,7 @@
 | [IF-029](tickets/phase-7-databases/IF-029-managed-database-provisioning.md) | Managed database provisioning | High | L | IF-004, IF-002, IF-014 |
 | [IF-030](tickets/phase-7-databases/IF-030-database-backups.md) | Automated database backups | High | M | IF-029, IF-004 |
 | [IF-031](tickets/phase-7-databases/IF-031-database-ui.md) | Database management UI | High | M | IF-016, IF-029, IF-030 |
+| [REVIEW](tickets/phase-7-databases/REVIEW-phase-7.md) | Phase 7 code review & audit | High | S | all above |
 
 ### Phase 8 — Auth & API
 | Ticket | Title | Priority | Size | Dependencies |
@@ -35,6 +31,7 @@
 | [IF-034](tickets/phase-8-auth-api/IF-034-user-management.md) | User management & roles | High | M | IF-032, IF-016 |
 | [IF-035](tickets/phase-8-auth-api/IF-035-api-tokens.md) | API token management | High | S | IF-032, IF-006 |
 | [IF-036](tickets/phase-8-auth-api/IF-036-openapi-spec.md) | OpenAPI specification | Medium | S | IF-006 |
+| [REVIEW](tickets/phase-8-auth-api/REVIEW-phase-8.md) | Phase 8 code review & audit | High | S | all above |
 
 ### Phase 9 — CLI
 | Ticket | Title | Priority | Size | Dependencies |
@@ -42,6 +39,7 @@
 | [IF-037](tickets/phase-9-cli/IF-037-cli-deploy-command.md) | CLI deploy command | High | M | IF-001, IF-035, IF-010 |
 | [IF-038](tickets/phase-9-cli/IF-038-cli-management-commands.md) | CLI management commands | High | M | IF-001, IF-035 |
 | [IF-039](tickets/phase-9-cli/IF-039-cli-update-command.md) | CLI self-update | Medium | S | IF-001 |
+| [REVIEW](tickets/phase-9-cli/REVIEW-phase-9.md) | Phase 9 code review & audit | High | S | all above |
 
 ### Phase 10 — Install & Migration
 | Ticket | Title | Priority | Size | Dependencies |
@@ -49,6 +47,7 @@
 | [IF-040](tickets/phase-10-install-migration/IF-040-install-script.md) | Installation script | High | M | IF-007 |
 | [IF-041](tickets/phase-10-install-migration/IF-041-server-migration-export-import.md) | Server migration (export/import) | Medium | L | IF-002, IF-004, IF-029, IF-030 |
 | ~~[IF-042](tickets/phase-10-install-migration/IF-042-setup-wizard.md)~~ | ~~First-run setup wizard~~ — **Superseded by Phase 13 (IF-050–IF-058)** | — | — | — |
+| [REVIEW](tickets/phase-10-install-migration/REVIEW-phase-10.md) | Phase 10 code review & audit | High | S | all above |
 
 ### Phase 11 — MCP & Notifications
 | Ticket | Title | Priority | Size | Dependencies |
@@ -56,6 +55,7 @@
 | [IF-043](tickets/phase-11-mcp-notifications/IF-043-notification-system.md) | Notification system | Medium | M | IF-002, IF-006 |
 | [IF-044](tickets/phase-11-mcp-notifications/IF-044-mcp-server.md) | MCP server | Medium | M | IF-006, IF-035 |
 | [IF-045](tickets/phase-11-mcp-notifications/IF-045-settings-page.md) | Global settings page | Medium | M | IF-016, IF-032 |
+| [REVIEW](tickets/phase-11-mcp-notifications/REVIEW-phase-11.md) | Phase 11 code review & audit | High | S | all above |
 
 ### Phase 12 — Landing Page & Documentation
 | Ticket | Title | Priority | Size | Dependencies |
@@ -64,6 +64,7 @@
 | [IF-047](tickets/phase-12-landing-docs/IF-047-documentation-site.md) | Documentation site | High | L | IF-046, IF-036 |
 | [IF-048](tickets/phase-12-landing-docs/IF-048-framework-guides.md) | Per-framework deployment guides | Medium | M | IF-047 |
 | [IF-049](tickets/phase-12-landing-docs/IF-049-social-assets.md) | Logo, social card & brand assets | Medium | S | — |
+| [REVIEW](tickets/phase-12-landing-docs/REVIEW-phase-12.md) | Phase 12 code review & audit | High | S | all above |
 
 ### Phase 13 — Onboarding
 | Ticket | Title | Priority | Size | Dependencies |
@@ -77,6 +78,7 @@
 | [IF-056](tickets/phase-13-onboarding/IF-056-step-first-app.md) | Step 5 — Create first app | Critical | M | IF-050, IF-051, IF-018, IF-008 |
 | [IF-057](tickets/phase-13-onboarding/IF-057-step-first-deploy.md) | Step 6 — Watch first deploy | Critical | M | IF-050, IF-051, IF-011, IF-015, IF-022 |
 | [IF-058](tickets/phase-13-onboarding/IF-058-onboarding-completion.md) | Onboarding completion & dashboard handoff | High | S | IF-050, IF-057, IF-017 |
+| [REVIEW](tickets/phase-13-onboarding/REVIEW-phase-13.md) | Phase 13 code review & audit | High | S | all above |
 
 ---
 
@@ -136,17 +138,23 @@
 | [IF-021](tickets/phase-4-web-dashboard/IF-021-log-viewer.md) | Log viewer component | 2026-05-07 | Always-dark terminal, line numbers, level badges, search, level filter, auto-scroll, download |
 | [IF-022](tickets/phase-4-web-dashboard/IF-022-deploy-view.md) | Deploy view with build steps | 2026-05-07 | Expandable build steps, streaming output via SSE, status icons, duration tracking |
 
+### Phase 5 — Domains & Proxy
+| Ticket | Title | Completed | Notes |
+|--------|-------|-----------|-------|
+| [IF-023](tickets/phase-5-domains-proxy/IF-023-domain-management.md) | Domain management | 2026-05-07 | DNS verification, delete + Caddy cleanup, auto IP detection, SSL provisioning |
+| [IF-024](tickets/phase-5-domains-proxy/IF-024-wildcard-domain-setup.md) | Base domain & wildcard setup | 2026-05-07 | Setup + verify endpoints, Caddy wildcard config, DNS instruction generation |
+
 ---
 
 ## Summary
 
 | Metric | Count |
 |--------|-------|
-| Total tickets | 57 |
-| Done | 22 |
-| Backlog | 34 |
+| Total tickets | 65 |
+| Done | 24 |
+| Backlog | 40 |
 | Superseded | 1 |
-| Phases complete | 4 / 13 |
+| Phases complete | 5 / 13 |
 
 ### Progress
 | Phase | Status | Tickets |
@@ -155,15 +163,15 @@
 | 2 — Build Engine | **Done** | 3/3 |
 | 3 — Deployment Pipeline | **Done** | 5/5 |
 | 4 — Web Dashboard | **Done** | 7/7 |
-| 5 — Domains & Proxy | Backlog | 0/2 |
-| 6 — Monitoring | Backlog | 0/4 |
-| 7 — Databases | Backlog | 0/3 |
-| 8 — Auth & API | Backlog | 0/5 |
-| 9 — CLI | Backlog | 0/3 |
-| 10 — Install & Migration | Backlog | 0/2 (+1 superseded) |
-| 11 — MCP & Notifications | Backlog | 0/3 |
-| 12 — Landing & Docs | Backlog | 0/4 |
-| 13 — Onboarding | Backlog | 0/9 |
+| 5 — Domains & Proxy | **Done** | 2/2 |
+| 6 — Monitoring | Backlog | 0/5 |
+| 7 — Databases | Backlog | 0/4 |
+| 8 — Auth & API | Backlog | 0/6 |
+| 9 — CLI | Backlog | 0/4 |
+| 10 — Install & Migration | Backlog | 0/3 (+1 superseded) |
+| 11 — MCP & Notifications | Backlog | 0/4 |
+| 12 — Landing & Docs | Backlog | 0/5 |
+| 13 — Onboarding | Backlog | 0/10 |
 
 ### Size breakdown
 | Size | Count | Estimated effort |

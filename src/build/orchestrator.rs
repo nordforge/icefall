@@ -336,16 +336,15 @@ impl BuildOrchestrator {
         let mut removed = Vec::new();
 
         for image in to_remove {
-            if let Some(ref id) = image.id.strip_prefix("sha256:").or(Some(&image.id)) {
-                let tag = image
-                    .repo_tags
-                    .first()
-                    .cloned()
-                    .unwrap_or_else(|| id.to_string());
-                match self.docker.remove_image(&tag).await {
-                    Ok(()) => removed.push(tag),
-                    Err(e) => tracing::warn!("Failed to remove image {tag}: {e}"),
-                }
+            let id = image.id.strip_prefix("sha256:").unwrap_or(&image.id);
+            let tag = image
+                .repo_tags
+                .first()
+                .cloned()
+                .unwrap_or_else(|| id.to_string());
+            match self.docker.remove_image(&tag).await {
+                Ok(()) => removed.push(tag),
+                Err(e) => tracing::warn!("Failed to remove image {tag}: {e}"),
             }
         }
 
@@ -368,13 +367,51 @@ fn finish_step(step: &mut BuildStep, status: BuildStepStatus) {
     step.finished_at = Some(now_iso8601());
 }
 
+const IGNORE_DIRS: &[&str] = &[
+    "node_modules",
+    ".git",
+    ".next",
+    ".nuxt",
+    ".output",
+    "target",
+    ".turbo",
+    ".cache",
+    "coverage",
+    "dist",
+];
+
 fn create_build_context(project_dir: &Path) -> Result<Bytes, BuildError> {
     let buf = Vec::new();
     let encoder = flate2::write::GzEncoder::new(buf, flate2::Compression::fast());
     let mut archive = tar::Builder::new(encoder);
 
-    archive
-        .append_dir_all(".", project_dir)
+    fn walk_and_add(
+        archive: &mut tar::Builder<flate2::write::GzEncoder<Vec<u8>>>,
+        dir: &Path,
+        base: &Path,
+    ) -> std::io::Result<()> {
+        for entry in std::fs::read_dir(dir)? {
+            let entry = entry?;
+            let path = entry.path();
+            let name = entry.file_name();
+            let name_str = name.to_string_lossy();
+
+            if IGNORE_DIRS.contains(&name_str.as_ref()) {
+                continue;
+            }
+
+            let relative = path.strip_prefix(base).unwrap_or(&path);
+            if path.is_dir() {
+                archive.append_dir(relative, &path)?;
+                walk_and_add(archive, &path, base)?;
+            } else {
+                archive.append_path_with_name(&path, relative)?;
+            }
+        }
+        Ok(())
+    }
+
+    walk_and_add(&mut archive, project_dir, project_dir)
         .map_err(|e| BuildError::DockerBuild(format!("failed to create tar archive: {e}")))?;
 
     let encoder = archive

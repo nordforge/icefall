@@ -1,14 +1,16 @@
 pub mod error;
 pub mod middleware;
 pub mod routes;
+pub mod utils;
 
 use std::collections::HashMap;
 use std::sync::Arc;
 
 use axum::Router;
-use tokio::sync::Mutex;
+use tokio::sync::{Mutex, RwLock};
 use tower_http::services::ServeDir;
 
+use crate::api::routes::server::ServerMetrics;
 use crate::caddy::CaddyClient;
 use crate::config::IcefallConfig;
 use crate::db::Database;
@@ -23,6 +25,7 @@ pub struct AppState {
     pub config: Arc<IcefallConfig>,
     pub event_bus: Arc<EventBus>,
     pub build_locks: Arc<BuildLockMap>,
+    pub server_metrics: Arc<RwLock<ServerMetrics>>,
 }
 
 pub struct BuildLockMap {

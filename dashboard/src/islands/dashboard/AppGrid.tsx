@@ -23,12 +23,14 @@ export default function AppGrid() {
         $appsLoading.set(false);
 
         const deployMap: Record<string, Deploy> = {};
-        for (const app of data) {
-          try {
-            const { data: appDeploys } = await api.listDeploys(app.id);
-            if (appDeploys.length > 0) deployMap[app.id] = appDeploys[0];
-          } catch { /* skip */ }
-        }
+        const results = await Promise.allSettled(
+          data.map((app) => api.listDeploys(app.id)),
+        );
+        results.forEach((result, i) => {
+          if (result.status === 'fulfilled' && result.value.data.length > 0) {
+            deployMap[data[i].id] = result.value.data[0];
+          }
+        });
         if (active) setDeploys(deployMap);
       } catch {
         if (active) $appsLoading.set(false);

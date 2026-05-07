@@ -8,16 +8,20 @@ interface LogEntry {
   message: string;
 }
 
+const MAX_LINES = 10_000;
+
 interface Props {
   appId: string;
 }
 
 export default function LogViewer({ appId }: Props) {
+  const bufferRef = useRef<LogEntry[]>([]);
   const [lines, setLines] = useState<LogEntry[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [autoScroll, setAutoScroll] = useState(true);
   const [levelFilter, setLevelFilter] = useState('all');
   const containerRef = useRef<HTMLDivElement>(null);
+  const rafRef = useRef<number | null>(null);
 
   useEffect(() => {
     const sse = createSSEClient(`/api/v1/apps/${appId}/events`, {
@@ -27,11 +31,23 @@ export default function LogViewer({ appId }: Props) {
           level: 'INFO',
           message: typeof data === 'string' ? data : data.line || JSON.stringify(data),
         };
-        setLines((prev) => [...prev.slice(-9999), entry]);
+        bufferRef.current.push(entry);
+        if (bufferRef.current.length > MAX_LINES) {
+          bufferRef.current = bufferRef.current.slice(-MAX_LINES);
+        }
+        if (!rafRef.current) {
+          rafRef.current = requestAnimationFrame(() => {
+            rafRef.current = null;
+            setLines([...bufferRef.current]);
+          });
+        }
       },
     });
 
-    return () => sse.close();
+    return () => {
+      sse.close();
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
   }, [appId]);
 
   useEffect(() => {
