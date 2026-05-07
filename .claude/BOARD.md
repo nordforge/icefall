@@ -6,14 +6,6 @@
 
 ## Backlog
 
-### Phase 7 — Databases
-| Ticket | Title | Priority | Size | Dependencies |
-|--------|-------|----------|------|--------------|
-| [IF-029](tickets/phase-7-databases/IF-029-managed-database-provisioning.md) | Managed database provisioning | High | L | IF-004, IF-002, IF-014 |
-| [IF-030](tickets/phase-7-databases/IF-030-database-backups.md) | Automated database backups | High | M | IF-029, IF-004 |
-| [IF-031](tickets/phase-7-databases/IF-031-database-ui.md) | Database management UI | High | M | IF-016, IF-029, IF-030 |
-| [REVIEW](tickets/phase-7-databases/REVIEW-phase-7.md) | Phase 7 code review & audit | High | S | all above |
-
 ### Phase 8 — Auth & API
 | Ticket | Title | Priority | Size | Dependencies |
 |--------|-------|----------|------|--------------|
@@ -144,6 +136,14 @@
 | [IF-028](tickets/phase-6-monitoring/IF-028-uptime-timeline-ui.md) | Uptime timeline UI | 2026-05-07 | 48-segment timeline bar, 24h/7d/30d range, hover tooltips, uptime percentage |
 | [REVIEW](tickets/phase-6-monitoring/REVIEW-phase-6.md) | Phase 6 code review & audit | 2026-05-07 | Fixed: is_check_due interval, unbounded task spawning, uptime range scoping |
 
+### Phase 7 — Databases
+| Ticket | Title | Completed | Notes |
+|--------|-------|-----------|-------|
+| [IF-029](tickets/phase-7-databases/IF-029-managed-database-provisioning.md) | Managed database provisioning | 2026-05-07 | Postgres/MySQL/Redis/MongoDB, auto-credentials, volumes, connection strings, app linking |
+| [IF-030](tickets/phase-7-databases/IF-030-database-backups.md) | Automated database backups | 2026-05-07 | Background scheduler, Docker exec dumps, rotation (keep 7), backup history API, manual trigger |
+| [IF-031](tickets/phase-7-databases/IF-031-database-ui.md) | Database management UI | 2026-05-07 | List/create/detail pages, masked connection strings, backup section, delete with danger zone |
+| [REVIEW](tickets/phase-7-databases/REVIEW-phase-7.md) | Phase 7 code review & audit | 2026-05-07 | Clippy clean, 86 tests pass |
+
 ---
 
 ## Summary
@@ -151,10 +151,10 @@
 | Metric | Count |
 |--------|-------|
 | Total tickets | 65 |
-| Done | 29 |
-| Backlog | 35 |
+| Done | 33 |
+| Backlog | 31 |
 | Superseded | 1 |
-| Phases complete | 6 / 13 |
+| Phases complete | 7 / 13 |
 
 ### Progress
 | Phase | Status | Tickets |
@@ -165,7 +165,7 @@
 | 4 — Web Dashboard | **Done** | 7/7 |
 | 5 — Domains & Proxy | **Done** | 2/2 |
 | 6 — Monitoring | **Done** | 5/5 |
-| 7 — Databases | Backlog | 0/4 |
+| 7 — Databases | **Done** | 4/4 |
 | 8 — Auth & API | Backlog | 0/6 |
 | 9 — CLI | Backlog | 0/4 |
 | 10 — Install & Migration | Backlog | 0/3 (+1 superseded) |

@@ -1,4 +1,5 @@
 pub mod apps;
+pub mod backups;
 pub mod databases;
 pub mod deploys;
 pub mod domains;
@@ -19,6 +20,7 @@ use crate::api::AppState;
 pub fn api_routes() -> Router<AppState> {
     Router::new()
         .merge(apps::routes())
+        .merge(backups::routes())
         .merge(databases::routes())
         .merge(deploys::routes())
         .merge(domains::routes())

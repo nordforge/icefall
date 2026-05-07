@@ -19,6 +19,7 @@ use crate::db::sqlite::SqliteDatabase;
 use crate::db::Database;
 use crate::docker::DockerClient;
 use crate::events::EventBus;
+use crate::monitoring::backup_scheduler::{spawn_backup_scheduler, BackupStore};
 use crate::monitoring::health_runner::spawn_health_runner;
 use crate::monitoring::log_store::{spawn_log_capture, LogStore};
 use crate::monitoring::metrics_collector::{
@@ -116,6 +117,7 @@ impl DaemonRunner {
         let server_metrics = Arc::new(RwLock::new(ServerMetrics::default()));
         let metrics_store = Arc::new(MetricsStore::new());
         let log_store = Arc::new(LogStore::new(&config.data_dir));
+        let backup_store = Arc::new(BackupStore::new(&config.data_dir));
 
         // Start background tasks
         spawn_server_metrics(server_metrics.clone());
@@ -127,6 +129,7 @@ impl DaemonRunner {
             metrics_store.clone(),
         );
         spawn_log_capture(docker.clone(), db.clone(), log_store.clone());
+        spawn_backup_scheduler(docker.clone(), db.clone(), backup_store.clone());
 
         // Build app state and router
         let state = AppState {
@@ -139,6 +142,7 @@ impl DaemonRunner {
             server_metrics,
             metrics_store,
             log_store,
+            backup_store,
         };
 
         let app = api::build_router(state);
