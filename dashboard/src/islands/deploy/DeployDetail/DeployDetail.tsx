@@ -82,9 +82,15 @@ export default function DeployDetail({ appId, deployId, appName }: Props) {
 
   return (
     <div>
-      <div class={styles.breadcrumb}>
-        Apps &gt; {appName} &gt; Deploys &gt; #{deployId.slice(0, 8)}
-      </div>
+      {/* a11y [WCAG 2.4.8]: proper breadcrumb navigation */}
+      <nav aria-label="Breadcrumb" class={styles.breadcrumb}>
+        <ol class={styles.breadcrumbList}>
+          <li><a href="/">Apps</a></li>
+          <li><a href={`/apps/${appId}`}>{appName}</a></li>
+          <li><a href={`/apps/${appId}/deploys`}>Deploys</a></li>
+          <li aria-current="page">#{deployId.slice(0, 8)}</li>
+        </ol>
+      </nav>
 
       <div class={styles.header}>
         <div>
@@ -92,7 +98,10 @@ export default function DeployDetail({ appId, deployId, appName }: Props) {
             <h1 class={styles.title}>
               Deploy #{deployId.slice(0, 8)}
             </h1>
-            <StatusDot status={deploy.status} />
+            {/* a11y [WCAG 4.1.3]: live region announces status changes to AT */}
+            <span role="status" aria-live="polite">
+              <StatusDot status={deploy.status} />
+            </span>
           </div>
           <div class={styles.meta}>
             {deploy.git_sha && (

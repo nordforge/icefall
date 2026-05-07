@@ -39,7 +39,9 @@ export default function BuildStepRow({ step, expanded, onToggle }: Props) {
         class={styles.toggle}
         aria-expanded={expanded}
       >
-        <Icon size={16} style={{ color }} class={styles.statusIcon} />
+        {/* a11y [WCAG 1.4.1]: icon is decorative; status conveyed by sr-only text */}
+        <Icon size={16} style={{ color }} class={styles.statusIcon} aria-hidden="true" />
+        <span class="sr-only">Status: {step.status}</span>
         <span class={styles.stepName}>{step.name}</span>
         {duration && (
           <span class={styles.duration}>

@@ -1,4 +1,4 @@
-import { useEffect } from 'preact/hooks';
+import { useEffect, useState } from 'preact/hooks';
 import { useStore } from '@nanostores/preact';
 import { $serverStatus } from '@stores/server';
 import { api } from '@lib/api';
@@ -8,6 +8,7 @@ import styles from './server-stats.module.css';
 
 export default function ServerStats() {
   const status = useStore($serverStatus);
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -16,9 +17,8 @@ export default function ServerStats() {
       try {
         const data = await api.getServerStatus();
         if (active) $serverStatus.set(data);
-      } catch {
-        // silently retry
-      }
+      } catch {}
+      if (active) setLoaded(true);
     }
 
     fetch();
@@ -30,6 +30,7 @@ export default function ServerStats() {
   }, []);
 
   if (!status) {
+    if (loaded) return null;
     return (
       <div class={styles.grid}>
         {[0, 1, 2].map((i) => (

@@ -172,15 +172,16 @@ export default function OnboardingWizard() {
           <p class={styles.stepDescription}>Create your admin account to get started.</p>
           <div>
             <label htmlFor="onboard-email" class={formStyles.label}>Email</label>
-            <input id="onboard-email" class={formStyles.input} type="email" value={email} onInput={(e) => setEmail((e.target as HTMLInputElement).value)} placeholder="admin@example.com" />
+            <input id="onboard-email" class={formStyles.input} type="email" autoComplete="email" aria-invalid={!!error && error.toLowerCase().includes('email')} value={email} onInput={(e) => setEmail((e.target as HTMLInputElement).value)} placeholder="admin@example.com" />
           </div>
           <div>
             <label htmlFor="onboard-password" class={formStyles.label}>Password</label>
-            <input id="onboard-password" class={formStyles.input} type="password" value={password} onInput={(e) => setPassword((e.target as HTMLInputElement).value)} placeholder="Minimum 8 characters" />
+            <input id="onboard-password" class={formStyles.input} type="password" autoComplete="new-password" aria-describedby="password-hint" aria-invalid={!!error && error.toLowerCase().includes('password')} value={password} onInput={(e) => setPassword((e.target as HTMLInputElement).value)} />
+            <p id="password-hint" class={formStyles.hint}>Minimum 8 characters</p>
           </div>
           <div>
             <label htmlFor="onboard-confirm-password" class={formStyles.label}>Confirm Password</label>
-            <input id="onboard-confirm-password" class={formStyles.input} type="password" value={confirmPassword} onInput={(e) => setConfirmPassword((e.target as HTMLInputElement).value)} />
+            <input id="onboard-confirm-password" class={formStyles.input} type="password" autoComplete="new-password" aria-invalid={!!error && error.toLowerCase().includes('password')} value={confirmPassword} onInput={(e) => setConfirmPassword((e.target as HTMLInputElement).value)} />
           </div>
           <Button variant="primary" fullWidth onClick={handleAdminCreate} loading={submitting} disabled={!email || !password || !confirmPassword}>
             Create Account
@@ -195,7 +196,9 @@ export default function OnboardingWizard() {
             <div class={styles.checksList}>
               {checks.map((c: any) => (
                 <div key={c.id} class={styles.checkItem}>
-                  <span class={c.status === 'pass' ? styles.checkDotPass : c.status === 'warn' ? styles.checkDotWarn : styles.checkDotFail} />
+                  {/* a11y [WCAG 1.4.1]: color-only dot supplemented with sr-only text */}
+                  <span class={c.status === 'pass' ? styles.checkDotPass : c.status === 'warn' ? styles.checkDotWarn : styles.checkDotFail} aria-hidden="true" />
+                  <span class="sr-only">{c.status}</span>
                   <span class={styles.checkName}>{c.name}</span>
                   <span class={styles.checkMessage}>{c.message}</span>
                 </div>

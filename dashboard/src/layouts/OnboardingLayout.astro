@@ -11,12 +11,19 @@ const { title, step } = Astro.props;
 ---
 
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title} — Icefall Setup</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <script is:inline>
+      (function() {
+        var stored = localStorage.getItem('icefall-theme');
+        var theme = stored || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', theme);
+      })();
+    </script>
   </head>
   <body class={styles.page}>
     <header class={styles.header}>
@@ -46,10 +53,5 @@ const { title, step } = Astro.props;
       </div>
     </footer>
 
-    <script>
-      const stored = localStorage.getItem('icefall-theme');
-      const theme = stored || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-      document.documentElement.setAttribute('data-theme', theme);
-    </script>
   </body>
 </html>

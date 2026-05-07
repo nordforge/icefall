@@ -112,11 +112,10 @@ export default function LogViewer({ appId }: Props) {
           class={styles.searchInput}
           aria-label="Search logs"
         />
-        {searchCount !== null && (
-          <span class={styles.searchCount}>
-            {searchCount} results
-          </span>
-        )}
+        {/* a11y [WCAG 4.1.3]: announce search result count to AT */}
+        <span class={styles.searchCount} role="status" aria-live="polite">
+          {searchCount !== null ? `${searchCount} results` : ''}
+        </span>
         <label for="log-level-filter" class="sr-only">Filter by log level</label>
         <select
           id="log-level-filter"
@@ -132,10 +131,14 @@ export default function LogViewer({ appId }: Props) {
         </select>
       </div>
 
+      {/* a11y [WCAG 4.1.3]: live log output announced to AT */}
       <div
         ref={containerRef}
         onScroll={handleScroll}
         class={styles.logContainer}
+        role="log"
+        aria-live="polite"
+        aria-label="Application logs"
       >
         {filtered.length === 0 ? (
           <div class={styles.emptyState}>

@@ -5,7 +5,6 @@
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  text-decoration: none;
   color: inherit;
   gap: var(--space-3);
   transition: border-color var(--duration-fast) var(--ease-out);
@@ -15,9 +14,18 @@
   border-color: var(--color-border-focus);
 }
 
-.card:focus-visible {
+.cardLink {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  text-decoration: none;
+  color: inherit;
+}
+
+.cardLink:focus-visible {
   outline: 2px solid var(--color-border-focus);
   outline-offset: 2px;
+  border-radius: var(--radius-sm);
 }
 
 .header {

@@ -26,9 +26,10 @@ export default function AppHeader({ app }: Props) {
   return (
     <div class={styles.header}>
       <div>
-        <div class={styles.breadcrumb}>
-          <span>Apps / {app.name}</span>
-        </div>
+        {/* a11y [WCAG 2.4.8]: proper breadcrumb navigation */}
+        <nav aria-label="Breadcrumb" class={styles.breadcrumb}>
+          <a href="/">Apps</a> / <span aria-current="page">{app.name}</span>
+        </nav>
         <div class={styles.titleRow}>
           <h1 class={styles.title}>{app.name}</h1>
           <StatusDot status="online" />

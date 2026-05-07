@@ -18,6 +18,7 @@ export default function SettingsPage() {
   const [s3Bucket, setS3Bucket] = useState('');
   const [s3Endpoint, setS3Endpoint] = useState('');
   const [saving, setSaving] = useState('');
+  const [saveMessage, setSaveMessage] = useState('');
 
   useEffect(() => {
     fetch('/api/v1/settings')
@@ -48,7 +49,10 @@ export default function SettingsPage() {
           });
         }
       }
-    } catch {}
+      setSaveMessage('Saved');
+    } catch {
+      setSaveMessage('Save failed');
+    }
     setSaving('');
   }
 
@@ -57,9 +61,11 @@ export default function SettingsPage() {
       <h1 class={styles.pageTitle}>
         Platform Settings
       </h1>
+      {/* a11y [WCAG 4.1.3]: announce save result to AT */}
+      <p role="status" aria-live="polite" class={styles.saveStatus}>{saveMessage}</p>
 
       <div class={styles.section}>
-        <h3 class={styles.sectionHeading}><Globe size={18} /> General</h3>
+        <h2 class={styles.sectionHeading}><Globe size={18} /> General</h2>
         <div class={formStyles.fieldRow}>
           <div>
             <label htmlFor="sp-base-domain" class={formStyles.label}>Base Domain</label>
@@ -78,7 +84,7 @@ export default function SettingsPage() {
       </div>
 
       <div class={styles.section}>
-        <h3 class={styles.sectionHeading}><Bell size={18} /> Notifications</h3>
+        <h2 class={styles.sectionHeading}><Bell size={18} /> Notifications</h2>
         <div class={formStyles.fieldRow}>
           <div>
             <label htmlFor="sp-smtp-host" class={formStyles.label}>SMTP Host</label>
@@ -101,7 +107,7 @@ export default function SettingsPage() {
       </div>
 
       <div class={styles.section}>
-        <h3 class={styles.sectionHeading}><Database size={18} /> Backups</h3>
+        <h2 class={styles.sectionHeading}><Database size={18} /> Backups</h2>
         <div class={formStyles.fieldRow}>
           <div>
             <label htmlFor="sp-s3-bucket" class={formStyles.label}>S3/R2 Bucket</label>
@@ -120,7 +126,7 @@ export default function SettingsPage() {
       </div>
 
       <div class={styles.section}>
-        <h3 class={styles.sectionHeading}><Shield size={18} /> MCP Server</h3>
+        <h2 class={styles.sectionHeading}><Shield size={18} /> MCP Server</h2>
         <p class={styles.mcpDescription}>
           Connect AI agents to manage your apps. Add this to your Claude Code settings:
         </p>
@@ -142,7 +148,7 @@ export default function SettingsPage() {
       </div>
 
       <div class={styles.section}>
-        <h3 class={styles.sectionHeading}><RefreshCw size={18} /> Updates</h3>
+        <h2 class={styles.sectionHeading}><RefreshCw size={18} /> Updates</h2>
         <div class={styles.updateRow}>
           <div>
             <p class={styles.versionLabel}>Current Version</p>

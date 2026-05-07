@@ -117,11 +117,18 @@
   color: var(--color-text-muted);
 }
 
+/* a11y [WCAG 2.5.8]: minimum 24×24 target size */
 .iconButton {
   background: none;
   border: none;
   color: var(--color-text-muted);
   cursor: pointer;
+  padding: var(--space-1);
+  min-width: 1.5rem;
+  min-height: 1.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .backupHeader {
@@ -245,6 +252,10 @@
   padding: var(--space-5);
   cursor: pointer;
   transition: border-color var(--duration-fast) var(--ease-out);
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: inherit;
 }
 
 .dbCardHeader {

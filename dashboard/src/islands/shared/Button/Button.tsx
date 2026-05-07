@@ -23,6 +23,7 @@ export default function Button({
   disabled,
   className,
   style,
+  type = 'button',
   ...props
 }: Props) {
   const classes = [
@@ -36,7 +37,7 @@ export default function Button({
     .join(' ');
 
   return (
-    <button disabled={disabled || loading} class={classes} style={style} {...props}>
+    <button type={type} disabled={disabled || loading} class={classes} style={style} {...props}>
       {loading && <span class={styles.spinner} aria-hidden="true" />}
       {children}
     </button>

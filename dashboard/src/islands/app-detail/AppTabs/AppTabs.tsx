@@ -35,9 +35,9 @@ function preloadTab(key: string) {
 export default function AppTabs({ appId, activeTab }: Props) {
   const handlePreload = useCallback((key: string) => () => preloadTab(key), []);
 
+  {/* a11y [WCAG 4.1.2]: these are navigation links, not JS tabs — use aria-current instead of tab roles */}
   return (
     <nav
-      role="tablist"
       aria-label="App sections"
       class={styles.nav}
     >
@@ -47,8 +47,7 @@ export default function AppTabs({ appId, activeTab }: Props) {
           <a
             key={tab.key}
             href={`/apps/${appId}${tab.path}`}
-            role="tab"
-            aria-selected={isActive}
+            aria-current={isActive ? 'page' : undefined}
             onMouseEnter={handlePreload(tab.key)}
             onFocus={handlePreload(tab.key)}
             class={isActive ? styles.tabActive : styles.tab}

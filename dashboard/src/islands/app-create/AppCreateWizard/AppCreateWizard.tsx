@@ -1,4 +1,4 @@
-import { useState } from 'preact/hooks';
+import { useState, useRef, useEffect } from 'preact/hooks';
 import { api } from '@lib/api';
 import Button from '@islands/shared/Button/Button';
 import { ArrowLeft, ArrowRight, Rocket } from 'lucide-preact';
@@ -30,6 +30,12 @@ export default function AppCreateWizard() {
     }
   }
 
+  // a11y [WCAG 2.4.3]: move focus to step card on step change
+  const cardRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    cardRef.current?.focus();
+  }, [step]);
+
   async function handleDeploy() {
     setDeploying(true);
     try {
@@ -56,18 +62,19 @@ export default function AppCreateWizard() {
         Create New App
       </h1>
 
-      <div class={styles.progress}>
+      {/* a11y [WCAG 1.3.1]: progress indicator with aria-current */}
+      <nav aria-label="Progress" class={styles.progress}>
         {STEPS.map((s, i) => (
-          <div key={s} class={styles.progressStep}>
+          <div key={s} class={styles.progressStep} aria-current={i === step ? 'step' : undefined}>
             <div class={i <= step ? styles.progressBarActive : styles.progressBarInactive} />
             <span class={i === step ? styles.progressLabelCurrent : i < step ? styles.progressLabelActive : styles.progressLabelInactive}>
               {s}
             </span>
           </div>
         ))}
-      </div>
+      </nav>
 
-      <div class={styles.card}>
+      <div ref={cardRef} tabIndex={-1} class={styles.card}>
         {step === 0 && (
           <div class={formStyles.fieldGroup}>
             <div>

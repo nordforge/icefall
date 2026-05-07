@@ -47,6 +47,7 @@ export default function DatabasesPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [showCredentials, setShowCredentials] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [newDb, setNewDb] = useState({ name: '', db_type: 'postgres', memory_mb: '' });
 
   useEffect(() => {
@@ -101,7 +102,14 @@ export default function DatabasesPage() {
     } catch { return ''; }
   }
 
-  if (loading) return <p class={styles.loadingText}>Loading databases...</p>;
+  if (loading) return (
+    <div>
+      <div class={styles.pageHeader}>
+        <h1 class={styles.pageTitle}>Databases</h1>
+      </div>
+      <p class={styles.loadingText}>Loading databases...</p>
+    </div>
+  );
 
   if (selectedDb) {
     const connStr = getConnectionString(selectedDb);
@@ -177,9 +185,19 @@ export default function DatabasesPage() {
                 <p class={styles.dangerLabel}>Delete Database</p>
                 <p class={styles.dangerDescription}>This will permanently delete the database and all its data.</p>
               </div>
-              <Button variant="danger" onClick={() => handleDelete(selectedDb.id)}>
-                <Trash2 size={14} /> Delete
-              </Button>
+              {/* a11y [WCAG 3.3.4]: two-step delete confirmation for destructive action */}
+              {confirmDelete ? (
+                <div class={styles.confirmActions}>
+                  <Button variant="ghost" onClick={() => setConfirmDelete(false)}>Cancel</Button>
+                  <Button variant="danger" onClick={() => handleDelete(selectedDb.id)}>
+                    <Trash2 size={14} /> Confirm Delete
+                  </Button>
+                </div>
+              ) : (
+                <Button variant="danger" onClick={() => setConfirmDelete(true)}>
+                  <Trash2 size={14} /> Delete
+                </Button>
+              )}
             </div>
           </div>
         </div>
@@ -232,8 +250,9 @@ export default function DatabasesPage() {
       ) : (
         <div class={styles.dbGrid}>
           {dbs.map(db => (
-            <div
+            <button
               key={db.id}
+              type="button"
               onClick={() => setSelectedDb(db)}
               class={styles.dbCard}
             >
@@ -252,7 +271,7 @@ export default function DatabasesPage() {
               <div class={styles.dbCardCreated}>
                 Created {formatRelativeTime(db.created_at)}
               </div>
-            </div>
+            </button>
           ))}
         </div>
       )}

@@ -18,10 +18,11 @@
   font-family: var(--font-sans);
 }
 
-.input:focus {
-  outline: none;
+/* a11y [WCAG 2.4.7]: visible focus ring with adequate contrast */
+.input:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: -1px;
   border-color: var(--color-border-focus);
-  box-shadow: 0 0 0 2px var(--color-primary-subtle);
 }
 
 .inputMono {
@@ -52,10 +53,17 @@
   resize: vertical;
 }
 
-.textarea:focus {
-  outline: none;
+/* a11y [WCAG 2.4.7]: visible focus ring with adequate contrast */
+.textarea:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: -1px;
   border-color: var(--color-border-focus);
-  box-shadow: 0 0 0 2px var(--color-primary-subtle);
+}
+
+.hint {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  margin-top: calc(-1 * var(--space-2));
 }
 
 .fieldGroup {

@@ -9,10 +9,10 @@ export default function ThemeToggle() {
   return (
     <button
       onClick={toggleTheme}
-      aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
       class={styles.toggle}
+      type="button"
     >
-      {theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}
+      {theme === 'light' ? <Moon size={16} aria-hidden="true" /> : <Sun size={16} aria-hidden="true" />}
       {theme === 'light' ? 'Dark mode' : 'Light mode'}
     </button>
   );

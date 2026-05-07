@@ -4,10 +4,12 @@
 <starlight-theme-select>
   <button
     class="theme-toggle"
-    aria-label={Astro.locals.t('themeSelect.accessibleLabel')}
+    aria-label="Switch to dark theme"
+    aria-pressed="false"
     type="button"
   >
-    <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    {/* a11y [WCAG 1.1.1]: decorative icons — button has aria-label, hide SVGs from AT */}
+    <svg class="sun-icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="1.25em" height="1.25em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <circle cx="12" cy="12" r="4" />
       <path d="M12 2v2" />
       <path d="M12 20v2" />
@@ -18,7 +20,7 @@
       <path d="m6.34 17.66-1.41 1.41" />
       <path d="m19.07 4.93-1.41 1.41" />
     </svg>
-    <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <svg class="moon-icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="1.25em" height="1.25em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
     </svg>
   </button>
@@ -60,10 +62,14 @@
     updateToggleState(effective);
   }
 
+  // a11y [WCAG 4.1.2 + 3.2.4]: update aria-label and aria-pressed to reflect current state
   function updateToggleState(effective: 'light' | 'dark'): void {
     document.querySelectorAll('.theme-toggle').forEach((btn) => {
       btn.classList.toggle('is-dark', effective === 'dark');
       btn.classList.toggle('is-light', effective === 'light');
+      const nextTheme = effective === 'dark' ? 'light' : 'dark';
+      btn.setAttribute('aria-label', `Switch to ${nextTheme} theme`);
+      btn.setAttribute('aria-pressed', String(effective === 'dark'));
     });
   }
 
@@ -93,8 +99,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 2rem;
-    height: 2rem;
+    min-width: 2.75rem;
+    min-height: 2.75rem;
     padding: 0;
     border: 0;
     border-radius: 50%;
@@ -102,7 +108,12 @@
     color: var(--sl-color-text);
     cursor: pointer;
     position: relative;
-    overflow: hidden;
+  }
+
+  /* a11y [WCAG 2.4.7]: visible focus ring at 3:1 contrast */
+  .theme-toggle:focus-visible {
+    outline: 2px solid var(--sl-color-accent);
+    outline-offset: 2px;
   }
 
   .theme-toggle:hover {

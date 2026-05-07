@@ -74,7 +74,9 @@ export default function UptimeTimeline({ appId }: Props) {
             {RANGES.map((r) => (
               <button
                 key={r.key}
+                type="button"
                 onClick={() => setRange(r.key)}
+                aria-pressed={range === r.key}
                 class={`${styles.rangeButton} ${range === r.key ? styles.rangeButtonActive : ''}`}
               >
                 {r.label}
@@ -84,7 +86,13 @@ export default function UptimeTimeline({ appId }: Props) {
         </div>
       </div>
 
-      <div class={styles.track} onMouseLeave={() => setHoveredIdx(null)}>
+      {/* a11y [WCAG 1.1.1]: accessible summary for AT; segments are decorative detail */}
+      <div
+        class={styles.track}
+        role="img"
+        aria-label={`Uptime timeline: ${uptimePercent}% uptime over the last ${selectedRange.label}`}
+        onMouseLeave={() => setHoveredIdx(null)}
+      >
         {segments.map((status, i) => (
           <div
             key={i}

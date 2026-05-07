@@ -86,7 +86,7 @@ export default function DomainsTab({ appId }: Props) {
                   </td>
                   <td class={styles.td}>
                     <span class={d.verified ? styles.dnsConfigured : styles.dnsPending}>
-                      <span class={styles.dnsDot} />
+                      <span class={styles.dnsDot} aria-hidden="true" />
                       {d.verified ? 'Configured' : 'Pending'}
                     </span>
                   </td>

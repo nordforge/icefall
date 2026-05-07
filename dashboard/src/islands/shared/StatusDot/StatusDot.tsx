@@ -24,10 +24,10 @@ export default function StatusDot({ status, showLabel = true }: Props) {
 
   return (
     <span class={styles.wrapper}>
+      {/* a11y [WCAG 4.1.2]: decorative when label visible, named when label hidden */}
       <span
         class={`${styles.dot} ${dotClass}`}
-        role="img"
-        aria-label={showLabel ? undefined : label}
+        {...(showLabel ? { 'aria-hidden': 'true' } : { role: 'img', 'aria-label': label })}
       />
       {showLabel && <span class={styles.label}>{label}</span>}
     </span>

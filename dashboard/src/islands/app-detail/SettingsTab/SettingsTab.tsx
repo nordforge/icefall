@@ -25,6 +25,7 @@ export default function SettingsTab({ app }: Props) {
     };
   });
   const [saving, setSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState('');
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
@@ -36,7 +37,10 @@ export default function SettingsTab({ app }: Props) {
         git_repo: form.git_repo || undefined,
         git_branch: form.git_branch,
       } as any);
-    } catch { /* show error */ }
+      setSaveMessage('Saved');
+    } catch {
+      setSaveMessage('Save failed');
+    }
     setSaving(false);
   }
 
@@ -53,9 +57,9 @@ export default function SettingsTab({ app }: Props) {
   return (
     <div class={styles.container}>
       <div class={styles.card}>
-        <h3 class={styles.sectionTitle}>
+        <h2 class={styles.sectionTitle}>
           General Settings
-        </h3>
+        </h2>
 
         <div class={formStyles.fieldRow}>
           <div>
@@ -80,13 +84,15 @@ export default function SettingsTab({ app }: Props) {
           <Button variant="primary" onClick={handleSave} loading={saving}>
             <Save size={14} /> Save Changes
           </Button>
+          {/* a11y [WCAG 4.1.3]: announce save result to AT */}
+          <span role="status" aria-live="polite">{saveMessage}</span>
         </div>
       </div>
 
       <div class={styles.dangerCard}>
-        <h3 class={styles.dangerTitle}>
+        <h2 class={styles.dangerTitle}>
           <AlertTriangle size={18} /> Danger Zone
-        </h3>
+        </h2>
 
         <div class={styles.dangerRowBorder}>
           <div>
