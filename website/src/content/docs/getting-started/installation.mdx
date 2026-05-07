@@ -39,9 +39,13 @@ curl -fsSL https://get.docker.com | sh
 # Install Caddy
 sudo apt install -y caddy
 
-# Download Icefall
+# Download Icefall (use the URL matching your architecture)
+# x86_64:
 sudo curl -fsSL -o /usr/local/bin/icefall \
-  https://github.com/nickbevers/icefall/releases/latest/download/icefall-x86_64-unknown-linux-gnu
+  https://github.com/nordforge/icefall/releases/latest/download/icefall-x86_64-unknown-linux-gnu
+# aarch64 (ARM):
+# sudo curl -fsSL -o /usr/local/bin/icefall \
+#   https://github.com/nordforge/icefall/releases/latest/download/icefall-aarch64-unknown-linux-gnu
 sudo chmod +x /usr/local/bin/icefall
 
 # Initialize
@@ -62,9 +66,13 @@ sudo systemctl enable --now docker
 sudo dnf copr enable @caddy/caddy
 sudo dnf install -y caddy
 
-# Download Icefall (same as above)
+# Download Icefall (use the URL matching your architecture)
+# x86_64:
 sudo curl -fsSL -o /usr/local/bin/icefall \
-  https://github.com/nickbevers/icefall/releases/latest/download/icefall-x86_64-unknown-linux-gnu
+  https://github.com/nordforge/icefall/releases/latest/download/icefall-x86_64-unknown-linux-gnu
+# aarch64 (ARM):
+# sudo curl -fsSL -o /usr/local/bin/icefall \
+#   https://github.com/nordforge/icefall/releases/latest/download/icefall-aarch64-unknown-linux-gnu
 sudo chmod +x /usr/local/bin/icefall
 sudo icefall init
 sudo systemctl enable --now icefall

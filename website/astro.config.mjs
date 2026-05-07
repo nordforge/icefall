@@ -8,10 +8,10 @@ export default defineConfig({
     starlight({
       title: 'Icefall',
       description: 'A fast, simple, self-hosted deployment platform',
-      social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/nickbevers/icefall' }],
+      social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/nordforge/icefall' }],
       logo: { src: './src/assets/logo.svg' },
       customCss: ['./src/styles/custom.css'],
-      editLink: { baseUrl: 'https://github.com/nickbevers/icefall/edit/main/website/' },
+      editLink: { baseUrl: 'https://github.com/nordforge/icefall/edit/main/website/' },
       sidebar: [
         {
           label: 'Getting Started',
