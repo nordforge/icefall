@@ -753,6 +753,85 @@ impl Database for SqliteDatabase {
         Ok(())
     }
 
+    // --- Sessions ---
+
+    async fn create_session(&self, user_id: &str, expires_at: &str) -> Result<Session, DbError> {
+        let id = new_id();
+        let now = now_iso8601();
+        sqlx::query("INSERT INTO sessions (id, user_id, expires_at, created_at) VALUES (?, ?, ?, ?)")
+            .bind(&id).bind(user_id).bind(expires_at).bind(&now)
+            .execute(&self.pool).await?;
+        Ok(Session { id, user_id: user_id.to_string(), expires_at: expires_at.to_string(), created_at: now })
+    }
+
+    async fn get_session(&self, session_id: &str) -> Result<Option<Session>, DbError> {
+        Ok(sqlx::query_as::<_, Session>("SELECT * FROM sessions WHERE id = ?")
+            .bind(session_id).fetch_optional(&self.pool).await?)
+    }
+
+    async fn delete_session(&self, session_id: &str) -> Result<(), DbError> {
+        sqlx::query("DELETE FROM sessions WHERE id = ?").bind(session_id).execute(&self.pool).await?;
+        Ok(())
+    }
+
+    async fn delete_user_sessions(&self, user_id: &str) -> Result<(), DbError> {
+        sqlx::query("DELETE FROM sessions WHERE user_id = ?").bind(user_id).execute(&self.pool).await?;
+        Ok(())
+    }
+
+    // --- API Tokens ---
+
+    async fn create_api_token(&self, user_id: &str, name: &str, token_hash: &str, expires_at: Option<&str>) -> Result<ApiToken, DbError> {
+        let id = new_id();
+        let now = now_iso8601();
+        sqlx::query("INSERT INTO api_tokens (id, user_id, name, token_hash, expires_at, created_at) VALUES (?, ?, ?, ?, ?, ?)")
+            .bind(&id).bind(user_id).bind(name).bind(token_hash).bind(expires_at).bind(&now)
+            .execute(&self.pool).await?;
+        Ok(ApiToken { id, user_id: user_id.to_string(), name: name.to_string(), token_hash: token_hash.to_string(), last_used_at: None, expires_at: expires_at.map(String::from), created_at: now })
+    }
+
+    async fn get_api_token_by_hash(&self, token_hash: &str) -> Result<Option<ApiToken>, DbError> {
+        Ok(sqlx::query_as::<_, ApiToken>("SELECT * FROM api_tokens WHERE token_hash = ?")
+            .bind(token_hash).fetch_optional(&self.pool).await?)
+    }
+
+    async fn list_api_tokens(&self, user_id: &str) -> Result<Vec<ApiToken>, DbError> {
+        Ok(sqlx::query_as::<_, ApiToken>("SELECT * FROM api_tokens WHERE user_id = ? ORDER BY created_at DESC")
+            .bind(user_id).fetch_all(&self.pool).await?)
+    }
+
+    async fn delete_api_token(&self, id: &str) -> Result<(), DbError> {
+        sqlx::query("DELETE FROM api_tokens WHERE id = ?").bind(id).execute(&self.pool).await?;
+        Ok(())
+    }
+
+    async fn update_token_last_used(&self, id: &str) -> Result<(), DbError> {
+        let now = now_iso8601();
+        sqlx::query("UPDATE api_tokens SET last_used_at = ? WHERE id = ?").bind(&now).bind(id).execute(&self.pool).await?;
+        Ok(())
+    }
+
+    // --- Invitations ---
+
+    async fn create_invitation(&self, email: &str, role: &str, token: &str, expires_at: &str) -> Result<Invitation, DbError> {
+        let id = new_id();
+        let now = now_iso8601();
+        sqlx::query("INSERT INTO invitations (id, email, role, token, expires_at, created_at) VALUES (?, ?, ?, ?, ?, ?)")
+            .bind(&id).bind(email).bind(role).bind(token).bind(expires_at).bind(&now)
+            .execute(&self.pool).await?;
+        Ok(Invitation { id, email: email.to_string(), role: role.to_string(), token: token.to_string(), expires_at: expires_at.to_string(), created_at: now })
+    }
+
+    async fn get_invitation_by_token(&self, token: &str) -> Result<Option<Invitation>, DbError> {
+        Ok(sqlx::query_as::<_, Invitation>("SELECT * FROM invitations WHERE token = ?")
+            .bind(token).fetch_optional(&self.pool).await?)
+    }
+
+    async fn delete_invitation(&self, id: &str) -> Result<(), DbError> {
+        sqlx::query("DELETE FROM invitations WHERE id = ?").bind(id).execute(&self.pool).await?;
+        Ok(())
+    }
+
     // --- Migrations ---
 
     async fn run_migrations(&self) -> Result<(), DbError> {

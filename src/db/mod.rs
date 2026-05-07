@@ -121,6 +121,24 @@ pub trait Database: Send + Sync + 'static {
         image_ref: &str,
     ) -> Result<(), DbError>;
 
+    // Sessions
+    async fn create_session(&self, user_id: &str, expires_at: &str) -> Result<Session, DbError>;
+    async fn get_session(&self, session_id: &str) -> Result<Option<Session>, DbError>;
+    async fn delete_session(&self, session_id: &str) -> Result<(), DbError>;
+    async fn delete_user_sessions(&self, user_id: &str) -> Result<(), DbError>;
+
+    // API Tokens
+    async fn create_api_token(&self, user_id: &str, name: &str, token_hash: &str, expires_at: Option<&str>) -> Result<ApiToken, DbError>;
+    async fn get_api_token_by_hash(&self, token_hash: &str) -> Result<Option<ApiToken>, DbError>;
+    async fn list_api_tokens(&self, user_id: &str) -> Result<Vec<ApiToken>, DbError>;
+    async fn delete_api_token(&self, id: &str) -> Result<(), DbError>;
+    async fn update_token_last_used(&self, id: &str) -> Result<(), DbError>;
+
+    // Invitations
+    async fn create_invitation(&self, email: &str, role: &str, token: &str, expires_at: &str) -> Result<Invitation, DbError>;
+    async fn get_invitation_by_token(&self, token: &str) -> Result<Option<Invitation>, DbError>;
+    async fn delete_invitation(&self, id: &str) -> Result<(), DbError>;
+
     // Env var extras
     async fn delete_env_vars_by_environment(
         &self,

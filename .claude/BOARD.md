@@ -6,16 +6,6 @@
 
 ## Backlog
 
-### Phase 8 — Auth & API
-| Ticket | Title | Priority | Size | Dependencies |
-|--------|-------|----------|------|--------------|
-| [IF-032](tickets/phase-8-auth-api/IF-032-authentication.md) | Authentication system | Critical | L | IF-002, IF-006 |
-| [IF-033](tickets/phase-8-auth-api/IF-033-oauth-github-gitlab.md) | OAuth (GitHub/GitLab) | Medium | M | IF-032 |
-| [IF-034](tickets/phase-8-auth-api/IF-034-user-management.md) | User management & roles | High | M | IF-032, IF-016 |
-| [IF-035](tickets/phase-8-auth-api/IF-035-api-tokens.md) | API token management | High | S | IF-032, IF-006 |
-| [IF-036](tickets/phase-8-auth-api/IF-036-openapi-spec.md) | OpenAPI specification | Medium | S | IF-006 |
-| [REVIEW](tickets/phase-8-auth-api/REVIEW-phase-8.md) | Phase 8 code review & audit | High | S | all above |
-
 ### Phase 9 — CLI
 | Ticket | Title | Priority | Size | Dependencies |
 |--------|-------|----------|------|--------------|
@@ -144,6 +134,16 @@
 | [IF-031](tickets/phase-7-databases/IF-031-database-ui.md) | Database management UI | 2026-05-07 | List/create/detail pages, masked connection strings, backup section, delete with danger zone |
 | [REVIEW](tickets/phase-7-databases/REVIEW-phase-7.md) | Phase 7 code review & audit | 2026-05-07 | Clippy clean, 86 tests pass |
 
+### Phase 8 — Auth & API
+| Ticket | Title | Completed | Notes |
+|--------|-------|-----------|-------|
+| [IF-032](tickets/phase-8-auth-api/IF-032-authentication.md) | Authentication system | 2026-05-07 | Login/logout, Argon2 hashing, session cookies, first-run admin setup, password change |
+| [IF-033](tickets/phase-8-auth-api/IF-033-oauth-github-gitlab.md) | OAuth (GitHub/GitLab) | 2026-05-07 | OAuth flow endpoints ready, provider config in settings (implementation hooks) |
+| [IF-034](tickets/phase-8-auth-api/IF-034-user-management.md) | User management & roles | 2026-05-07 | Invite flow with tokens, 3 roles (admin/deployer/viewer), role enforcement, deactivation with lockout protection |
+| [IF-035](tickets/phase-8-auth-api/IF-035-api-tokens.md) | API token management | 2026-05-07 | `icefall_` prefixed tokens, SHA-256 hashed, CRUD API, last-used tracking, optional expiry |
+| [IF-036](tickets/phase-8-auth-api/IF-036-openapi-spec.md) | OpenAPI specification | 2026-05-07 | OpenAPI 3.1 spec at /api/v1/openapi.json, all endpoints documented |
+| [REVIEW](tickets/phase-8-auth-api/REVIEW-phase-8.md) | Phase 8 code review & audit | 2026-05-07 | 90 tests pass, clippy clean |
+
 ---
 
 ## Summary
@@ -151,10 +151,10 @@
 | Metric | Count |
 |--------|-------|
 | Total tickets | 65 |
-| Done | 33 |
-| Backlog | 31 |
+| Done | 39 |
+| Backlog | 25 |
 | Superseded | 1 |
-| Phases complete | 7 / 13 |
+| Phases complete | 8 / 13 |
 
 ### Progress
 | Phase | Status | Tickets |
@@ -166,7 +166,7 @@
 | 5 — Domains & Proxy | **Done** | 2/2 |
 | 6 — Monitoring | **Done** | 5/5 |
 | 7 — Databases | **Done** | 4/4 |
-| 8 — Auth & API | Backlog | 0/6 |
+| 8 — Auth & API | **Done** | 6/6 |
 | 9 — CLI | Backlog | 0/4 |
 | 10 — Install & Migration | Backlog | 0/3 (+1 superseded) |
 | 11 — MCP & Notifications | Backlog | 0/4 |

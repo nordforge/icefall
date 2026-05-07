@@ -1,4 +1,5 @@
 pub mod apps;
+pub mod auth;
 pub mod backups;
 pub mod databases;
 pub mod deploys;
@@ -8,6 +9,7 @@ pub mod events;
 pub mod health;
 pub mod logs;
 pub mod metrics;
+pub mod openapi;
 pub mod server;
 pub mod settings;
 pub mod users;
@@ -20,6 +22,7 @@ use crate::api::AppState;
 pub fn api_routes() -> Router<AppState> {
     Router::new()
         .merge(apps::routes())
+        .merge(auth::routes())
         .merge(backups::routes())
         .merge(databases::routes())
         .merge(deploys::routes())
@@ -33,4 +36,5 @@ pub fn api_routes() -> Router<AppState> {
         .merge(server::routes())
         .merge(events::routes())
         .merge(webhooks::routes())
+        .merge(openapi::routes())
 }
