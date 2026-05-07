@@ -1,0 +1,145 @@
+---
+---
+
+<starlight-theme-select>
+  <button
+    class="theme-toggle"
+    aria-label={Astro.locals.t('themeSelect.accessibleLabel')}
+    type="button"
+  >
+    <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2v2" />
+      <path d="M12 20v2" />
+      <path d="m4.93 4.93 1.41 1.41" />
+      <path d="m17.66 17.66 1.41 1.41" />
+      <path d="M2 12h2" />
+      <path d="M20 12h2" />
+      <path d="m6.34 17.66-1.41 1.41" />
+      <path d="m19.07 4.93-1.41 1.41" />
+    </svg>
+    <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+    </svg>
+  </button>
+</starlight-theme-select>
+
+<script is:inline>
+  StarlightThemeProvider.updatePickers();
+</script>
+
+<script>
+  type Theme = 'auto' | 'dark' | 'light';
+
+  const storageKey = 'starlight-theme';
+
+  const parseTheme = (theme: unknown): Theme =>
+    theme === 'auto' || theme === 'dark' || theme === 'light' ? theme : 'auto';
+
+  const loadTheme = (): Theme =>
+    parseTheme(typeof localStorage !== 'undefined' && localStorage.getItem(storageKey));
+
+  function storeTheme(theme: Theme): void {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(storageKey, theme === 'light' || theme === 'dark' ? theme : '');
+    }
+  }
+
+  const getPreferredColorScheme = (): Theme =>
+    matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+
+  function getEffectiveTheme(theme: Theme): 'light' | 'dark' {
+    return theme === 'auto' ? getPreferredColorScheme() : theme;
+  }
+
+  function onThemeChange(theme: Theme): void {
+    StarlightThemeProvider.updatePickers(theme);
+    const effective = getEffectiveTheme(theme);
+    document.documentElement.dataset.theme = effective;
+    storeTheme(theme);
+    updateToggleState(effective);
+  }
+
+  function updateToggleState(effective: 'light' | 'dark'): void {
+    document.querySelectorAll('.theme-toggle').forEach((btn) => {
+      btn.classList.toggle('is-dark', effective === 'dark');
+      btn.classList.toggle('is-light', effective === 'light');
+    });
+  }
+
+  matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => {
+    if (loadTheme() === 'auto') onThemeChange('auto');
+  });
+
+  class StarlightThemeSelect extends HTMLElement {
+    constructor() {
+      super();
+      const theme = loadTheme();
+      const effective = getEffectiveTheme(theme);
+      updateToggleState(effective);
+
+      this.querySelector('button')?.addEventListener('click', () => {
+        const current = document.documentElement.dataset.theme;
+        const next = current === 'dark' ? 'light' : 'dark';
+        onThemeChange(next);
+      });
+    }
+  }
+  customElements.define('starlight-theme-select', StarlightThemeSelect);
+</script>
+
+<style>
+  .theme-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--sl-color-text);
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .theme-toggle:hover {
+    color: var(--sl-color-text-accent);
+  }
+
+  .sun-icon,
+  .moon-icon {
+    position: absolute;
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .sun-icon {
+    transform: rotate(0deg) scale(1);
+    opacity: 1;
+  }
+
+  .moon-icon {
+    transform: rotate(-90deg) scale(0);
+    opacity: 0;
+  }
+
+  .theme-toggle.is-dark .sun-icon {
+    transform: rotate(90deg) scale(0);
+    opacity: 0;
+  }
+
+  .theme-toggle.is-dark .moon-icon {
+    transform: rotate(0deg) scale(1);
+    opacity: 1;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sun-icon,
+    .moon-icon {
+      transition: none;
+    }
+  }
+</style>

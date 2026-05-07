@@ -11,6 +11,9 @@ export default defineConfig({
       social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/nordforge/icefall' }],
       logo: { src: './src/assets/logo.svg' },
       customCss: ['./src/styles/custom.css'],
+      components: {
+        ThemeSelect: './src/components/ThemeSelect.astro',
+      },
       editLink: { baseUrl: 'https://github.com/nordforge/icefall/edit/main/website/' },
       sidebar: [
         {

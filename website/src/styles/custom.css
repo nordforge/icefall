@@ -11,3 +11,7 @@
   --sl-color-accent: oklch(0.55 0.19 260);
   --sl-color-accent-high: oklch(0.85 0.08 260);
 }
+
+.site-title.sl-flex {
+  gap: 0.25rem;
+}
