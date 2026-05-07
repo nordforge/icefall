@@ -1,4 +1,4 @@
-import type { App, Deploy, Domain, EnvVar, ServerStatus } from './types';
+import type { App, Deploy, Domain, EnvVar, ServerStatus, User, ApiToken } from './types';
 
 const API_BASE = '/api/v1';
 
@@ -74,6 +74,38 @@ export const api = {
     ),
 
   getServerStatus: () => request<ServerStatus>('/server/status'),
+
+  deleteDomain: (appId: string, domainId: string) =>
+    request<{ message: string }>(`/apps/${appId}/domains/${domainId}`, { method: 'DELETE' }),
+
+  listUsers: () => request<{ data: User[] }>('/users'),
+
+  getMe: () => request<{ data: User }>('/users/me'),
+
+  inviteUser: (email: string, role: string) =>
+    request<{ data: { invite_token: string } }>(
+      '/users/invite',
+      { method: 'POST', body: JSON.stringify({ email, role }) },
+    ),
+
+  changeRole: (userId: string, role: string) =>
+    request<{ data: User }>(`/users/${userId}/role`, { method: 'PUT', body: JSON.stringify({ role }) }),
+
+  deactivateUser: (userId: string) =>
+    request<{ message: string }>(`/users/${userId}`, { method: 'DELETE' }),
+
+  listTokens: () => request<{ data: ApiToken[] }>('/tokens'),
+
+  createToken: (name: string, expiresAt?: string) =>
+    request<{ data: ApiToken & { token: string } }>(
+      '/tokens',
+      { method: 'POST', body: JSON.stringify({ name, expires_at: expiresAt }) },
+    ),
+
+  revokeToken: (tokenId: string) =>
+    request<{ message: string }>(`/tokens/${tokenId}`, { method: 'DELETE' }),
+
+  getServerIp: () => request<{ ip: string }>('/server/ip'),
 };
 
 export { ApiError };

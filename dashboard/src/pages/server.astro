@@ -1,8 +1,8 @@
 ---
 import DashboardLayout from '@/layouts/DashboardLayout.astro';
+import ServerPage from '@islands/server/ServerPage/ServerPage';
 ---
 
 <DashboardLayout title="Server">
-  <h1>Server</h1>
-  <p>Server management is coming soon.</p>
+  <ServerPage client:load />
 </DashboardLayout>

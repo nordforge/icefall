@@ -7,10 +7,9 @@ const currentPath = Astro.url.pathname;
 const navItems = [
   { href: '/', label: 'Apps', icon: 'grid' },
   { href: '/databases', label: 'Databases', icon: 'database' },
-  { href: '/domains', label: 'Domains', icon: 'globe' },
-  { href: '/settings', label: 'Settings', icon: 'settings' },
   { href: '/server', label: 'Server', icon: 'server' },
   { href: '/users', label: 'Users', icon: 'users' },
+  { href: '/settings', label: 'Settings', icon: 'settings' },
   { href: '/docs', label: 'Docs', icon: 'book' },
 ];
 
@@ -22,14 +21,19 @@ function isActive(href: string): boolean {
 
 <aside class={styles.sidebar}>
   <a href="/" class={styles.logo}>
-    <span class={styles.logoIcon}>I</span>
+    <span class={styles.logoIcon}>
+      <svg aria-hidden="true" width="20" height="20" viewBox="0 0 512 512" fill="none">
+        <path d="M161 291L231 426L221 231L131 321Z" fill="currentColor"/>
+        <path d="M236 86L326 181L251 426L231 426Z" fill="currentColor"/>
+        <path d="M361 321L271 426L306 251L381 296Z" fill="currentColor"/>
+      </svg>
+    </span>
     <span>
       Icefall
       <span class={styles.subtitle}>PaaS Platform</span>
     </span>
   </a>
 
-  {/* a11y [WCAG 2.4.1]: label distinguishes from other nav landmarks */}
   <nav aria-label="Main" class={styles.nav}>
     {navItems.map((item) => (
       <a
@@ -37,14 +41,12 @@ function isActive(href: string): boolean {
         aria-current={isActive(item.href) ? 'page' : undefined}
         class:list={[styles.navItem, isActive(item.href) && styles.navItemActive]}
       >
-        {/* a11y [WCAG 1.1.1]: decorative icon hidden from AT */}
         <svg aria-hidden="true" class={styles.navIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
           {item.icon === 'grid' && <><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /></>}
           {item.icon === 'database' && <><ellipse cx="12" cy="5" rx="9" ry="3" /><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" /><path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3" /></>}
-          {item.icon === 'globe' && <><circle cx="12" cy="12" r="10" /><path d="M2 12h20" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10" /></>}
-          {item.icon === 'settings' && <><circle cx="12" cy="12" r="3" /><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" /></>}
           {item.icon === 'server' && <><rect x="2" y="2" width="20" height="8" rx="2" /><rect x="2" y="14" width="20" height="8" rx="2" /><circle cx="6" cy="6" r="1" fill="currentColor" /><circle cx="6" cy="18" r="1" fill="currentColor" /></>}
           {item.icon === 'users' && <><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></>}
+          {item.icon === 'settings' && <><circle cx="12" cy="12" r="3" /><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" /></>}
           {item.icon === 'book' && <><path d="M4 19V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v14" /><path d="M4 19h16" /><path d="M12 3v16" /></>}
         </svg>
         {item.label}
@@ -53,10 +55,12 @@ function isActive(href: string): boolean {
   </nav>
 
   <div class={styles.footer}>
-    <ThemeToggle client:idle />
-    <div class={styles.footerStatus}>
-      <span class={styles.statusDotGreen} aria-hidden="true"></span>
-      System Operational
+    <div class={styles.footerRow}>
+      <div class={styles.footerStatus}>
+        <span class={styles.statusDotGreen} aria-hidden="true"></span>
+        Operational
+      </div>
+      <ThemeToggle client:idle />
     </div>
   </div>
 </aside>

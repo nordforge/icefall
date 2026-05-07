@@ -1,24 +1,57 @@
 .toggle {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
+  justify-content: center;
+  min-width: 2rem;
+  min-height: 2rem;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
   color: var(--color-text-secondary);
-  font-size: var(--text-sm);
   cursor: pointer;
-  width: 100%;
-  font-family: inherit;
+  position: relative;
 }
 
 .toggle:hover {
-  background: var(--color-surface-alt);
   color: var(--color-text);
 }
 
 .toggle:focus-visible {
   outline: 2px solid var(--color-border-focus);
   outline-offset: 2px;
+}
+
+.sunIcon,
+.moonIcon {
+  position: absolute;
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sunIcon {
+  transform: rotate(0deg) scale(1);
+  opacity: 1;
+}
+
+.moonIcon {
+  transform: rotate(-90deg) scale(0);
+  opacity: 0;
+}
+
+.isDark .sunIcon {
+  transform: rotate(90deg) scale(0);
+  opacity: 0;
+}
+
+.isDark .moonIcon {
+  transform: rotate(0deg) scale(1);
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sunIcon,
+  .moonIcon {
+    transition: none;
+  }
 }

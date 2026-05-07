@@ -1,8 +1,8 @@
 ---
 import DashboardLayout from '@/layouts/DashboardLayout.astro';
+import DomainsPage from '@islands/domains/DomainsPage/DomainsPage';
 ---
 
 <DashboardLayout title="Domains">
-  <h1>Domains</h1>
-  <p>Domain management is available within each app's settings. Select an app from the dashboard to manage its domains.</p>
+  <DomainsPage client:load />
 </DashboardLayout>

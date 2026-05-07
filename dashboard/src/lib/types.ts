@@ -72,3 +72,21 @@ export type BuildStep = {
 }
 
 export type AppStatus = 'online' | 'building' | 'deploying' | 'failed' | 'stopped';
+
+export type User = {
+  id: string;
+  email: string;
+  role: 'admin' | 'deployer' | 'viewer';
+  is_active: boolean;
+  last_login_at: string | null;
+  created_at: string;
+}
+
+export type ApiToken = {
+  id: string;
+  name: string;
+  prefix: string;
+  last_used_at: string | null;
+  expires_at: string | null;
+  created_at: string;
+}

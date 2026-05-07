@@ -3,7 +3,7 @@ import type { App, Deploy } from '@lib/types';
 import { api } from '@lib/api';
 import { formatRelativeTime, shortSha, formatDuration } from '@lib/format';
 import StatusDot from '@islands/shared/StatusDot/StatusDot';
-import ProgressBar from '@islands/shared/ProgressBar/ProgressBar';
+import UptimeTimeline from '@islands/shared/UptimeTimeline/UptimeTimeline';
 import styles from './overview-tab.module.css';
 
 type Props = {
@@ -99,6 +99,10 @@ export default function OverviewTab({ app }: Props) {
             View all &rarr;
           </a>
         )}
+      </div>
+
+      <div class={styles.uptimePanel}>
+        <UptimeTimeline appId={app.id} />
       </div>
     </div>
   );
