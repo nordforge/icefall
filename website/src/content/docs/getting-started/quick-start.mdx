@@ -1,0 +1,62 @@
+---
+title: Quick Start
+description: Deploy your first app in 5 minutes.
+---
+
+## 1. Create your admin account
+
+Open `http://YOUR_SERVER_IP:3000` — you'll see the setup wizard. Create your admin account with an email and a strong password (12+ characters).
+
+## 2. Configure your domain (optional)
+
+If you have a domain, the wizard will guide you through DNS setup:
+
+```
+A    apps.example.com     → YOUR_SERVER_IP
+A    *.apps.example.com   → YOUR_SERVER_IP
+```
+
+This enables automatic subdomains like `my-app.apps.example.com`.
+
+## 3. Deploy from the dashboard
+
+Click **New App**, paste your repository URL, and click **Deploy**. Icefall will:
+
+1. Clone your repository
+2. Detect your framework (Astro, Next.js, React, etc.)
+3. Generate an optimized Dockerfile
+4. Build a container image
+5. Start the container with health checks
+6. Configure HTTPS via Caddy
+
+## 4. Deploy from the CLI
+
+```bash
+# Login to your server
+icefall login
+
+# In your project directory, create a config
+echo 'app_id = "YOUR_APP_ID"' > .icefall.toml
+
+# Deploy
+icefall deploy
+```
+
+## 5. Deploy via Git webhook
+
+In your GitHub/GitLab repo settings, add a webhook:
+
+```
+URL: https://apps.example.com/api/v1/webhooks/YOUR_APP_ID/github
+Secret: (from app settings)
+Events: Push
+```
+
+Now every push to `main` triggers a deploy automatically.
+
+## What's next?
+
+- [Framework Guides](/docs/frameworks/astro) — specific setup for your framework
+- [Environment Variables](/docs/concepts/environments) — manage secrets and config
+- [Custom Domains](/docs/concepts/domains) — add your own domain
+- [Managed Databases](/docs/databases/provisioning) — one-click Postgres, MySQL, Redis

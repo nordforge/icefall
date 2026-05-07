@@ -1,0 +1,51 @@
+---
+title: Deploy Astro
+description: How to deploy an Astro site or SSR app on Icefall.
+---
+
+## Auto-detection
+
+Icefall detects Astro when it finds `astro` in your `package.json` dependencies or an `astro.config.mjs/ts/js` file.
+
+| Setting | Static | SSR |
+|---------|--------|-----|
+| Build command | `bun run build` | `bun run build` |
+| Output directory | `dist/` | `dist/` |
+| Port | 80 (Caddy) | 4321 |
+| Served by | Caddy (static files) | Node.js |
+
+## Static Astro (default)
+
+No configuration needed. Push and deploy:
+
+```bash
+icefall deploy
+```
+
+Icefall generates a multi-stage Dockerfile:
+1. Installs dependencies
+2. Runs `astro build`
+3. Copies `dist/` to a Caddy container
+
+## SSR Astro
+
+If your `astro.config.mjs` has `output: 'server'` or uses an SSR adapter (`@astrojs/node`), Icefall detects SSR mode automatically.
+
+The generated Dockerfile runs your app with Node.js instead of serving static files.
+
+## Override defaults
+
+Create a `.icefall.toml` or set build config in the dashboard:
+
+```toml
+[build]
+build_command = "bun run build"
+output_dir = "dist"
+port = 4321
+```
+
+## Common issues
+
+**Build fails with "Cannot find module"** — make sure your lockfile (`bun.lock`, `package-lock.json`) is committed.
+
+**SSR not detected** — check that `output: 'server'` is set in your Astro config, not just the adapter import.

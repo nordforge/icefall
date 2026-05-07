@@ -1,0 +1,58 @@
+---
+title: Deploy Next.js
+description: How to deploy a Next.js app on Icefall.
+---
+
+## Auto-detection
+
+Icefall detects Next.js when `next` is in your `package.json` dependencies or a `next.config.mjs/ts/js` file exists.
+
+| Setting | Default |
+|---------|---------|
+| Build command | `npm run build` |
+| Output directory | `.next/` |
+| Port | 3000 |
+| Mode | Standalone output |
+
+## Setup
+
+Add `output: 'standalone'` to your `next.config.mjs`:
+
+```js
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  output: 'standalone',
+};
+export default nextConfig;
+```
+
+This is required for Icefall's Docker deployment — it creates a minimal Node.js server.
+
+## Deploy
+
+```bash
+icefall deploy
+```
+
+Icefall generates a multi-stage Dockerfile:
+1. Installs dependencies
+2. Runs `next build`
+3. Copies standalone output + static files to a slim Node.js image
+4. Runs as a non-root user
+
+## Environment variables
+
+Set them via the dashboard or CLI:
+
+```bash
+icefall env set my-app NEXT_PUBLIC_API_URL=https://api.example.com
+icefall env set my-app DATABASE_URL=postgresql://...
+```
+
+`NEXT_PUBLIC_*` variables are embedded at build time. Regular variables are available at runtime.
+
+## Common issues
+
+**"standalone output not found"** — add `output: 'standalone'` to `next.config.mjs`.
+
+**Static assets not loading** — Icefall copies `.next/static` correctly. If using a custom `basePath`, set it in your config.

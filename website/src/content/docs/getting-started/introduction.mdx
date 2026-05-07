@@ -1,0 +1,45 @@
+---
+title: Introduction
+description: What is Icefall and who is it for?
+---
+
+Icefall is a **self-hosted deployment platform** — a single binary that turns any Linux server into a PaaS. Push your code, Icefall handles the rest: builds, containers, SSL, domains, databases, and monitoring.
+
+## Who is it for?
+
+- **Solo developers** who want Vercel/Netlify-style deploys on their own server
+- **Small teams** who need a deployment platform without the complexity of Kubernetes
+- **Agencies** managing multiple client projects on a single VPS
+- **Anyone** tired of manually configuring Nginx, Docker Compose, and Let's Encrypt
+
+## Key Features
+
+- **Git-push deploys** — connect a repo, push to main, your app is live
+- **Framework detection** — auto-detects Astro, Next.js, Nuxt, React, Vue, Node.js
+- **Preview environments** — every feature branch gets its own URL
+- **Managed databases** — one-click Postgres, MySQL, Redis, MongoDB with auto-backups
+- **SSL everywhere** — automatic HTTPS via Caddy + Let's Encrypt
+- **Health monitoring** — TCP health checks, auto-restart, uptime tracking
+- **Real-time logs** — streaming build and runtime logs
+- **CLI + Dashboard + MCP** — manage from terminal, browser, or AI agent
+
+## Architecture
+
+Icefall is a single Rust binary (`icefall`) that runs as a daemon:
+
+```
+┌─────────────────────────────────────┐
+│  Icefall Daemon (Rust/Axum)         │
+│  ├── REST API + SSE Events          │
+│  ├── Build Engine (git → Docker)    │
+│  ├── Deploy Manager                 │
+│  ├── Health Check Runner            │
+│  └── Metrics Collector              │
+├─────────────────────────────────────┤
+│  Caddy (reverse proxy, auto-SSL)    │
+├─────────────────────────────────────┤
+│  Docker Engine (containers)         │
+└─────────────────────────────────────┘
+```
+
+No Kubernetes. No YAML. No 47-step tutorial. One binary, one config file.

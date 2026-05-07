@@ -6,15 +6,6 @@
 
 ## Backlog
 
-### Phase 12 — Landing Page & Documentation
-| Ticket | Title | Priority | Size | Dependencies |
-|--------|-------|----------|------|--------------|
-| [IF-046](tickets/phase-12-landing-docs/IF-046-landing-page.md) | Landing page (icefall.dev) | High | M | — |
-| [IF-047](tickets/phase-12-landing-docs/IF-047-documentation-site.md) | Documentation site | High | L | IF-046, IF-036 |
-| [IF-048](tickets/phase-12-landing-docs/IF-048-framework-guides.md) | Per-framework deployment guides | Medium | M | IF-047 |
-| [IF-049](tickets/phase-12-landing-docs/IF-049-social-assets.md) | Logo, social card & brand assets | Medium | S | — |
-| [REVIEW](tickets/phase-12-landing-docs/REVIEW-phase-12.md) | Phase 12 code review & audit | High | S | all above |
-
 ### Phase 13 — Onboarding
 | Ticket | Title | Priority | Size | Dependencies |
 |--------|-------|----------|------|--------------|
@@ -144,6 +135,15 @@
 | [IF-045](tickets/phase-11-mcp-notifications/IF-045-settings-page.md) | Global settings page | 2026-05-07 | Dashboard page: domain, notifications, backup S3/R2, MCP config snippet, version display |
 | [REVIEW](tickets/phase-11-mcp-notifications/REVIEW-phase-11.md) | Phase 11 code review | 2026-05-07 | 90 tests, clippy clean |
 
+### Phase 12 — Landing Page & Documentation
+| Ticket | Title | Completed | Notes |
+|--------|-------|-----------|-------|
+| [IF-046](tickets/phase-12-landing-docs/IF-046-landing-page.md) | Landing page | 2026-05-07 | Starlight splash page with hero, features grid, install command, tech stack |
+| [IF-047](tickets/phase-12-landing-docs/IF-047-documentation-site.md) | Documentation site | 2026-05-07 | 31 doc pages across 9 sections, Pagefind search, edit links, sidebar nav |
+| [IF-048](tickets/phase-12-landing-docs/IF-048-framework-guides.md) | Framework guides | 2026-05-07 | Astro + Next.js with full content, 6 more framework stubs ready for content |
+| [IF-049](tickets/phase-12-landing-docs/IF-049-social-assets.md) | Brand assets | 2026-05-07 | SVG logo (light/dark), favicon, brand guidelines in assets/brand/ |
+| [REVIEW](tickets/phase-12-landing-docs/REVIEW-phase-12.md) | Phase 12 review | 2026-05-07 | 34 pages build, search index, sitemap |
+
 ---
 
 ## Summary
@@ -151,10 +151,10 @@
 | Metric | Count |
 |--------|-------|
 | Total tickets | 65 |
-| Done | 50 |
-| Backlog | 14 |
+| Done | 55 |
+| Backlog | 9 |
 | Superseded | 1 |
-| Phases complete | 11 / 13 |
+| Phases complete | 12 / 13 |
 
 ### Progress
 | Phase | Status | Tickets |
@@ -170,7 +170,7 @@
 | 9 — CLI | **Done** | 4/4 |
 | 10 — Install & Migration | **Done** | 3/3 (+1 superseded) |
 | 11 — MCP & Notifications | **Done** | 4/4 |
-| 12 — Landing & Docs | Backlog | 0/5 |
+| 12 — Landing & Docs | **Done** | 5/5 |
 | 13 — Onboarding | Backlog | 0/10 |
 
 ### Size breakdown

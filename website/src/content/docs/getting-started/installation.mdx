@@ -1,0 +1,93 @@
+---
+title: Installation
+description: Install Icefall on your server in under 2 minutes.
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+## One-liner install
+
+```bash
+curl -fsSL https://icefall.dev/install.sh | bash
+```
+
+This will:
+1. Detect your OS and architecture
+2. Install Docker (if not present)
+3. Install Caddy (for automatic HTTPS)
+4. Download the Icefall binary
+5. Generate a config file with a random encryption key
+6. Create and start a systemd service
+7. Print your dashboard URL
+
+## Requirements
+
+- **OS:** Ubuntu 20.04+, Debian 11+, Fedora 38+, CentOS 9+, Arch
+- **Architecture:** x86_64 or aarch64
+- **RAM:** 1 GB minimum, 2 GB recommended
+- **Disk:** 10 GB minimum
+- **Ports:** 80 and 443 open for web traffic, 3000 for the dashboard
+
+## Manual install
+
+<Tabs>
+<TabItem label="Ubuntu/Debian">
+```bash
+# Install Docker
+curl -fsSL https://get.docker.com | sh
+
+# Install Caddy
+sudo apt install -y caddy
+
+# Download Icefall
+sudo curl -fsSL -o /usr/local/bin/icefall \
+  https://github.com/nickbevers/icefall/releases/latest/download/icefall-x86_64-unknown-linux-gnu
+sudo chmod +x /usr/local/bin/icefall
+
+# Initialize
+sudo icefall init
+
+# Start
+sudo systemctl enable icefall
+sudo systemctl start icefall
+```
+</TabItem>
+<TabItem label="Fedora/RHEL">
+```bash
+# Install Docker
+sudo dnf install -y docker
+sudo systemctl enable --now docker
+
+# Install Caddy
+sudo dnf copr enable @caddy/caddy
+sudo dnf install -y caddy
+
+# Download Icefall (same as above)
+sudo curl -fsSL -o /usr/local/bin/icefall \
+  https://github.com/nickbevers/icefall/releases/latest/download/icefall-x86_64-unknown-linux-gnu
+sudo chmod +x /usr/local/bin/icefall
+sudo icefall init
+sudo systemctl enable --now icefall
+```
+</TabItem>
+</Tabs>
+
+## Non-interactive install
+
+For automated setups (CI, Terraform, cloud-init):
+
+```bash
+curl -fsSL https://icefall.dev/install.sh | bash -s -- --yes
+```
+
+## Verify
+
+```bash
+icefall status
+```
+
+Should show server version, CPU, memory, and disk usage.
+
+## Next steps
+
+Open `http://YOUR_SERVER_IP:3000` in your browser to create your admin account and deploy your first app.

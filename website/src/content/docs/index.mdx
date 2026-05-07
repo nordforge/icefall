@@ -1,0 +1,54 @@
+---
+title: Icefall
+description: A fast, simple, self-hosted deployment platform.
+template: splash
+hero:
+  tagline: Deploy apps to your own server. One binary. Zero complexity.
+  actions:
+    - text: Get Started
+      link: /docs/getting-started/installation/
+      icon: right-arrow
+    - text: View on GitHub
+      link: https://github.com/nickbevers/icefall
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+## Why Icefall?
+
+<CardGrid>
+  <Card title="Git-Push Deploys" icon="rocket">
+    Connect a repo, push to main, your app is live. Automatic framework detection for Astro, Next.js, Nuxt, React, Vue, and Node.js.
+  </Card>
+  <Card title="Preview Environments" icon="approve-check-circle">
+    Every feature branch gets its own URL. Push to `feature/auth` → live at `feature-auth--myapp.domain.com`.
+  </Card>
+  <Card title="Managed Databases" icon="seti:db">
+    One-click Postgres, MySQL, Redis, MongoDB with auto-backups, encrypted credentials, and connection string injection.
+  </Card>
+  <Card title="Zero-Downtime Deploys" icon="puzzle">
+    New container starts, health check passes, traffic switches, old container stops. No dropped requests.
+  </Card>
+</CardGrid>
+
+## Install in 30 seconds
+
+```bash
+curl -fsSL https://icefall.dev/install.sh | bash
+```
+
+Then open your browser and create your admin account. That's it.
+
+## Built with
+
+- **Rust** — single binary daemon, fast and memory-efficient
+- **Docker** — container isolation for every app
+- **Caddy** — automatic HTTPS with Let's Encrypt
+- **SQLite** — no external database dependency
+- **Astro + Preact** — lightweight dashboard UI
+
+## Open Source
+
+Icefall is MIT licensed. [Star us on GitHub](https://github.com/nickbevers/icefall) or [read the docs](/docs/getting-started/introduction/).
