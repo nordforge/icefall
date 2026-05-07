@@ -8,6 +8,17 @@ use crate::db::encryption::Encryptor;
 use crate::db::models::*;
 use crate::db::{Database, DbError};
 
+fn normalize_repo_url(url: &str) -> String {
+    url.trim()
+        .trim_end_matches('/')
+        .trim_end_matches(".git")
+        .replace("https://", "")
+        .replace("http://", "")
+        .replace("git@", "")
+        .replace(':', "/")
+        .to_lowercase()
+}
+
 pub struct SqliteDatabase {
     pool: SqlitePool,
     encryptor: Arc<Encryptor>,
@@ -674,6 +685,72 @@ impl Database for SqliteDatabase {
         .fetch_all(&self.pool)
         .await?;
         Ok(rules)
+    }
+
+    // --- Lookup helpers ---
+
+    async fn get_app_by_repo(&self, repo_url: &str) -> Result<Option<App>, DbError> {
+        let apps = self.list_apps().await?;
+        let normalized = normalize_repo_url(repo_url);
+        Ok(apps
+            .into_iter()
+            .find(|a| a.git_repo.as_deref().map(normalize_repo_url) == Some(normalized.clone())))
+    }
+
+    async fn get_environment_by_branch(
+        &self,
+        app_id: &str,
+        branch: &str,
+    ) -> Result<Option<Environment>, DbError> {
+        let env = sqlx::query_as::<_, Environment>(
+            "SELECT * FROM environments WHERE app_id = ? AND branch = ?",
+        )
+        .bind(app_id)
+        .bind(branch)
+        .fetch_optional(&self.pool)
+        .await?;
+        Ok(env)
+    }
+
+    // --- Deploy extras ---
+
+    async fn update_deploy_container_id(
+        &self,
+        deploy_id: &str,
+        container_id: &str,
+    ) -> Result<(), DbError> {
+        sqlx::query("UPDATE deploys SET container_id = ? WHERE id = ?")
+            .bind(container_id)
+            .bind(deploy_id)
+            .execute(&self.pool)
+            .await?;
+        Ok(())
+    }
+
+    async fn update_deploy_image_ref(
+        &self,
+        deploy_id: &str,
+        image_ref: &str,
+    ) -> Result<(), DbError> {
+        sqlx::query("UPDATE deploys SET image_ref = ? WHERE id = ?")
+            .bind(image_ref)
+            .bind(deploy_id)
+            .execute(&self.pool)
+            .await?;
+        Ok(())
+    }
+
+    // --- Env var extras ---
+
+    async fn delete_env_vars_by_environment(
+        &self,
+        environment_id: &str,
+    ) -> Result<(), DbError> {
+        sqlx::query("DELETE FROM env_vars WHERE environment_id = ?")
+            .bind(environment_id)
+            .execute(&self.pool)
+            .await?;
+        Ok(())
     }
 
     // --- Migrations ---

@@ -101,6 +101,32 @@ pub trait Database: Send + Sync + 'static {
         app_id: &str,
     ) -> Result<Vec<NotificationRule>, DbError>;
 
+    // Lookup helpers
+    async fn get_app_by_repo(&self, repo_url: &str) -> Result<Option<App>, DbError>;
+    async fn get_environment_by_branch(
+        &self,
+        app_id: &str,
+        branch: &str,
+    ) -> Result<Option<Environment>, DbError>;
+
+    // Deploy extras
+    async fn update_deploy_container_id(
+        &self,
+        deploy_id: &str,
+        container_id: &str,
+    ) -> Result<(), DbError>;
+    async fn update_deploy_image_ref(
+        &self,
+        deploy_id: &str,
+        image_ref: &str,
+    ) -> Result<(), DbError>;
+
+    // Env var extras
+    async fn delete_env_vars_by_environment(
+        &self,
+        environment_id: &str,
+    ) -> Result<(), DbError>;
+
     // Migrations
     async fn run_migrations(&self) -> Result<(), DbError>;
 }

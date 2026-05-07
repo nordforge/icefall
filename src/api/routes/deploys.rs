@@ -7,6 +7,7 @@ use crate::api::AppState;
 use crate::build::orchestrator::BuildOrchestrator;
 use crate::build::BuildConfig;
 use crate::db::models::NewDeploy;
+use crate::deploy::manager::DeployManager;
 
 pub fn routes() -> Router<AppState> {
     Router::new().route(
@@ -57,16 +58,45 @@ async fn create_deploy(
         .as_deref()
         .and_then(|s| serde_json::from_str(s).ok());
 
-    let orchestrator = BuildOrchestrator::new(
-        state.docker.clone(),
-        state.db.clone(),
-        state.config.clone(),
-    );
+    let lock = state.build_locks.acquire(&id).await;
     let deploy_id = deploy.id.clone();
     let app_clone = app.clone();
+    let env_clone = env.clone();
+
     tokio::spawn(async move {
-        if let Err(e) = orchestrator.build(&deploy_id, &app_clone, build_config).await {
-            tracing::error!("Build failed for deploy {deploy_id}: {e}");
+        let _guard = lock.lock().await;
+
+        let orchestrator = BuildOrchestrator::new(
+            state.docker.clone(),
+            state.db.clone(),
+            state.config.clone(),
+        );
+
+        match orchestrator.build(&deploy_id, &app_clone, build_config).await {
+            Ok(result) => {
+                let manager = DeployManager::new(
+                    state.docker.clone(),
+                    state.caddy.clone(),
+                    state.db.clone(),
+                    state.config.clone(),
+                    state.event_bus.clone(),
+                );
+
+                let updated_deploy = match state.db.get_deploy(&deploy_id).await {
+                    Ok(Some(d)) => d,
+                    _ => return,
+                };
+
+                if let Err(e) = manager
+                    .deploy(&updated_deploy, &app_clone, &env_clone, &result.image_ref)
+                    .await
+                {
+                    tracing::error!("Deploy failed for {deploy_id}: {e}");
+                }
+            }
+            Err(e) => {
+                tracing::error!("Build failed for deploy {deploy_id}: {e}");
+            }
         }
     });
 

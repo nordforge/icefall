@@ -5,4 +5,6 @@ pub mod cli;
 pub mod config;
 pub mod daemon;
 pub mod db;
+pub mod deploy;
 pub mod docker;
+pub mod events;

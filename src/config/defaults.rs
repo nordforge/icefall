@@ -47,3 +47,15 @@ pub fn build_timeout_secs() -> u64 {
 pub fn keep_images() -> usize {
     5
 }
+
+pub fn health_check_attempts() -> u32 {
+    30
+}
+
+pub fn health_check_interval_ms() -> u64 {
+    1000
+}
+
+pub fn deploy_stop_timeout_secs() -> i64 {
+    10
+}

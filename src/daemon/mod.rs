@@ -8,13 +8,14 @@ use thiserror::Error;
 use tokio::net::TcpListener;
 use tracing::{error, info, warn};
 
-use crate::api::{self, AppState};
+use crate::api::{self, AppState, BuildLockMap};
 use crate::caddy::CaddyClient;
 use crate::config::IcefallConfig;
 use crate::db::encryption::Encryptor;
 use crate::db::sqlite::SqliteDatabase;
 use crate::db::Database;
 use crate::docker::DockerClient;
+use crate::events::EventBus;
 
 #[derive(Debug, Error)]
 pub enum DaemonError {
@@ -101,12 +102,18 @@ impl DaemonRunner {
             Err(e) => warn!("Caddy unreachable (will retry): {e}"),
         }
 
+        // Create event bus and build locks
+        let event_bus = Arc::new(EventBus::new(1024));
+        let build_locks = Arc::new(BuildLockMap::new());
+
         // Build app state and router
         let state = AppState {
             db,
             docker,
             caddy,
             config: Arc::new(config.clone()),
+            event_bus,
+            build_locks,
         };
 
         let app = api::build_router(state);

@@ -1154,11 +1154,14 @@ dependencies = [
  "dirs",
  "flate2",
  "futures-util",
+ "hex",
+ "hmac",
  "nix",
  "rand 0.8.6",
  "reqwest",
  "serde",
  "serde_json",
+ "sha2",
  "sqlx",
  "tar",
  "tempfile",
@@ -2796,6 +2799,7 @@ dependencies = [
  "futures-core",
  "pin-project-lite",
  "tokio",
+ "tokio-util",
 ]
 
 [[package]]

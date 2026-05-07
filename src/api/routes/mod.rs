@@ -7,6 +7,7 @@ pub mod events;
 pub mod server;
 pub mod settings;
 pub mod users;
+pub mod webhooks;
 
 use axum::Router;
 
@@ -17,8 +18,11 @@ pub fn api_routes() -> Router<AppState> {
         .merge(apps::routes())
         .merge(databases::routes())
         .merge(deploys::routes())
+        .merge(domains::routes())
+        .merge(env_vars::routes())
         .merge(users::routes())
         .merge(settings::routes())
         .merge(server::routes())
         .merge(events::routes())
+        .merge(webhooks::routes())
 }

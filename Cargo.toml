@@ -13,7 +13,7 @@ path = "src/main.rs"
 [dependencies]
 # Async runtime
 tokio = { version = "1", features = ["full"] }
-tokio-stream = "0.1"
+tokio-stream = { version = "0.1", features = ["sync"] }
 
 # HTTP framework
 axum = { version = "0.8", features = ["macros"] }
@@ -43,6 +43,11 @@ aes-gcm = "0.10"
 rand = "0.8"
 base64 = "0.22"
 argon2 = "0.5"
+
+# Webhook signature validation
+hmac = "0.12"
+sha2 = "0.10"
+hex = "0.4"
 
 # Error handling
 thiserror = "2"

@@ -12,9 +12,6 @@ pub fn routes() -> Router<AppState> {
             "/apps/{id}",
             get(get_app).put(update_app).delete(delete_app),
         )
-        .merge(super::deploys::routes())
-        .merge(super::env_vars::routes())
-        .merge(super::domains::routes())
 }
 
 async fn list_apps(

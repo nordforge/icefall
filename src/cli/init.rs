@@ -33,6 +33,9 @@ pub async fn run() {
         log_level: "info".to_string(),
         build_timeout_secs: crate::config::defaults::build_timeout_secs(),
         keep_images: crate::config::defaults::keep_images(),
+        health_check_attempts: crate::config::defaults::health_check_attempts(),
+        health_check_interval_ms: crate::config::defaults::health_check_interval_ms(),
+        deploy_stop_timeout_secs: crate::config::defaults::deploy_stop_timeout_secs(),
     };
 
     let toml_str = toml::to_string_pretty(&config).expect("Failed to serialize config");

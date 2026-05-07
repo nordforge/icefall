@@ -6,15 +6,6 @@
 
 ## Backlog
 
-### Phase 3 — Deployment Pipeline
-| Ticket | Title | Priority | Size | Dependencies |
-|--------|-------|----------|------|--------------|
-| [IF-011](tickets/phase-3-deployment-pipeline/IF-011-container-deploy.md) | Container deployment & lifecycle | Critical | M | IF-004, IF-005, IF-010, IF-002 |
-| [IF-012](tickets/phase-3-deployment-pipeline/IF-012-webhook-receiver.md) | Git webhook receiver | Critical | M | IF-006, IF-010, IF-011 |
-| [IF-013](tickets/phase-3-deployment-pipeline/IF-013-preview-environments.md) | Preview environments | High | M | IF-011, IF-012, IF-002 |
-| [IF-014](tickets/phase-3-deployment-pipeline/IF-014-env-var-management.md) | Environment variable management | Critical | M | IF-002, IF-006 |
-| [IF-015](tickets/phase-3-deployment-pipeline/IF-015-sse-build-streaming.md) | SSE event streaming | High | M | IF-006, IF-010 |
-
 ### Phase 4 — Web Dashboard
 | Ticket | Title | Priority | Size | Dependencies |
 |--------|-------|----------|------|--------------|
@@ -136,6 +127,15 @@
 | [IF-009](tickets/phase-2-build-engine/IF-009-dockerfile-builder.md) | Dockerfile generation per framework | 2026-05-07 | Multi-stage templates, layer caching, non-root user, Caddy/Node runtimes, 12 tests |
 | [IF-010](tickets/phase-2-build-engine/IF-010-image-builder.md) | Docker image build orchestrator | 2026-05-07 | Full pipeline (clone→detect→generate→build→tag→cleanup), secret redaction, timeout, 7 tests |
 
+### Phase 3 — Deployment Pipeline
+| Ticket | Title | Completed | Notes |
+|--------|-------|-----------|-------|
+| [IF-011](tickets/phase-3-deployment-pipeline/IF-011-container-deploy.md) | Container deployment & lifecycle | 2026-05-07 | Zero-downtime deploy, health checks, Caddy route switching, rollback, labels, resource limits |
+| [IF-012](tickets/phase-3-deployment-pipeline/IF-012-webhook-receiver.md) | Git webhook receiver | 2026-05-07 | GitHub + GitLab endpoints, HMAC-SHA256 validation, branch routing, build rate limiting |
+| [IF-013](tickets/phase-3-deployment-pipeline/IF-013-preview-environments.md) | Preview environments | 2026-05-07 | Branch sanitization, glob pattern matching, auto-create/destroy, subdomain routing |
+| [IF-014](tickets/phase-3-deployment-pipeline/IF-014-env-var-management.md) | Environment variable management | 2026-05-07 | Full CRUD, .env import, scope resolution, reserved keys, container restart on change |
+| [IF-015](tickets/phase-3-deployment-pipeline/IF-015-sse-build-streaming.md) | SSE event streaming | 2026-05-07 | EventBus (broadcast), global/app/deploy SSE streams, reconnect via last-event-id |
+
 ---
 
 ## Summary
@@ -143,17 +143,17 @@
 | Metric | Count |
 |--------|-------|
 | Total tickets | 57 |
-| Done | 10 |
-| Backlog | 46 |
+| Done | 15 |
+| Backlog | 41 |
 | Superseded | 1 |
-| Phases complete | 2 / 13 |
+| Phases complete | 3 / 13 |
 
 ### Progress
 | Phase | Status | Tickets |
 |-------|--------|---------|
 | 1 — Foundation | **Done** | 7/7 |
 | 2 — Build Engine | **Done** | 3/3 |
-| 3 — Deployment Pipeline | Backlog | 0/5 |
+| 3 — Deployment Pipeline | **Done** | 5/5 |
 | 4 — Web Dashboard | Backlog | 0/7 |
 | 5 — Domains & Proxy | Backlog | 0/2 |
 | 6 — Monitoring | Backlog | 0/4 |

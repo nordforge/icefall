@@ -64,6 +64,12 @@ pub struct IcefallConfig {
     pub build_timeout_secs: u64,
     #[serde(default = "defaults::keep_images")]
     pub keep_images: usize,
+    #[serde(default = "defaults::health_check_attempts")]
+    pub health_check_attempts: u32,
+    #[serde(default = "defaults::health_check_interval_ms")]
+    pub health_check_interval_ms: u64,
+    #[serde(default = "defaults::deploy_stop_timeout_secs")]
+    pub deploy_stop_timeout_secs: i64,
 }
 
 impl IcefallConfig {
@@ -187,6 +193,9 @@ impl Default for IcefallConfig {
             log_level: defaults::log_level(),
             build_timeout_secs: defaults::build_timeout_secs(),
             keep_images: defaults::keep_images(),
+            health_check_attempts: defaults::health_check_attempts(),
+            health_check_interval_ms: defaults::health_check_interval_ms(),
+            deploy_stop_timeout_secs: defaults::deploy_stop_timeout_secs(),
         }
     }
 }

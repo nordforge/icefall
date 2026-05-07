@@ -5,6 +5,7 @@ use thiserror::Error;
 
 use crate::build::BuildError;
 use crate::db::DbError;
+use crate::deploy::DeployError;
 use crate::docker::DockerError;
 use crate::caddy::CaddyError;
 
@@ -73,6 +74,12 @@ impl From<CaddyError> for ApiError {
 
 impl From<BuildError> for ApiError {
     fn from(err: BuildError) -> Self {
+        ApiError::Internal(Box::new(err))
+    }
+}
+
+impl From<DeployError> for ApiError {
+    fn from(err: DeployError) -> Self {
         ApiError::Internal(Box::new(err))
     }
 }

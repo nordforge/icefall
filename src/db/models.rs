@@ -33,6 +33,7 @@ pub struct App {
     pub resource_limits: Option<String>,
     pub preview_enabled: bool,
     pub preview_branch_pattern: Option<String>,
+    pub webhook_secret: Option<String>,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -106,6 +107,7 @@ pub struct Deploy {
     pub started_at: Option<String>,
     pub finished_at: Option<String>,
     pub image_ref: Option<String>,
+    pub container_id: Option<String>,
     pub created_at: String,
 }
 
