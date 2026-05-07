@@ -16,6 +16,8 @@ use crate::config::IcefallConfig;
 use crate::db::Database;
 use crate::docker::DockerClient;
 use crate::events::EventBus;
+use crate::monitoring::log_store::LogStore;
+use crate::monitoring::metrics_collector::MetricsStore;
 
 #[derive(Clone)]
 pub struct AppState {
@@ -26,6 +28,8 @@ pub struct AppState {
     pub event_bus: Arc<EventBus>,
     pub build_locks: Arc<BuildLockMap>,
     pub server_metrics: Arc<RwLock<ServerMetrics>>,
+    pub metrics_store: Arc<MetricsStore>,
+    pub log_store: Arc<LogStore>,
 }
 
 pub struct BuildLockMap {

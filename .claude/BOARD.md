@@ -6,15 +6,6 @@
 
 ## Backlog
 
-### Phase 6 — Monitoring
-| Ticket | Title | Priority | Size | Dependencies |
-|--------|-------|----------|------|--------------|
-| [IF-025](tickets/phase-6-monitoring/IF-025-health-checks.md) | Health check system | High | M | IF-004, IF-002, IF-015 |
-| [IF-026](tickets/phase-6-monitoring/IF-026-container-metrics.md) | Container metrics collection | Medium | M | IF-004, IF-015 |
-| [IF-027](tickets/phase-6-monitoring/IF-027-log-search.md) | Log storage and search | Medium | M | IF-004, IF-002 |
-| [IF-028](tickets/phase-6-monitoring/IF-028-uptime-timeline-ui.md) | Uptime timeline UI | Medium | S | IF-025, IF-019 |
-| [REVIEW](tickets/phase-6-monitoring/REVIEW-phase-6.md) | Phase 6 code review & audit | High | S | all above |
-
 ### Phase 7 — Databases
 | Ticket | Title | Priority | Size | Dependencies |
 |--------|-------|----------|------|--------------|
@@ -144,6 +135,15 @@
 | [IF-023](tickets/phase-5-domains-proxy/IF-023-domain-management.md) | Domain management | 2026-05-07 | DNS verification, delete + Caddy cleanup, auto IP detection, SSL provisioning |
 | [IF-024](tickets/phase-5-domains-proxy/IF-024-wildcard-domain-setup.md) | Base domain & wildcard setup | 2026-05-07 | Setup + verify endpoints, Caddy wildcard config, DNS instruction generation |
 
+### Phase 6 — Monitoring
+| Ticket | Title | Completed | Notes |
+|--------|-------|-----------|-------|
+| [IF-025](tickets/phase-6-monitoring/IF-025-health-checks.md) | Health check system | 2026-05-07 | TCP + Docker health checks, background runner, auto-restart, SSE events, uptime calculation |
+| [IF-026](tickets/phase-6-monitoring/IF-026-container-metrics.md) | Container metrics collection | 2026-05-07 | Background polling (10s), in-memory ring buffer (1h), metrics API + history endpoint |
+| [IF-027](tickets/phase-6-monitoring/IF-027-log-search.md) | Log storage and search | 2026-05-07 | File-based log capture, rotation (50MB), search + filter API, download, secret redaction |
+| [IF-028](tickets/phase-6-monitoring/IF-028-uptime-timeline-ui.md) | Uptime timeline UI | 2026-05-07 | 48-segment timeline bar, 24h/7d/30d range, hover tooltips, uptime percentage |
+| [REVIEW](tickets/phase-6-monitoring/REVIEW-phase-6.md) | Phase 6 code review & audit | 2026-05-07 | Fixed: is_check_due interval, unbounded task spawning, uptime range scoping |
+
 ---
 
 ## Summary
@@ -151,10 +151,10 @@
 | Metric | Count |
 |--------|-------|
 | Total tickets | 65 |
-| Done | 24 |
-| Backlog | 40 |
+| Done | 29 |
+| Backlog | 35 |
 | Superseded | 1 |
-| Phases complete | 5 / 13 |
+| Phases complete | 6 / 13 |
 
 ### Progress
 | Phase | Status | Tickets |
@@ -164,7 +164,7 @@
 | 3 — Deployment Pipeline | **Done** | 5/5 |
 | 4 — Web Dashboard | **Done** | 7/7 |
 | 5 — Domains & Proxy | **Done** | 2/2 |
-| 6 — Monitoring | Backlog | 0/5 |
+| 6 — Monitoring | **Done** | 5/5 |
 | 7 — Databases | Backlog | 0/4 |
 | 8 — Auth & API | Backlog | 0/6 |
 | 9 — CLI | Backlog | 0/4 |

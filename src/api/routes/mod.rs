@@ -4,6 +4,9 @@ pub mod deploys;
 pub mod domains;
 pub mod env_vars;
 pub mod events;
+pub mod health;
+pub mod logs;
+pub mod metrics;
 pub mod server;
 pub mod settings;
 pub mod users;
@@ -20,6 +23,9 @@ pub fn api_routes() -> Router<AppState> {
         .merge(deploys::routes())
         .merge(domains::routes())
         .merge(env_vars::routes())
+        .merge(health::routes())
+        .merge(logs::routes())
+        .merge(metrics::routes())
         .merge(users::routes())
         .merge(settings::routes())
         .merge(server::routes())

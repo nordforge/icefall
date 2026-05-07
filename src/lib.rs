@@ -8,3 +8,4 @@ pub mod db;
 pub mod deploy;
 pub mod docker;
 pub mod events;
+pub mod monitoring;

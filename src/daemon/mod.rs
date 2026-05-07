@@ -10,7 +10,7 @@ use tracing::{error, info, warn};
 
 use tokio::sync::RwLock;
 
-use crate::api::routes::server::{spawn_metrics_collector, ServerMetrics};
+use crate::api::routes::server::{spawn_metrics_collector as spawn_server_metrics, ServerMetrics};
 use crate::api::{self, AppState, BuildLockMap};
 use crate::caddy::CaddyClient;
 use crate::config::IcefallConfig;
@@ -19,6 +19,11 @@ use crate::db::sqlite::SqliteDatabase;
 use crate::db::Database;
 use crate::docker::DockerClient;
 use crate::events::EventBus;
+use crate::monitoring::health_runner::spawn_health_runner;
+use crate::monitoring::log_store::{spawn_log_capture, LogStore};
+use crate::monitoring::metrics_collector::{
+    spawn_metrics_collector as spawn_container_metrics, MetricsStore,
+};
 
 #[derive(Debug, Error)]
 pub enum DaemonError {
@@ -105,11 +110,23 @@ impl DaemonRunner {
             Err(e) => warn!("Caddy unreachable (will retry): {e}"),
         }
 
-        // Create event bus, build locks, and server metrics
+        // Create event bus, build locks, and monitoring stores
         let event_bus = Arc::new(EventBus::new(1024));
         let build_locks = Arc::new(BuildLockMap::new());
         let server_metrics = Arc::new(RwLock::new(ServerMetrics::default()));
-        spawn_metrics_collector(server_metrics.clone());
+        let metrics_store = Arc::new(MetricsStore::new());
+        let log_store = Arc::new(LogStore::new(&config.data_dir));
+
+        // Start background tasks
+        spawn_server_metrics(server_metrics.clone());
+        spawn_health_runner(db.clone(), docker.clone(), event_bus.clone());
+        spawn_container_metrics(
+            docker.clone(),
+            db.clone(),
+            event_bus.clone(),
+            metrics_store.clone(),
+        );
+        spawn_log_capture(docker.clone(), db.clone(), log_store.clone());
 
         // Build app state and router
         let state = AppState {
@@ -120,6 +137,8 @@ impl DaemonRunner {
             event_bus,
             build_locks,
             server_metrics,
+            metrics_store,
+            log_store,
         };
 
         let app = api::build_router(state);
