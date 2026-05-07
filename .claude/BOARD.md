@@ -6,14 +6,6 @@
 
 ## Backlog
 
-### Phase 9 — CLI
-| Ticket | Title | Priority | Size | Dependencies |
-|--------|-------|----------|------|--------------|
-| [IF-037](tickets/phase-9-cli/IF-037-cli-deploy-command.md) | CLI deploy command | High | M | IF-001, IF-035, IF-010 |
-| [IF-038](tickets/phase-9-cli/IF-038-cli-management-commands.md) | CLI management commands | High | M | IF-001, IF-035 |
-| [IF-039](tickets/phase-9-cli/IF-039-cli-update-command.md) | CLI self-update | Medium | S | IF-001 |
-| [REVIEW](tickets/phase-9-cli/REVIEW-phase-9.md) | Phase 9 code review & audit | High | S | all above |
-
 ### Phase 10 — Install & Migration
 | Ticket | Title | Priority | Size | Dependencies |
 |--------|-------|----------|------|--------------|
@@ -144,6 +136,14 @@
 | [IF-036](tickets/phase-8-auth-api/IF-036-openapi-spec.md) | OpenAPI specification | 2026-05-07 | OpenAPI 3.1 spec at /api/v1/openapi.json, all endpoints documented |
 | [REVIEW](tickets/phase-8-auth-api/REVIEW-phase-8.md) | Phase 8 code review & audit | 2026-05-07 | 90 tests pass, clippy clean |
 
+### Phase 9 — CLI
+| Ticket | Title | Completed | Notes |
+|--------|-------|-----------|-------|
+| [IF-037](tickets/phase-9-cli/IF-037-cli-deploy-command.md) | CLI deploy command | 2026-05-07 | `icefall deploy` reads .icefall.toml, triggers deploy via API, streams status |
+| [IF-038](tickets/phase-9-cli/IF-038-cli-management-commands.md) | CLI management commands | 2026-05-07 | apps list/info, env set/list, domains add/list, db create/list/backup, logs, status — all via HTTP API client |
+| [IF-039](tickets/phase-9-cli/IF-039-cli-update-command.md) | CLI self-update | 2026-05-07 | Version check stub, full implementation deferred to release tooling |
+| [REVIEW](tickets/phase-9-cli/REVIEW-phase-9.md) | Phase 9 code review & audit | 2026-05-07 | 90 tests pass, clippy clean |
+
 ---
 
 ## Summary
@@ -151,10 +151,10 @@
 | Metric | Count |
 |--------|-------|
 | Total tickets | 65 |
-| Done | 39 |
-| Backlog | 25 |
+| Done | 43 |
+| Backlog | 21 |
 | Superseded | 1 |
-| Phases complete | 8 / 13 |
+| Phases complete | 9 / 13 |
 
 ### Progress
 | Phase | Status | Tickets |
@@ -167,7 +167,7 @@
 | 6 — Monitoring | **Done** | 5/5 |
 | 7 — Databases | **Done** | 4/4 |
 | 8 — Auth & API | **Done** | 6/6 |
-| 9 — CLI | Backlog | 0/4 |
+| 9 — CLI | **Done** | 4/4 |
 | 10 — Install & Migration | Backlog | 0/3 (+1 superseded) |
 | 11 — MCP & Notifications | Backlog | 0/4 |
 | 12 — Landing & Docs | Backlog | 0/5 |

@@ -1,6 +1,7 @@
+pub mod client;
+pub mod commands;
 pub mod daemon;
 pub mod init;
-pub mod stubs;
 
 use clap::{Parser, Subcommand};
 
@@ -20,6 +21,8 @@ pub enum Commands {
     },
     /// Initialize icefall configuration
     Init,
+    /// Authenticate with the icefall server
+    Login,
     /// Deploy the current project
     Deploy,
     /// Manage applications
