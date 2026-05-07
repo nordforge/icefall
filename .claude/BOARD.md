@@ -6,17 +6,6 @@
 
 ## Backlog
 
-### Phase 4 — Web Dashboard
-| Ticket | Title | Priority | Size | Dependencies |
-|--------|-------|----------|------|--------------|
-| [IF-016](tickets/phase-4-web-dashboard/IF-016-astro-project-setup.md) | Astro + Preact project setup | Critical | S | IF-006 |
-| [IF-017](tickets/phase-4-web-dashboard/IF-017-dashboard-home.md) | Dashboard home page | High | M | IF-016, IF-006 |
-| [IF-018](tickets/phase-4-web-dashboard/IF-018-app-create-flow.md) | App creation flow | Critical | M | IF-016, IF-008, IF-010, IF-014 |
-| [IF-019](tickets/phase-4-web-dashboard/IF-019-app-detail-page.md) | App detail page | High | L | IF-016, IF-017, IF-006 |
-| [IF-020](tickets/phase-4-web-dashboard/IF-020-env-var-editor.md) | Environment variable editor UI | High | M | IF-016, IF-014 |
-| [IF-021](tickets/phase-4-web-dashboard/IF-021-log-viewer.md) | Log viewer component | High | M | IF-016, IF-015 |
-| [IF-022](tickets/phase-4-web-dashboard/IF-022-deploy-view.md) | Deploy view with build steps | High | M | IF-016, IF-015, IF-010 |
-
 ### Phase 5 — Domains & Proxy
 | Ticket | Title | Priority | Size | Dependencies |
 |--------|-------|----------|------|--------------|
@@ -136,6 +125,17 @@
 | [IF-014](tickets/phase-3-deployment-pipeline/IF-014-env-var-management.md) | Environment variable management | 2026-05-07 | Full CRUD, .env import, scope resolution, reserved keys, container restart on change |
 | [IF-015](tickets/phase-3-deployment-pipeline/IF-015-sse-build-streaming.md) | SSE event streaming | 2026-05-07 | EventBus (broadcast), global/app/deploy SSE streams, reconnect via last-event-id |
 
+### Phase 4 — Web Dashboard
+| Ticket | Title | Completed | Notes |
+|--------|-------|-----------|-------|
+| [IF-016](tickets/phase-4-web-dashboard/IF-016-astro-project-setup.md) | Astro + Preact project setup | 2026-05-07 | Astro 6, Preact islands, CSS Modules + OKLCH tokens, sidebar, theme toggle, API/SSE utilities |
+| [IF-017](tickets/phase-4-web-dashboard/IF-017-dashboard-home.md) | Dashboard home page | 2026-05-07 | Server stats bars (CPU/RAM/Disk via sysinfo), app card grid, empty state, SSE live status |
+| [IF-018](tickets/phase-4-web-dashboard/IF-018-app-create-flow.md) | App creation flow | 2026-05-07 | 4-step wizard (repo → build → env vars → review), auto-name from repo, .env import |
+| [IF-019](tickets/phase-4-web-dashboard/IF-019-app-detail-page.md) | App detail page | 2026-05-07 | 6 tabs (overview/deploys/logs/env/domains/settings), client-side routing, status cards |
+| [IF-020](tickets/phase-4-web-dashboard/IF-020-env-var-editor.md) | Environment variable editor UI | 2026-05-07 | Masked values, click-to-reveal, scope badges, inline add, .env import dialog |
+| [IF-021](tickets/phase-4-web-dashboard/IF-021-log-viewer.md) | Log viewer component | 2026-05-07 | Always-dark terminal, line numbers, level badges, search, level filter, auto-scroll, download |
+| [IF-022](tickets/phase-4-web-dashboard/IF-022-deploy-view.md) | Deploy view with build steps | 2026-05-07 | Expandable build steps, streaming output via SSE, status icons, duration tracking |
+
 ---
 
 ## Summary
@@ -143,10 +143,10 @@
 | Metric | Count |
 |--------|-------|
 | Total tickets | 57 |
-| Done | 15 |
-| Backlog | 41 |
+| Done | 22 |
+| Backlog | 34 |
 | Superseded | 1 |
-| Phases complete | 3 / 13 |
+| Phases complete | 4 / 13 |
 
 ### Progress
 | Phase | Status | Tickets |
@@ -154,7 +154,7 @@
 | 1 — Foundation | **Done** | 7/7 |
 | 2 — Build Engine | **Done** | 3/3 |
 | 3 — Deployment Pipeline | **Done** | 5/5 |
-| 4 — Web Dashboard | Backlog | 0/7 |
+| 4 — Web Dashboard | **Done** | 7/7 |
 | 5 — Domains & Proxy | Backlog | 0/2 |
 | 6 — Monitoring | Backlog | 0/4 |
 | 7 — Databases | Backlog | 0/3 |

@@ -1,0 +1,12 @@
+---
+import DashboardLayout from '../../layouts/DashboardLayout.astro';
+import AppDetailRouter from '../../islands/app-detail/AppDetailRouter';
+
+export function getStaticPaths() {
+  return [{ params: { path: undefined } }];
+}
+---
+
+<DashboardLayout title="App">
+  <AppDetailRouter client:only="preact" />
+</DashboardLayout>

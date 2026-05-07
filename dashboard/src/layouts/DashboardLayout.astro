@@ -1,0 +1,36 @@
+---
+import Sidebar from '../components/sidebar/Sidebar.astro';
+import layoutStyles from '../styles/layout.module.css';
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+}
+
+const { title } = Astro.props;
+---
+
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title} — Icefall</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body>
+    <div class={layoutStyles.layout}>
+      <Sidebar />
+      <main class={layoutStyles.main}>
+        <div class={layoutStyles.content}>
+          <slot />
+        </div>
+      </main>
+    </div>
+    <script>
+      const stored = localStorage.getItem('icefall-theme');
+      const theme = stored || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', theme);
+    </script>
+  </body>
+</html>

@@ -1,9 +1,16 @@
 use axum::extract::{Path, State};
 use axum::routing::get;
 use axum::{Json, Router};
+use serde::Deserialize;
 
 use crate::api::error::ApiError;
 use crate::api::AppState;
+use crate::db::models::NewDomain;
+
+#[derive(Deserialize)]
+struct AddDomainRequest {
+    domain: String,
+}
 
 pub fn routes() -> Router<AppState> {
     Router::new().route(
@@ -21,10 +28,17 @@ async fn list_domains(
 }
 
 async fn add_domain(
-    State(_state): State<AppState>,
-    Path(_id): Path<String>,
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+    Json(body): Json<AddDomainRequest>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
-    Err(ApiError::BadRequest(
-        "Domain add not yet implemented".to_string(),
-    ))
+    let domain = state
+        .db
+        .add_domain(&NewDomain {
+            app_id: id,
+            domain: body.domain,
+        })
+        .await?;
+
+    Ok(Json(serde_json::json!({ "data": domain })))
 }

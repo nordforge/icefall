@@ -29,6 +29,12 @@ Full-featured log viewer for runtime container logs with search, filter, and rea
 - [ ] Performance: handle 100K+ lines without freezing (virtualized list)
 - [ ] Light and dark theme verified (log viewer stays dark in both)
 
+## Design References (Stitch — Light Mode)
+
+| Screen | Stitch ID | Screenshot folder |
+|--------|-----------|-------------------|
+| Log Viewer: api-gateway (Light) | `dcb5e5c299ab4c919e1b0688de87ee8e` | `design_screenshots/log-viewer/` |
+
 ## Dependencies
 
 - IF-016, IF-015

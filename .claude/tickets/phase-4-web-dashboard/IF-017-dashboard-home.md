@@ -24,6 +24,12 @@ The main dashboard page showing server health overview and a grid of all deploye
 - [ ] Real-time status updates via SSE (status dots update live)
 - [ ] Light and dark theme verified
 
+## Design References (Stitch — Light Mode)
+
+| Screen | Stitch ID | Screenshot folder |
+|--------|-----------|-------------------|
+| Icefall Dashboard (Light) | `5a0920c332834efe99f987bca26e2e68` | `design_screenshots/dashboard/` |
+
 ## Dependencies
 
 - IF-016, IF-006

@@ -27,6 +27,12 @@ Real-time deploy view showing structured, collapsible build steps with streaming
 - [ ] Transition animation: step status change (pending → running → done)
 - [ ] Light and dark theme verified
 
+## Design References (Stitch — Light Mode)
+
+| Screen | Stitch ID | Screenshot folder |
+|--------|-----------|-------------------|
+| Deploy #47: api-gateway (Light) | `afcf80606fb946e4acad739564c03505` | `design_screenshots/deploy-detail/` |
+
 ## Dependencies
 
 - IF-016, IF-015, IF-010

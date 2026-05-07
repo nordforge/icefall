@@ -1,0 +1,79 @@
+import type { App, Deploy, Domain, EnvVar, ServerStatus } from './types';
+
+const API_BASE = '/api/v1';
+
+class ApiError extends Error {
+  status: number;
+  constructor(status: number, message: string) {
+    super(message);
+    this.status = status;
+  }
+}
+
+async function request<T>(path: string, options?: RequestInit): Promise<T> {
+  const res = await fetch(`${API_BASE}${path}`, {
+    headers: { 'Content-Type': 'application/json' },
+    ...options,
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ error: res.statusText }));
+    throw new ApiError(res.status, body.error || 'Unknown error');
+  }
+  return res.json();
+}
+
+export const api = {
+  listApps: () => request<{ data: App[] }>('/apps'),
+
+  getApp: (id: string) => request<{ data: App }>(`/apps/${id}`),
+
+  createApp: (body: {
+    name: string;
+    git_repo?: string;
+    git_branch?: string;
+    framework?: string;
+  }) => request<{ data: App }>('/apps', { method: 'POST', body: JSON.stringify(body) }),
+
+  updateApp: (id: string, body: Partial<App>) =>
+    request<{ data: App }>(`/apps/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+
+  deleteApp: (id: string) =>
+    request<{ message: string }>(`/apps/${id}`, { method: 'DELETE' }),
+
+  listDeploys: (appId: string) =>
+    request<{ data: Deploy[] }>(`/apps/${appId}/deploys`),
+
+  triggerDeploy: (appId: string) =>
+    request<{ data: Deploy }>(`/apps/${appId}/deploys`, { method: 'POST' }),
+
+  listEnvVars: (appId: string, reveal = false) =>
+    request<{ data: EnvVar[] }>(`/apps/${appId}/env${reveal ? '?reveal=true' : ''}`),
+
+  setEnvVar: (appId: string, body: { key: string; value: string; scope?: string }) =>
+    request<{ data: { id: string; key: string; scope: string } }>(
+      `/apps/${appId}/env`,
+      { method: 'POST', body: JSON.stringify(body) },
+    ),
+
+  deleteEnvVar: (appId: string, varId: string) =>
+    request<{ message: string }>(`/apps/${appId}/env/${varId}`, { method: 'DELETE' }),
+
+  importEnv: (appId: string, content: string, scope = 'shared') =>
+    request<{ imported: number; skipped: string[] }>(
+      `/apps/${appId}/env/import`,
+      { method: 'POST', body: JSON.stringify({ content, scope }) },
+    ),
+
+  listDomains: (appId: string) =>
+    request<{ data: Domain[] }>(`/apps/${appId}/domains`),
+
+  addDomain: (appId: string, domain: string) =>
+    request<{ data: Domain }>(
+      `/apps/${appId}/domains`,
+      { method: 'POST', body: JSON.stringify({ domain }) },
+    ),
+
+  getServerStatus: () => request<ServerStatus>('/server/status'),
+};
+
+export { ApiError };

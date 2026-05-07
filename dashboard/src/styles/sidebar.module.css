@@ -1,0 +1,116 @@
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: var(--sidebar-width);
+  height: 100vh;
+  background: var(--color-sidebar-bg);
+  border-right: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  z-index: 100;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-5) var(--space-4);
+  font-weight: var(--weight-semibold);
+  font-size: var(--text-lg);
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.logoIcon {
+  width: 28px;
+  height: 28px;
+  background: var(--color-primary);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-primary-text);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+}
+
+.subtitle {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  font-weight: var(--weight-normal);
+  display: block;
+}
+
+.nav {
+  flex: 1;
+  padding: var(--space-2) var(--space-2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.navItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  transition: background var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
+}
+
+.navItem:hover {
+  background: var(--color-surface-alt);
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.navItemActive {
+  background: var(--color-sidebar-active);
+  color: var(--color-sidebar-active-text);
+}
+
+.navItemActive:hover {
+  background: var(--color-sidebar-active);
+}
+
+.navIcon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.footer {
+  padding: var(--space-4);
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.footerStatus {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+}
+
+.statusDotGreen {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  background: var(--color-success);
+  flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+  .sidebar {
+    transform: translateX(-100%);
+  }
+}

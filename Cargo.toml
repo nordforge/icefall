@@ -19,7 +19,7 @@ tokio-stream = { version = "0.1", features = ["sync"] }
 axum = { version = "0.8", features = ["macros"] }
 axum-extra = { version = "0.10", features = ["typed-header"] }
 tower = "0.5"
-tower-http = { version = "0.6", features = ["cors", "trace", "request-id", "util"] }
+tower-http = { version = "0.6", features = ["cors", "trace", "request-id", "util", "fs"] }
 
 # CLI
 clap = { version = "4", features = ["derive"] }
@@ -64,6 +64,9 @@ utoipa-swagger-ui = { version = "9", features = ["axum"] }
 tar = "0.4"
 flate2 = "1"
 bytes = "1"
+
+# System info
+sysinfo = "0.35"
 
 # Utilities
 uuid = { version = "1", features = ["v7", "serde"] }

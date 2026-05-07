@@ -7,6 +7,7 @@ use std::sync::Arc;
 
 use axum::Router;
 use tokio::sync::Mutex;
+use tower_http::services::ServeDir;
 
 use crate::caddy::CaddyClient;
 use crate::config::IcefallConfig;
@@ -52,7 +53,9 @@ impl BuildLockMap {
 pub fn build_router(state: AppState) -> Router {
     let api_routes = routes::api_routes();
 
-    let router = Router::new().nest("/api/v1", api_routes);
+    let router = Router::new()
+        .nest("/api/v1", api_routes)
+        .fallback_service(ServeDir::new("dashboard/dist").append_index_html_on_directories(true));
 
     middleware::apply_middleware(router, &state.config).with_state(state)
 }

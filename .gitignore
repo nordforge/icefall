@@ -3,6 +3,7 @@ skills/
 .claude/settings.json
 .claude/settings.local.json
 .stitch/
+.claude/design_screenshots/
 .mcp.json
 PRD.md
 DESIGN.md

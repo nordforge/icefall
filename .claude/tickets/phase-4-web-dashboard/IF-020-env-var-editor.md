@@ -24,6 +24,12 @@ Vercel-style environment variable editor component with scope management, visibi
 - [ ] Empty state: "No environment variables" with import CTA
 - [ ] Light and dark theme verified
 
+## Design References (Stitch — Light Mode)
+
+| Screen | Stitch ID | Screenshot folder |
+|--------|-----------|-------------------|
+| Environment Variables: api-gateway (Light) | `28b7917bd29348ddb7c4daa3f26aeb51` | `design_screenshots/env-vars/` |
+
 ## Dependencies
 
 - IF-016, IF-014

@@ -1,0 +1,61 @@
+@import './tokens.css';
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=JetBrains+Mono:wght@100..800&display=swap');
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+  color: var(--color-text);
+  background: var(--color-bg);
+}
+
+a {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+code,
+kbd,
+pre {
+  font-family: var(--font-mono);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+button {
+  cursor: pointer;
+  font-family: inherit;
+}
+
+input,
+select,
+textarea {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+}

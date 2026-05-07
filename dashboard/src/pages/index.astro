@@ -1,0 +1,16 @@
+---
+import DashboardLayout from '../layouts/DashboardLayout.astro';
+import layoutStyles from '../styles/layout.module.css';
+import ServerStats from '../islands/dashboard/ServerStats';
+import AppGrid from '../islands/dashboard/AppGrid';
+---
+
+<DashboardLayout title="Dashboard">
+  <div class={layoutStyles.pageHeader}>
+    <h1 class={layoutStyles.pageTitle}>Dashboard</h1>
+  </div>
+  <ServerStats client:load />
+  <div style="margin-top: var(--space-6);">
+    <AppGrid client:load />
+  </div>
+</DashboardLayout>
