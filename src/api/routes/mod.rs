@@ -16,6 +16,7 @@ pub fn api_routes() -> Router<AppState> {
     Router::new()
         .merge(apps::routes())
         .merge(databases::routes())
+        .merge(deploys::routes())
         .merge(users::routes())
         .merge(settings::routes())
         .merge(server::routes())

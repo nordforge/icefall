@@ -6,13 +6,6 @@
 
 ## Backlog
 
-### Phase 2 — Build Engine
-| Ticket | Title | Priority | Size | Dependencies |
-|--------|-------|----------|------|--------------|
-| [IF-008](tickets/phase-2-build-engine/IF-008-framework-detection.md) | Framework detection engine | Critical | M | IF-001 |
-| [IF-009](tickets/phase-2-build-engine/IF-009-dockerfile-builder.md) | Dockerfile generation per framework | Critical | L | IF-008 |
-| [IF-010](tickets/phase-2-build-engine/IF-010-image-builder.md) | Docker image build orchestrator | Critical | M | IF-004, IF-008, IF-009, IF-002 |
-
 ### Phase 3 — Deployment Pipeline
 | Ticket | Title | Priority | Size | Dependencies |
 |--------|-------|----------|------|--------------|
@@ -136,6 +129,13 @@
 | [IF-006](tickets/phase-1-foundation/IF-006-rest-api-skeleton.md) | REST API skeleton (Axum) | 2026-05-07 | Router, middleware (tracing/CORS/request IDs), error types, all route stubs |
 | [IF-007](tickets/phase-1-foundation/IF-007-daemon-lifecycle.md) | Daemon lifecycle management | 2026-05-07 | Full startup sequence, PID file, signal handling, systemd unit generation |
 
+### Phase 2 — Build Engine
+| Ticket | Title | Completed | Notes |
+|--------|-------|-----------|-------|
+| [IF-008](tickets/phase-2-build-engine/IF-008-framework-detection.md) | Framework detection engine | 2026-05-07 | 8 frameworks, 4 package managers, node version detection, user overrides, 20 tests |
+| [IF-009](tickets/phase-2-build-engine/IF-009-dockerfile-builder.md) | Dockerfile generation per framework | 2026-05-07 | Multi-stage templates, layer caching, non-root user, Caddy/Node runtimes, 12 tests |
+| [IF-010](tickets/phase-2-build-engine/IF-010-image-builder.md) | Docker image build orchestrator | 2026-05-07 | Full pipeline (clone→detect→generate→build→tag→cleanup), secret redaction, timeout, 7 tests |
+
 ---
 
 ## Summary
@@ -143,16 +143,16 @@
 | Metric | Count |
 |--------|-------|
 | Total tickets | 57 |
-| Done | 7 |
-| Backlog | 49 |
+| Done | 10 |
+| Backlog | 46 |
 | Superseded | 1 |
-| Phases complete | 1 / 13 |
+| Phases complete | 2 / 13 |
 
 ### Progress
 | Phase | Status | Tickets |
 |-------|--------|---------|
 | 1 — Foundation | **Done** | 7/7 |
-| 2 — Build Engine | Backlog | 0/3 |
+| 2 — Build Engine | **Done** | 3/3 |
 | 3 — Deployment Pipeline | Backlog | 0/5 |
 | 4 — Web Dashboard | Backlog | 0/7 |
 | 5 — Domains & Proxy | Backlog | 0/2 |

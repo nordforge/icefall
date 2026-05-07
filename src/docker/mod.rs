@@ -18,6 +18,8 @@ pub enum DockerError {
     Unavailable(String),
     #[error("docker API error: {0}")]
     Api(#[from] bollard::errors::Error),
+    #[error("image build failed: {0}")]
+    BuildFailed(String),
     #[error("I/O error: {0}")]
     Io(#[from] std::io::Error),
 }

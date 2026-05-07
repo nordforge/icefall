@@ -31,6 +31,8 @@ pub async fn run() {
         backup: Default::default(),
         pid_file: PathBuf::from("/var/run/icefall.pid"),
         log_level: "info".to_string(),
+        build_timeout_secs: crate::config::defaults::build_timeout_secs(),
+        keep_images: crate::config::defaults::keep_images(),
     };
 
     let toml_str = toml::to_string_pretty(&config).expect("Failed to serialize config");

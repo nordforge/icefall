@@ -60,6 +60,10 @@ pub struct IcefallConfig {
     pub pid_file: PathBuf,
     #[serde(default = "defaults::log_level")]
     pub log_level: String,
+    #[serde(default = "defaults::build_timeout_secs")]
+    pub build_timeout_secs: u64,
+    #[serde(default = "defaults::keep_images")]
+    pub keep_images: usize,
 }
 
 impl IcefallConfig {
@@ -181,6 +185,8 @@ impl Default for IcefallConfig {
             backup: BackupConfig::default(),
             pid_file: defaults::pid_file(),
             log_level: defaults::log_level(),
+            build_timeout_secs: defaults::build_timeout_secs(),
+            keep_images: defaults::keep_images(),
         }
     }
 }

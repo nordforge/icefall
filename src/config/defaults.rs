@@ -39,3 +39,11 @@ pub fn backup_interval_hours() -> u32 {
 pub fn backup_retain_count() -> u32 {
     7
 }
+
+pub fn build_timeout_secs() -> u64 {
+    600
+}
+
+pub fn keep_images() -> usize {
+    5
+}

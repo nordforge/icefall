@@ -3,6 +3,7 @@ use axum::response::{IntoResponse, Response};
 use axum::Json;
 use thiserror::Error;
 
+use crate::build::BuildError;
 use crate::db::DbError;
 use crate::docker::DockerError;
 use crate::caddy::CaddyError;
@@ -67,5 +68,11 @@ impl From<CaddyError> for ApiError {
             CaddyError::Unreachable(msg) => ApiError::ServiceUnavailable(msg),
             other => ApiError::Internal(Box::new(other)),
         }
+    }
+}
+
+impl From<BuildError> for ApiError {
+    fn from(err: BuildError) -> Self {
+        ApiError::Internal(Box::new(err))
     }
 }

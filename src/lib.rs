@@ -1,4 +1,5 @@
 pub mod api;
+pub mod build;
 pub mod caddy;
 pub mod cli;
 pub mod config;
