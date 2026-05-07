@@ -6,14 +6,6 @@
 
 ## Backlog
 
-### Phase 10 — Install & Migration
-| Ticket | Title | Priority | Size | Dependencies |
-|--------|-------|----------|------|--------------|
-| [IF-040](tickets/phase-10-install-migration/IF-040-install-script.md) | Installation script | High | M | IF-007 |
-| [IF-041](tickets/phase-10-install-migration/IF-041-server-migration-export-import.md) | Server migration (export/import) | Medium | L | IF-002, IF-004, IF-029, IF-030 |
-| ~~[IF-042](tickets/phase-10-install-migration/IF-042-setup-wizard.md)~~ | ~~First-run setup wizard~~ — **Superseded by Phase 13 (IF-050–IF-058)** | — | — | — |
-| [REVIEW](tickets/phase-10-install-migration/REVIEW-phase-10.md) | Phase 10 code review & audit | High | S | all above |
-
 ### Phase 11 — MCP & Notifications
 | Ticket | Title | Priority | Size | Dependencies |
 |--------|-------|----------|------|--------------|
@@ -144,6 +136,14 @@
 | [IF-039](tickets/phase-9-cli/IF-039-cli-update-command.md) | CLI self-update | 2026-05-07 | Version check stub, full implementation deferred to release tooling |
 | [REVIEW](tickets/phase-9-cli/REVIEW-phase-9.md) | Phase 9 code review & audit | 2026-05-07 | 90 tests pass, clippy clean |
 
+### Phase 10 — Install & Migration
+| Ticket | Title | Completed | Notes |
+|--------|-------|-----------|-------|
+| [IF-040](tickets/phase-10-install-migration/IF-040-install-script.md) | Installation script | 2026-05-07 | Bash install.sh: OS/arch detection, Docker+Caddy install, config gen, systemd service, idempotent |
+| [IF-041](tickets/phase-10-install-migration/IF-041-server-migration-export-import.md) | Server migration | 2026-05-07 | `icefall migrate export/import`: SQLite + config + logs + backups as tar.gz, step-by-step progress |
+| ~~IF-042~~ | ~~Setup wizard~~ | — | Superseded by Phase 13 |
+| [REVIEW](tickets/phase-10-install-migration/REVIEW-phase-10.md) | Phase 10 code review | 2026-05-07 | 90 tests, clippy clean |
+
 ---
 
 ## Summary
@@ -151,10 +151,10 @@
 | Metric | Count |
 |--------|-------|
 | Total tickets | 65 |
-| Done | 43 |
-| Backlog | 21 |
+| Done | 46 |
+| Backlog | 18 |
 | Superseded | 1 |
-| Phases complete | 9 / 13 |
+| Phases complete | 10 / 13 |
 
 ### Progress
 | Phase | Status | Tickets |
@@ -168,7 +168,7 @@
 | 7 — Databases | **Done** | 4/4 |
 | 8 — Auth & API | **Done** | 6/6 |
 | 9 — CLI | **Done** | 4/4 |
-| 10 — Install & Migration | Backlog | 0/3 (+1 superseded) |
+| 10 — Install & Migration | **Done** | 3/3 (+1 superseded) |
 | 11 — MCP & Notifications | Backlog | 0/4 |
 | 12 — Landing & Docs | Backlog | 0/5 |
 | 13 — Onboarding | Backlog | 0/10 |

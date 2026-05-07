@@ -40,11 +40,11 @@ async fn main() {
             DbCommands::Backup { db } => icefall::cli::commands::databases::backup(&db).await,
         },
         Commands::Migrate { command } => match command {
-            MigrateCommands::Export { output } => {
-                icefall::cli::commands::migrate::export(&output).await;
+            MigrateCommands::Export { output, dry_run } => {
+                icefall::cli::commands::migrate::export(&output, dry_run).await;
             }
-            MigrateCommands::Import { from } => {
-                icefall::cli::commands::migrate::import(&from).await;
+            MigrateCommands::Import { from, dry_run } => {
+                icefall::cli::commands::migrate::import(&from, dry_run).await;
             }
         },
         Commands::Update => icefall::cli::commands::update::run().await,

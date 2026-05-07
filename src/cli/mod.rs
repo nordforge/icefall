@@ -137,14 +137,20 @@ pub enum DbCommands {
 pub enum MigrateCommands {
     /// Export server state
     Export {
-        /// Output file path
+        /// Output file path (local path or s3://bucket/key)
         #[arg(long, default_value = "icefall-backup.tar.gz")]
         output: String,
+        /// Show what would be exported without creating the archive
+        #[arg(long)]
+        dry_run: bool,
     },
     /// Import server state
     Import {
-        /// Input file path
+        /// Input file path (local path or s3://bucket/key)
         #[arg(long)]
         from: String,
+        /// Show what the archive contains without restoring
+        #[arg(long)]
+        dry_run: bool,
     },
 }
