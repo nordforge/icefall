@@ -42,21 +42,18 @@ pub fn spawn_health_runner(
                     continue;
                 }
 
+                let container_label = format!("icefall.app={}", app.id);
+                let containers = match docker.list_containers(Some(&container_label)).await {
+                    Ok(c) => c,
+                    Err(_) => continue,
+                };
+                let running_container = containers.iter().find(|c| c.state == "running");
+
                 for check in &checks {
                     let due = is_check_due(check, &states);
                     if !due {
                         continue;
                     }
-
-                    let container_label = format!("icefall.app={}", app.id);
-                    let containers = match docker.list_containers(Some(&container_label)).await {
-                        Ok(c) => c,
-                        Err(_) => continue,
-                    };
-
-                    let running_container = containers
-                        .iter()
-                        .find(|c| c.state == "running");
 
                     let healthy = if let Some(container) = running_container {
                         run_check(check, &docker, &container.id).await

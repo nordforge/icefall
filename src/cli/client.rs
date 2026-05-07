@@ -50,6 +50,16 @@ impl CliClient {
         })
     }
 
+    pub fn new_or_exit() -> Self {
+        match Self::new() {
+            Ok(c) => c,
+            Err(e) => {
+                eprintln!("{e}");
+                std::process::exit(2);
+            }
+        }
+    }
+
     pub fn from_url(url: &str, token: &str) -> Self {
         Self {
             http: Client::new(),

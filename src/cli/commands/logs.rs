@@ -1,10 +1,7 @@
 use crate::cli::client::CliClient;
 
 pub async fn stream(app: &str, search: Option<&str>) {
-    let client = match CliClient::new() {
-        Ok(c) => c,
-        Err(e) => { eprintln!("{e}"); std::process::exit(2); }
-    };
+    let client = CliClient::new_or_exit();
 
     let query = match search {
         Some(s) => format!("/apps/{app}/logs?search={s}&limit=100"),

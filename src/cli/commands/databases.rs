@@ -1,10 +1,7 @@
 use crate::cli::client::CliClient;
 
 pub async fn create(db_type: &str) {
-    let client = match CliClient::new() {
-        Ok(c) => c,
-        Err(e) => { eprintln!("{e}"); std::process::exit(2); }
-    };
+    let client = CliClient::new_or_exit();
 
     let name = format!("{db_type}-{}", &uuid::Uuid::now_v7().to_string()[..8]);
     println!("Creating {db_type} database '{name}'...");
@@ -24,10 +21,7 @@ pub async fn create(db_type: &str) {
 }
 
 pub async fn list() {
-    let client = match CliClient::new() {
-        Ok(c) => c,
-        Err(e) => { eprintln!("{e}"); std::process::exit(2); }
-    };
+    let client = CliClient::new_or_exit();
 
     match client.get::<serde_json::Value>("/databases").await {
         Ok(resp) => {
@@ -50,10 +44,7 @@ pub async fn list() {
 }
 
 pub async fn backup(db: &str) {
-    let client = match CliClient::new() {
-        Ok(c) => c,
-        Err(e) => { eprintln!("{e}"); std::process::exit(2); }
-    };
+    let client = CliClient::new_or_exit();
 
     println!("Triggering backup for {db}...");
     match client.post::<serde_json::Value>(&format!("/databases/{db}/backup"), &serde_json::json!({})).await {

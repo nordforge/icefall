@@ -1,0 +1,53 @@
+.wrapper {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.toggle {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface);
+  border: none;
+  color: var(--color-text);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  gap: var(--space-3);
+}
+
+.statusIcon {
+  flex-shrink: 0;
+}
+
+.stepName {
+  flex: 1;
+  text-align: left;
+  font-weight: var(--weight-medium);
+}
+
+.duration {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.output {
+  background: var(--color-surface-invert);
+  color: var(--color-text-invert);
+  padding: var(--space-4);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  line-height: 1.7;
+  max-height: 300px;
+  overflow: auto;
+  white-space: pre-wrap;
+  border-top: 1px solid var(--color-border);
+}
+
+.linePrefix {
+  color: var(--color-text-muted);
+  user-select: none;
+  margin-right: var(--space-3);
+}

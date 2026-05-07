@@ -145,6 +145,11 @@ pub trait Database: Send + Sync + 'static {
         environment_id: &str,
     ) -> Result<(), DbError>;
 
+    // Onboarding
+    async fn get_onboarding(&self) -> Result<Option<(String, String, String, Option<String>)>, DbError>;
+    async fn create_onboarding(&self, started_at: &str) -> Result<(), DbError>;
+    async fn update_onboarding_state(&self, current_step: &str, completed_steps: &str, completed_at: Option<&str>) -> Result<(), DbError>;
+
     // Migrations
     async fn run_migrations(&self) -> Result<(), DbError>;
 }

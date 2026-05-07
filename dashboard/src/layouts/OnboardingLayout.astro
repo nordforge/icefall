@@ -1,0 +1,55 @@
+---
+import '../styles/global.css';
+import styles from './onboarding-layout.module.css';
+
+interface Props {
+  title: string;
+  step: number;
+}
+
+const { title, step } = Astro.props;
+---
+
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title} — Icefall Setup</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body class={styles.page}>
+    <header class={styles.header}>
+      <a href="/" class={styles.logoLink}>
+        <span class={styles.logoIcon}>I</span>
+        Icefall
+      </a>
+    </header>
+
+    <main class={styles.main}>
+      <slot />
+    </main>
+
+    <footer class={styles.footer}>
+      <div class={styles.stepDots}>
+        {[1, 2, 3, 4, 5, 6].map((s) => (
+          <span
+            class:list={[
+              styles.dot,
+              s <= step && styles.dotComplete,
+              s === step && styles.dotActive,
+            ]}
+            aria-hidden="true"
+          />
+        ))}
+        <span class={styles.stepLabel}>Step {step} of 6</span>
+      </div>
+    </footer>
+
+    <script>
+      const stored = localStorage.getItem('icefall-theme');
+      const theme = stored || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', theme);
+    </script>
+  </body>
+</html>

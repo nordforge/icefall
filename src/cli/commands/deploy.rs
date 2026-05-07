@@ -1,10 +1,7 @@
 use crate::cli::client::CliClient;
 
 pub async fn run() {
-    let client = match CliClient::new() {
-        Ok(c) => c,
-        Err(e) => { eprintln!("{e}"); std::process::exit(2); }
-    };
+    let client = CliClient::new_or_exit();
 
     let config = load_project_config();
     let app_id = match config.as_ref().and_then(|c| c.get("app_id").and_then(|v| v.as_str())) {

@@ -1,4 +1,4 @@
-export interface App {
+export type App = {
   id: string;
   name: string;
   git_repo: string | null;
@@ -13,7 +13,7 @@ export interface App {
   updated_at: string;
 }
 
-export interface Deploy {
+export type Deploy = {
   id: string;
   app_id: string;
   environment_id: string;
@@ -36,7 +36,7 @@ export type DeployStatus =
   | 'stopped'
   | 'cancelled';
 
-export interface EnvVar {
+export type EnvVar = {
   id: string;
   key: string;
   value: string;
@@ -44,7 +44,7 @@ export interface EnvVar {
   created_at: string;
 }
 
-export interface Domain {
+export type Domain = {
   id: string;
   app_id: string;
   domain: string;
@@ -53,7 +53,7 @@ export interface Domain {
   created_at: string;
 }
 
-export interface ServerStatus {
+export type ServerStatus = {
   status: string;
   version: string;
   cpu_percent: number;
@@ -63,7 +63,7 @@ export interface ServerStatus {
   disk_total_bytes: number;
 }
 
-export interface BuildStep {
+export type BuildStep = {
   name: string;
   status: 'pending' | 'running' | 'done' | 'failed';
   started_at: string | null;

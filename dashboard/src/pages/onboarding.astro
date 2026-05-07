@@ -1,0 +1,8 @@
+---
+import OnboardingLayout from '@/layouts/OnboardingLayout.astro';
+import OnboardingWizard from '@islands/onboarding/OnboardingWizard/OnboardingWizard';
+---
+
+<OnboardingLayout title="Setup" step={1}>
+  <OnboardingWizard client:only="preact" />
+</OnboardingLayout>

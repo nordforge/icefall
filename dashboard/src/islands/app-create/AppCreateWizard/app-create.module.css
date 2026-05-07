@@ -1,0 +1,118 @@
+.wrapper {
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.pageTitle {
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-semibold);
+  margin-bottom: var(--space-6);
+}
+
+/* Progress steps */
+.progress {
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-8);
+}
+
+.progressStep {
+  flex: 1;
+  text-align: center;
+}
+
+.progressBar {
+  height: 4px;
+  border-radius: var(--radius-full);
+  margin-bottom: var(--space-2);
+  transition: background var(--duration-normal) var(--ease-out);
+}
+
+.progressBarActive {
+  composes: progressBar;
+  background: var(--color-primary);
+}
+
+.progressBarInactive {
+  composes: progressBar;
+  background: var(--color-border);
+}
+
+.progressLabel {
+  font-size: var(--text-xs);
+}
+
+.progressLabelActive {
+  composes: progressLabel;
+  color: var(--color-primary);
+  font-weight: var(--weight-medium);
+}
+
+.progressLabelInactive {
+  composes: progressLabel;
+  color: var(--color-text-muted);
+  font-weight: var(--weight-normal);
+}
+
+.progressLabelCurrent {
+  composes: progressLabel;
+  color: var(--color-primary);
+  font-weight: var(--weight-medium);
+}
+
+/* Card */
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-6);
+}
+
+/* Review step */
+.reviewTitle {
+  font-weight: var(--weight-semibold);
+}
+
+.reviewGrid {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-2) var(--space-4);
+  font-size: var(--text-sm);
+}
+
+.reviewLabel {
+  color: var(--color-text-muted);
+}
+
+.reviewValue {
+  font-weight: var(--weight-medium);
+}
+
+.reviewMono {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+
+/* Env step */
+.envDescription {
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-3);
+}
+
+/* Navigation */
+.navigation {
+  display: flex;
+  justify-content: space-between;
+  margin-top: var(--space-5);
+}
+
+.cancelLink {
+  text-decoration: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progressBar {
+    transition: none;
+  }
+}

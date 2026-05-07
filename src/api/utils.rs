@@ -1,5 +1,14 @@
 use std::net::IpAddr;
 
+pub fn hash_password(password: &str) -> Result<String, String> {
+    use argon2::{password_hash::SaltString, Argon2, PasswordHasher};
+    let salt = SaltString::generate(&mut rand::thread_rng());
+    Argon2::default()
+        .hash_password(password.as_bytes(), &salt)
+        .map(|h| h.to_string())
+        .map_err(|e| e.to_string())
+}
+
 pub async fn detect_server_ip() -> Option<String> {
     let client = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(5))

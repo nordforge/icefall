@@ -1,10 +1,7 @@
 use crate::cli::client::CliClient;
 
 pub async fn set(app: &str, pair: &str) {
-    let client = match CliClient::new() {
-        Ok(c) => c,
-        Err(e) => { eprintln!("{e}"); std::process::exit(2); }
-    };
+    let client = CliClient::new_or_exit();
 
     let (key, value) = match pair.split_once('=') {
         Some((k, v)) => (k.to_string(), v.to_string()),
@@ -18,10 +15,7 @@ pub async fn set(app: &str, pair: &str) {
 }
 
 pub async fn list(app: &str) {
-    let client = match CliClient::new() {
-        Ok(c) => c,
-        Err(e) => { eprintln!("{e}"); std::process::exit(2); }
-    };
+    let client = CliClient::new_or_exit();
 
     match client.get::<serde_json::Value>(&format!("/apps/{app}/env")).await {
         Ok(resp) => {

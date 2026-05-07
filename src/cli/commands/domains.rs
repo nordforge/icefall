@@ -1,10 +1,7 @@
 use crate::cli::client::CliClient;
 
 pub async fn add(app: &str, domain: &str) {
-    let client = match CliClient::new() {
-        Ok(c) => c,
-        Err(e) => { eprintln!("{e}"); std::process::exit(2); }
-    };
+    let client = CliClient::new_or_exit();
 
     match client.post::<serde_json::Value>(&format!("/apps/{app}/domains"), &serde_json::json!({"domain": domain})).await {
         Ok(resp) => {
@@ -21,10 +18,7 @@ pub async fn add(app: &str, domain: &str) {
 }
 
 pub async fn list(app: &str) {
-    let client = match CliClient::new() {
-        Ok(c) => c,
-        Err(e) => { eprintln!("{e}"); std::process::exit(2); }
-    };
+    let client = CliClient::new_or_exit();
 
     match client.get::<serde_json::Value>(&format!("/apps/{app}/domains")).await {
         Ok(resp) => {

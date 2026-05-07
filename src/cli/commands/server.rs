@@ -1,10 +1,7 @@
 use crate::cli::client::CliClient;
 
 pub async fn status() {
-    let client = match CliClient::new() {
-        Ok(c) => c,
-        Err(e) => { eprintln!("{e}"); std::process::exit(2); }
-    };
+    let client = CliClient::new_or_exit();
 
     match client.get::<serde_json::Value>("/server/status").await {
         Ok(resp) => {

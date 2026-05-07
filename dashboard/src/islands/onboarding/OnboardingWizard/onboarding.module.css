@@ -1,0 +1,196 @@
+.card {
+  width: 100%;
+  max-width: 480px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-10);
+}
+
+.cardCentered {
+  composes: card;
+  text-align: center;
+}
+
+.loadingWrapper {
+  text-align: center;
+  color: var(--color-text-muted);
+  padding: var(--space-8);
+}
+
+/* Completed step */
+.successIcon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--color-success);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto var(--space-5);
+  color: var(--color-primary-text);
+}
+
+.completedTitle {
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-semibold);
+  margin-bottom: var(--space-2);
+}
+
+.completedDescription {
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-6);
+}
+
+/* Step header */
+.stepHeader {
+  text-align: center;
+  margin-bottom: var(--space-6);
+}
+
+.stepIcon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  background: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto var(--space-4);
+  color: var(--color-primary-text);
+}
+
+.stepTitle {
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-semibold);
+  margin-bottom: var(--space-1);
+}
+
+/* Error */
+.errorBanner {
+  background: var(--color-error);
+  color: var(--color-primary-text);
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+  margin-bottom: var(--space-4);
+  font-size: var(--text-sm);
+}
+
+/* Step content */
+.stepDescription {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+/* Server checks */
+.checksList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.checkItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.checkDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.checkDotPass {
+  composes: checkDot;
+  background: var(--color-success);
+}
+
+.checkDotWarn {
+  composes: checkDot;
+  background: var(--color-warning);
+}
+
+.checkDotFail {
+  composes: checkDot;
+  background: var(--color-error);
+}
+
+.checkName {
+  font-weight: var(--weight-medium);
+  font-size: var(--text-sm);
+  flex: 1;
+}
+
+.checkMessage {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+/* Git provider list */
+.providerItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.providerName {
+  font-weight: var(--weight-medium);
+  font-size: var(--text-sm);
+}
+
+.providerHint {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.skipButton {
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font-size: var(--text-sm);
+  text-align: center;
+}
+
+/* Deploy spinner */
+.deploySpinner {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  border: 3px solid var(--color-border);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: onboardingSpin 600ms linear infinite;
+}
+
+@keyframes onboardingSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .deploySpinner {
+    animation: none;
+    opacity: 0.5;
+  }
+}
+
+.deployHint {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  margin-top: var(--space-4);
+}
+
+.deployMessage {
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-4);
+}

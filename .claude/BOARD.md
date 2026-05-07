@@ -6,19 +6,7 @@
 
 ## Backlog
 
-### Phase 13 — Onboarding
-| Ticket | Title | Priority | Size | Dependencies |
-|--------|-------|----------|------|--------------|
-| [IF-050](tickets/phase-13-onboarding/IF-050-onboarding-state-machine.md) | Onboarding state machine & route guard | Critical | M | IF-002, IF-006, IF-007 |
-| [IF-051](tickets/phase-13-onboarding/IF-051-onboarding-ui-shell.md) | Onboarding UI shell & step navigation | Critical | M | IF-050, IF-016 |
-| [IF-052](tickets/phase-13-onboarding/IF-052-step-admin-account.md) | Step 1 — Create admin account | Critical | M | IF-050, IF-051, IF-032 |
-| [IF-053](tickets/phase-13-onboarding/IF-053-step-server-check.md) | Step 2 — Server environment check | Critical | M | IF-050, IF-051, IF-004 |
-| [IF-054](tickets/phase-13-onboarding/IF-054-step-base-domain.md) | Step 3 — Base domain configuration | High | M | IF-050, IF-051, IF-005, IF-023 |
-| [IF-055](tickets/phase-13-onboarding/IF-055-step-git-provider.md) | Step 4 — Connect Git provider | High | M | IF-050, IF-051, IF-033, IF-012 |
-| [IF-056](tickets/phase-13-onboarding/IF-056-step-first-app.md) | Step 5 — Create first app | Critical | M | IF-050, IF-051, IF-018, IF-008 |
-| [IF-057](tickets/phase-13-onboarding/IF-057-step-first-deploy.md) | Step 6 — Watch first deploy | Critical | M | IF-050, IF-051, IF-011, IF-015, IF-022 |
-| [IF-058](tickets/phase-13-onboarding/IF-058-onboarding-completion.md) | Onboarding completion & dashboard handoff | High | S | IF-050, IF-057, IF-017 |
-| [REVIEW](tickets/phase-13-onboarding/REVIEW-phase-13.md) | Phase 13 code review & audit | High | S | all above |
+*No remaining tickets.*
 
 ---
 
@@ -144,6 +132,20 @@
 | [IF-049](tickets/phase-12-landing-docs/IF-049-social-assets.md) | Brand assets | 2026-05-07 | SVG logo (light/dark), favicon, brand guidelines in assets/brand/ |
 | [REVIEW](tickets/phase-12-landing-docs/REVIEW-phase-12.md) | Phase 12 review | 2026-05-07 | 34 pages build, search index, sitemap |
 
+### Phase 13 — Onboarding
+| Ticket | Title | Completed | Notes |
+|--------|-------|-----------|-------|
+| [IF-050](tickets/phase-13-onboarding/IF-050-onboarding-state-machine.md) | Onboarding state machine | 2026-05-07 | DB-persisted state, 6-step flow, optional/required steps, API endpoints |
+| [IF-051](tickets/phase-13-onboarding/IF-051-onboarding-ui-shell.md) | Onboarding UI shell | 2026-05-07 | Dedicated layout: header with logo, centered content, step dots at bottom, no sidebar/footer |
+| [IF-052](tickets/phase-13-onboarding/IF-052-step-admin-account.md) | Step 1 — Admin account | 2026-05-07 | Email + password form, Argon2 hashing, auto-session creation |
+| [IF-053](tickets/phase-13-onboarding/IF-053-step-server-check.md) | Step 2 — Server check | 2026-05-07 | Docker, Caddy, disk, memory checks with pass/warn/fail status |
+| [IF-054](tickets/phase-13-onboarding/IF-054-step-base-domain.md) | Step 3 — Base domain | 2026-05-07 | Domain input, DNS instructions, Caddy wildcard config, skippable |
+| [IF-055](tickets/phase-13-onboarding/IF-055-step-git-provider.md) | Step 4 — Git provider | 2026-05-07 | GitHub/GitLab connect cards, skippable |
+| [IF-056](tickets/phase-13-onboarding/IF-056-step-first-app.md) | Step 5 — First app | 2026-05-07 | Repo URL + app name form, creates app + triggers deploy |
+| [IF-057](tickets/phase-13-onboarding/IF-057-step-first-deploy.md) | Step 6 — First deploy | 2026-05-07 | Deploy progress spinner, auto-advances on completion |
+| [IF-058](tickets/phase-13-onboarding/IF-058-onboarding-completion.md) | Completion & handoff | 2026-05-07 | Success screen with checkmark, "Go to Dashboard" button |
+| [REVIEW](tickets/phase-13-onboarding/REVIEW-phase-13.md) | Phase 13 review | 2026-05-07 | 90 tests, clippy clean, 6 dashboard pages |
+
 ---
 
 ## Summary
@@ -151,10 +153,10 @@
 | Metric | Count |
 |--------|-------|
 | Total tickets | 65 |
-| Done | 55 |
-| Backlog | 9 |
+| Done | 65 |
+| Backlog | 0 |
 | Superseded | 1 |
-| Phases complete | 12 / 13 |
+| Phases complete | 13 / 13 |
 
 ### Progress
 | Phase | Status | Tickets |
@@ -171,7 +173,7 @@
 | 10 — Install & Migration | **Done** | 3/3 (+1 superseded) |
 | 11 — MCP & Notifications | **Done** | 4/4 |
 | 12 — Landing & Docs | **Done** | 5/5 |
-| 13 — Onboarding | Backlog | 0/10 |
+| 13 — Onboarding | **Done** | 10/10 |
 
 ### Size breakdown
 | Size | Count | Estimated effort |

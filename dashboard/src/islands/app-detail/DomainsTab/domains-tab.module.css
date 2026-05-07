@@ -1,0 +1,109 @@
+.headerActions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: var(--space-4);
+}
+
+.inputGroup {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.emptyState {
+  padding: var(--space-8);
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+.emptyIcon {
+  margin-bottom: var(--space-2);
+  opacity: 0.5;
+}
+
+.emptyHint {
+  font-size: var(--text-sm);
+  margin-top: var(--space-1);
+}
+
+.tableCard {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.table {
+  font-size: var(--text-sm);
+}
+
+.tableRow {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.th {
+  padding: var(--space-3) var(--space-4);
+  text-align: left;
+  font-weight: var(--weight-medium);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.td {
+  padding: var(--space-3) var(--space-4);
+}
+
+.domainCell {
+  composes: td;
+  font-weight: var(--weight-medium);
+}
+
+.domainName {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.sslActive {
+  color: var(--color-success);
+}
+
+.sslInactive {
+  color: var(--color-text-muted);
+}
+
+.dnsStatus {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.dnsConfigured {
+  composes: dnsStatus;
+  color: var(--color-success);
+}
+
+.dnsPending {
+  composes: dnsStatus;
+  color: var(--color-warning);
+}
+
+.dnsDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.iconButton {
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: var(--space-1);
+}
+
+.loadingText {
+  color: var(--color-text-muted);
+}

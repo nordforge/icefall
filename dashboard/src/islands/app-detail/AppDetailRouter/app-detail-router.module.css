@@ -1,0 +1,18 @@
+.loading {
+  padding: var(--space-8);
+  color: var(--color-text-muted);
+}
+
+.error {
+  padding: var(--space-8);
+  color: var(--color-error);
+}
+
+.tabContent {
+  margin-top: var(--space-5);
+}
+
+.tabLoading {
+  padding: var(--space-4);
+  color: var(--color-text-muted);
+}

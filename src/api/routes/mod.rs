@@ -11,6 +11,7 @@ pub mod logs;
 pub mod mcp;
 pub mod metrics;
 pub mod notifications;
+pub mod onboarding;
 pub mod openapi;
 pub mod server;
 pub mod settings;
@@ -39,6 +40,7 @@ pub fn api_routes() -> Router<AppState> {
         .merge(events::routes())
         .merge(webhooks::routes())
         .merge(notifications::routes())
+        .merge(onboarding::routes())
         .merge(mcp::routes())
         .merge(openapi::routes())
 }

@@ -49,12 +49,12 @@ async fn call_tool(
         .await?
         .ok_or_else(|| ApiError::BadRequest("Authentication required. Pass API token as Bearer header.".into()))?;
 
-    let is_reader = user.role == "viewer";
+    let can_write = user.role == "admin" || user.role == "deployer";
     let write_tools = [
         "deploy_app", "set_env_var", "create_database", "add_domain", "restart_app",
     ];
 
-    if is_reader && write_tools.contains(&body.tool.as_str()) {
+    if !can_write && write_tools.contains(&body.tool.as_str()) {
         return Err(ApiError::BadRequest(format!(
             "Your role '{}' cannot use '{}'. Write access requires deployer or admin role.",
             user.role, body.tool

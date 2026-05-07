@@ -1,0 +1,108 @@
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  font-weight: var(--weight-medium);
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background var(--duration-fast) var(--ease-out),
+    opacity var(--duration-fast) var(--ease-out);
+}
+
+.button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Sizes */
+.md {
+  height: var(--button-height);
+  padding: 0 var(--space-4);
+  font-size: var(--text-sm);
+}
+
+.sm {
+  height: 28px;
+  padding: 0 var(--space-3);
+  font-size: var(--text-xs);
+}
+
+/* Variants */
+.primary {
+  background: var(--color-primary);
+  color: var(--color-primary-text);
+  border: none;
+}
+
+.primary:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+}
+
+.secondary {
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+}
+
+.secondary:hover:not(:disabled) {
+  background: var(--color-surface-alt);
+}
+
+.danger {
+  background: var(--color-error);
+  color: var(--color-primary-text);
+  border: none;
+}
+
+.danger:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.ghost {
+  background: transparent;
+  color: var(--color-text-secondary);
+  border: none;
+}
+
+.ghost:hover:not(:disabled) {
+  background: var(--color-surface-alt);
+  color: var(--color-text);
+}
+
+/* Full width modifier */
+.fullWidth {
+  width: 100%;
+}
+
+/* Focus ring */
+.button:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+/* Spinner */
+@keyframes buttonSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: buttonSpin 600ms linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation: none;
+    opacity: 0.5;
+  }
+}
