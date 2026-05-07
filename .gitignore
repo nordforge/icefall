@@ -4,3 +4,11 @@ skills/
 .claude/settings.local.json
 .stitch/
 .mcp.json
+PRD.md
+DESIGN.md
+
+# Rust
+target/
+*.db
+*.db-wal
+*.db-shm

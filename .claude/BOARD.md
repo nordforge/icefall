@@ -1,21 +1,10 @@
 # Icefall — Project Board
 
-> Last updated: 2026-05-06
+> Last updated: 2026-05-07
 
 ---
 
 ## Backlog
-
-### Phase 1 — Foundation
-| Ticket | Title | Priority | Size | Dependencies |
-|--------|-------|----------|------|--------------|
-| [IF-001](tickets/phase-1-foundation/IF-001-rust-project-scaffold.md) | Rust project scaffold | Critical | S | — |
-| [IF-002](tickets/phase-1-foundation/IF-002-database-schema-sqlite.md) | Database schema & SQLite setup | Critical | M | IF-001 |
-| [IF-003](tickets/phase-1-foundation/IF-003-config-system.md) | Configuration system | Critical | S | IF-001 |
-| [IF-004](tickets/phase-1-foundation/IF-004-docker-client.md) | Docker Engine client | Critical | M | IF-001 |
-| [IF-005](tickets/phase-1-foundation/IF-005-caddy-client.md) | Caddy admin API client | Critical | S | IF-001, IF-003 |
-| [IF-006](tickets/phase-1-foundation/IF-006-rest-api-skeleton.md) | REST API skeleton (Axum) | Critical | M | IF-001, IF-002, IF-003 |
-| [IF-007](tickets/phase-1-foundation/IF-007-daemon-lifecycle.md) | Daemon lifecycle management | High | M | IF-001, IF-003, IF-006 |
 
 ### Phase 2 — Build Engine
 | Ticket | Title | Priority | Size | Dependencies |
@@ -136,9 +125,16 @@
 
 ## Done
 
-| Ticket | Title | Completed |
-|--------|-------|-----------|
-| — | — | — |
+### Phase 1 — Foundation
+| Ticket | Title | Completed | Notes |
+|--------|-------|-----------|-------|
+| [IF-001](tickets/phase-1-foundation/IF-001-rust-project-scaffold.md) | Rust project scaffold | 2026-05-07 | Full Cargo.toml, binary crate, Clap CLI with all subcommands |
+| [IF-002](tickets/phase-1-foundation/IF-002-database-schema-sqlite.md) | Database schema & SQLite setup | 2026-05-07 | 11 migrations, 40+ trait methods, AES-256-GCM encryption with tests |
+| [IF-003](tickets/phase-1-foundation/IF-003-config-system.md) | Configuration system | 2026-05-07 | TOML loading, env var overrides, validation, defaults |
+| [IF-004](tickets/phase-1-foundation/IF-004-docker-client.md) | Docker Engine client | 2026-05-07 | Full Bollard wrapper — containers, images, networks, volumes, stats, logs |
+| [IF-005](tickets/phase-1-foundation/IF-005-caddy-client.md) | Caddy admin API client | 2026-05-07 | Route CRUD, wildcard support, operation queue with retry |
+| [IF-006](tickets/phase-1-foundation/IF-006-rest-api-skeleton.md) | REST API skeleton (Axum) | 2026-05-07 | Router, middleware (tracing/CORS/request IDs), error types, all route stubs |
+| [IF-007](tickets/phase-1-foundation/IF-007-daemon-lifecycle.md) | Daemon lifecycle management | 2026-05-07 | Full startup sequence, PID file, signal handling, systemd unit generation |
 
 ---
 
@@ -147,10 +143,27 @@
 | Metric | Count |
 |--------|-------|
 | Total tickets | 57 |
-| Critical | 20 |
-| High | 24 |
-| Medium | 13 |
-| Phases | 13 |
+| Done | 7 |
+| Backlog | 49 |
+| Superseded | 1 |
+| Phases complete | 1 / 13 |
+
+### Progress
+| Phase | Status | Tickets |
+|-------|--------|---------|
+| 1 — Foundation | **Done** | 7/7 |
+| 2 — Build Engine | Backlog | 0/3 |
+| 3 — Deployment Pipeline | Backlog | 0/5 |
+| 4 — Web Dashboard | Backlog | 0/7 |
+| 5 — Domains & Proxy | Backlog | 0/2 |
+| 6 — Monitoring | Backlog | 0/4 |
+| 7 — Databases | Backlog | 0/3 |
+| 8 — Auth & API | Backlog | 0/5 |
+| 9 — CLI | Backlog | 0/3 |
+| 10 — Install & Migration | Backlog | 0/2 (+1 superseded) |
+| 11 — MCP & Notifications | Backlog | 0/3 |
+| 12 — Landing & Docs | Backlog | 0/4 |
+| 13 — Onboarding | Backlog | 0/9 |
 
 ### Size breakdown
 | Size | Count | Estimated effort |
