@@ -8,7 +8,9 @@ pub mod env_vars;
 pub mod events;
 pub mod health;
 pub mod logs;
+pub mod mcp;
 pub mod metrics;
+pub mod notifications;
 pub mod openapi;
 pub mod server;
 pub mod settings;
@@ -36,5 +38,7 @@ pub fn api_routes() -> Router<AppState> {
         .merge(server::routes())
         .merge(events::routes())
         .merge(webhooks::routes())
+        .merge(notifications::routes())
+        .merge(mcp::routes())
         .merge(openapi::routes())
 }

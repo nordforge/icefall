@@ -6,14 +6,6 @@
 
 ## Backlog
 
-### Phase 11 — MCP & Notifications
-| Ticket | Title | Priority | Size | Dependencies |
-|--------|-------|----------|------|--------------|
-| [IF-043](tickets/phase-11-mcp-notifications/IF-043-notification-system.md) | Notification system | Medium | M | IF-002, IF-006 |
-| [IF-044](tickets/phase-11-mcp-notifications/IF-044-mcp-server.md) | MCP server | Medium | M | IF-006, IF-035 |
-| [IF-045](tickets/phase-11-mcp-notifications/IF-045-settings-page.md) | Global settings page | Medium | M | IF-016, IF-032 |
-| [REVIEW](tickets/phase-11-mcp-notifications/REVIEW-phase-11.md) | Phase 11 code review & audit | High | S | all above |
-
 ### Phase 12 — Landing Page & Documentation
 | Ticket | Title | Priority | Size | Dependencies |
 |--------|-------|----------|------|--------------|
@@ -144,6 +136,14 @@
 | ~~IF-042~~ | ~~Setup wizard~~ | — | Superseded by Phase 13 |
 | [REVIEW](tickets/phase-10-install-migration/REVIEW-phase-10.md) | Phase 10 code review | 2026-05-07 | 90 tests, clippy clean |
 
+### Phase 11 — MCP & Notifications
+| Ticket | Title | Completed | Notes |
+|--------|-------|-----------|-------|
+| [IF-043](tickets/phase-11-mcp-notifications/IF-043-notification-system.md) | Notification system | 2026-05-07 | Webhook dispatch, SMTP/Plunk stubs, channel CRUD, per-app rules, test endpoint, event types |
+| [IF-044](tickets/phase-11-mcp-notifications/IF-044-mcp-server.md) | MCP server | 2026-05-07 | 13 tools (list/get apps, deploy, logs, env vars, databases, health, domains, restart), role-based permissions |
+| [IF-045](tickets/phase-11-mcp-notifications/IF-045-settings-page.md) | Global settings page | 2026-05-07 | Dashboard page: domain, notifications, backup S3/R2, MCP config snippet, version display |
+| [REVIEW](tickets/phase-11-mcp-notifications/REVIEW-phase-11.md) | Phase 11 code review | 2026-05-07 | 90 tests, clippy clean |
+
 ---
 
 ## Summary
@@ -151,10 +151,10 @@
 | Metric | Count |
 |--------|-------|
 | Total tickets | 65 |
-| Done | 46 |
-| Backlog | 18 |
+| Done | 50 |
+| Backlog | 14 |
 | Superseded | 1 |
-| Phases complete | 10 / 13 |
+| Phases complete | 11 / 13 |
 
 ### Progress
 | Phase | Status | Tickets |
@@ -169,7 +169,7 @@
 | 8 — Auth & API | **Done** | 6/6 |
 | 9 — CLI | **Done** | 4/4 |
 | 10 — Install & Migration | **Done** | 3/3 (+1 superseded) |
-| 11 — MCP & Notifications | Backlog | 0/4 |
+| 11 — MCP & Notifications | **Done** | 4/4 |
 | 12 — Landing & Docs | Backlog | 0/5 |
 | 13 — Onboarding | Backlog | 0/10 |
 
