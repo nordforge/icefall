@@ -131,6 +131,23 @@
   justify-content: center;
 }
 
+.iconButton:hover {
+  color: var(--color-text);
+}
+
+.tdActions {
+  padding: var(--space-2) var(--space-4);
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.saveMessage {
+  font-size: var(--text-sm);
+  color: var(--color-success);
+  margin-bottom: var(--space-3);
+}
+
 .backupHeader {
   display: flex;
   justify-content: space-between;

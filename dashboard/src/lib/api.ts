@@ -106,6 +106,15 @@ export const api = {
     request<{ message: string }>(`/tokens/${tokenId}`, { method: 'DELETE' }),
 
   getServerIp: () => request<{ ip: string }>('/server/ip'),
+
+  listDbTables: (dbId: string) =>
+    request<{ data: string[] }>(`/databases/${dbId}/tables`),
+
+  queryDb: (dbId: string, sql: string) =>
+    request<{ columns: string[]; rows: string[][]; row_count: number }>(
+      `/databases/${dbId}/query`,
+      { method: 'POST', body: JSON.stringify({ sql }) },
+    ),
 };
 
 export { ApiError };

@@ -16,6 +16,8 @@ pub fn routes() -> Router<AppState> {
         .route("/databases/{id}", get(get_database).delete(delete_database))
         .route("/databases/{id}/link/{app_id}", post(link_to_app))
         .route("/databases/{id}/link/{app_id}", delete(unlink_from_app))
+        .route("/databases/{id}/tables", get(list_tables))
+        .route("/databases/{id}/query", post(execute_query))
 }
 
 #[derive(Deserialize)]
@@ -234,6 +236,15 @@ async fn create_database(
         })
         .await?;
 
+    state
+        .db
+        .update_managed_db_credentials(
+            &managed_db.id,
+            &credentials.to_string(),
+            &container_id,
+        )
+        .await?;
+
     if let Some(ref app_id) = body.app_id {
         let envs = state.db.list_environments(app_id).await?;
         if let Some(env) = envs.first() {
@@ -335,4 +346,169 @@ async fn unlink_from_app(
     }
 
     Ok(Json(serde_json::json!({ "message": "unlinked" })))
+}
+
+#[derive(Deserialize)]
+struct QueryBody {
+    sql: String,
+}
+
+async fn get_db_connection_string(
+    state: &AppState,
+    id: &str,
+) -> Result<(String, String), ApiError> {
+    let dbs = state.db.list_managed_dbs().await?;
+    let db = dbs
+        .iter()
+        .find(|d| d.id == id)
+        .ok_or_else(|| ApiError::NotFound(format!("database {id}")))?;
+
+    let db_type = db.db_type.clone();
+    let creds: serde_json::Value = serde_json::from_str(&db.credentials).unwrap_or_default();
+    let conn_str = creds
+        .get("connection_string")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .to_string();
+
+    if conn_str.is_empty() {
+        return Err(ApiError::BadRequest("No credentials stored for this database".into()));
+    }
+
+    Ok((conn_str, db_type))
+}
+
+async fn list_tables(
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+) -> Result<Json<serde_json::Value>, ApiError> {
+    let (conn_str, db_type) = get_db_connection_string(&state, &id).await?;
+    let container_name = conn_str
+        .split('@')
+        .nth(1)
+        .and_then(|s| s.split(':').next())
+        .unwrap_or("");
+
+    let sql = match db_type.as_str() {
+        "postgres" => "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' ORDER BY table_name",
+        "mysql" => "SELECT table_name FROM information_schema.tables WHERE table_schema = DATABASE() ORDER BY table_name",
+        _ => return Err(ApiError::BadRequest("Table browsing is only supported for PostgreSQL and MySQL".into())),
+    };
+
+    let cmd = match db_type.as_str() {
+        "postgres" => vec![
+            "psql".to_string(),
+            conn_str.replace(container_name, "localhost"),
+            "-t".to_string(),
+            "-A".to_string(),
+            "-c".to_string(),
+            sql.to_string(),
+        ],
+        "mysql" => {
+            let creds: serde_json::Value = {
+                let dbs = state.db.list_managed_dbs().await?;
+                let db = dbs.iter().find(|d| d.id == id).unwrap();
+                serde_json::from_str(&db.credentials).unwrap_or_default()
+            };
+            let user = creds.get("user").and_then(|v| v.as_str()).unwrap_or("icefall");
+            let pass = creds.get("password").and_then(|v| v.as_str()).unwrap_or("");
+            vec![
+                "mysql".to_string(),
+                format!("-u{user}"),
+                format!("-p{pass}"),
+                "-e".to_string(),
+                sql.to_string(),
+                "--batch".to_string(),
+                "--skip-column-names".to_string(),
+            ]
+        }
+        _ => unreachable!(),
+    };
+
+    let output = state
+        .docker
+        .exec_in_container(container_name, &cmd)
+        .await
+        .map_err(|e| ApiError::Internal(Box::new(e)))?;
+
+    let tables: Vec<&str> = output.trim().lines().filter(|l| !l.is_empty()).collect();
+
+    Ok(Json(serde_json::json!({ "data": tables })))
+}
+
+async fn execute_query(
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+    Json(body): Json<QueryBody>,
+) -> Result<Json<serde_json::Value>, ApiError> {
+    let sql = body.sql.trim();
+
+    let lower = sql.to_lowercase();
+    if !lower.starts_with("select") {
+        return Err(ApiError::BadRequest("Only SELECT queries are allowed".into()));
+    }
+
+    let limited = if lower.contains("limit") {
+        sql.to_string()
+    } else {
+        format!("{sql} LIMIT 100")
+    };
+
+    let (conn_str, db_type) = get_db_connection_string(&state, &id).await?;
+    let container_name = conn_str
+        .split('@')
+        .nth(1)
+        .and_then(|s| s.split(':').next())
+        .unwrap_or("");
+
+    let cmd = match db_type.as_str() {
+        "postgres" => vec![
+            "psql".to_string(),
+            conn_str.replace(container_name, "localhost"),
+            "--csv".to_string(),
+            "-c".to_string(),
+            limited,
+        ],
+        "mysql" => {
+            let creds: serde_json::Value = {
+                let dbs = state.db.list_managed_dbs().await?;
+                let db = dbs.iter().find(|d| d.id == id).unwrap();
+                serde_json::from_str(&db.credentials).unwrap_or_default()
+            };
+            let user = creds.get("user").and_then(|v| v.as_str()).unwrap_or("icefall");
+            let pass = creds.get("password").and_then(|v| v.as_str()).unwrap_or("");
+            vec![
+                "mysql".to_string(),
+                format!("-u{user}"),
+                format!("-p{pass}"),
+                "-e".to_string(),
+                limited,
+                "--batch".to_string(),
+            ]
+        }
+        _ => return Err(ApiError::BadRequest("Query execution is only supported for PostgreSQL and MySQL".into())),
+    };
+
+    let output = state
+        .docker
+        .exec_in_container(container_name, &cmd)
+        .await
+        .map_err(|e| ApiError::Internal(Box::new(e)))?;
+
+    let mut lines = output.lines();
+    let headers: Vec<String> = match lines.next() {
+        Some(h) => h.split(if db_type == "postgres" { ',' } else { '\t' }).map(|s| s.trim().to_string()).collect(),
+        None => return Ok(Json(serde_json::json!({ "columns": [], "rows": [] }))),
+    };
+
+    let rows: Vec<Vec<String>> = lines
+        .filter(|l| !l.is_empty())
+        .map(|l| l.split(if db_type == "postgres" { ',' } else { '\t' }).map(|s| s.trim().to_string()).collect())
+        .collect();
+
+    Ok(Json(serde_json::json!({
+        "columns": headers,
+        "rows": rows,
+        "row_count": rows.len(),
+    })))
 }

@@ -375,6 +375,24 @@ impl Database for SqliteDatabase {
         })
     }
 
+    async fn update_managed_db_credentials(
+        &self,
+        id: &str,
+        credentials_json: &str,
+        container_id: &str,
+    ) -> Result<(), DbError> {
+        let encrypted = self.encryptor.encrypt(credentials_json.as_bytes())?;
+        sqlx::query(
+            "UPDATE databases SET credentials_encrypted = ?, container_id = ? WHERE id = ?",
+        )
+        .bind(&encrypted)
+        .bind(container_id)
+        .bind(id)
+        .execute(&self.pool)
+        .await?;
+        Ok(())
+    }
+
     async fn list_managed_dbs(&self) -> Result<Vec<ManagedDatabase>, DbError> {
         let rows = sqlx::query(
             "SELECT id, name, db_type, container_id, credentials_encrypted, backup_schedule, app_id, created_at

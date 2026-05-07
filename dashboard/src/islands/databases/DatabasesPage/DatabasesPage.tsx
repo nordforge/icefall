@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'preact/hooks';
 import Button from '@islands/shared/Button/Button';
 import StatusDot from '@islands/shared/StatusDot/StatusDot';
+import DatabaseBrowser from '@islands/databases/DatabaseBrowser/DatabaseBrowser';
 import { formatRelativeTime, formatBytes } from '@lib/format';
-import { Plus, Database, Trash2, Copy, Eye, EyeOff, RefreshCw } from 'lucide-preact';
+import { Plus, Database, Trash2, Copy, Eye, EyeOff, RefreshCw, Download, RotateCcw } from 'lucide-preact';
 import styles from './databases-page.module.css';
 import formStyles from '@styles/form.module.css';
 
@@ -48,6 +49,7 @@ export default function DatabasesPage() {
   const [showCredentials, setShowCredentials] = useState(false);
   const [creating, setCreating] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [saveMessage, setSaveMessage] = useState('');
   const [newDb, setNewDb] = useState({ name: '', db_type: 'postgres', memory_mb: '' });
 
   useEffect(() => {
@@ -129,12 +131,13 @@ export default function DatabasesPage() {
           </div>
         </div>
 
+        {saveMessage && <p role="status" aria-live="polite" class={styles.saveMessage}>{saveMessage}</p>}
         <div class={styles.detailGrid}>
           <div class={styles.card}>
             <h3 class={styles.cardTitle}>Connection</h3>
             <div class={styles.connectionRow}>
               <code class={showCredentials ? styles.connectionStringRevealed : styles.connectionStringHidden}>
-                {showCredentials ? connStr : '••••••••••••••••••••••••'}
+                {showCredentials ? (connStr || 'No credentials stored — recreate the database to generate new credentials') : '••••••••••••••••••••••••'}
               </code>
               {/* a11y [4.1.2]: aria-label on icon-only button */}
               <button onClick={() => setShowCredentials(!showCredentials)} class={styles.iconButton} aria-label={showCredentials ? 'Hide credentials' : 'Show credentials'}>
@@ -160,7 +163,7 @@ export default function DatabasesPage() {
               <table class={styles.table}>
                 <thead>
                   <tr class={styles.tableRow}>
-                    {['Filename', 'Size', 'Created', 'Status'].map(h => (
+                    {['Filename', 'Size', 'Created', 'Status', 'Actions'].map(h => (
                       <th key={h} class={styles.th}>{h}</th>
                     ))}
                   </tr>
@@ -172,11 +175,55 @@ export default function DatabasesPage() {
                       <td class={styles.tdSecondary}>{formatBytes(b.size_bytes)}</td>
                       <td class={styles.tdMuted}>{b.created_at ? formatRelativeTime(b.created_at) : '—'}</td>
                       <td class={styles.td}><StatusDot status={b.status === 'completed' ? 'success' : 'failed'} /></td>
+                      <td class={styles.tdActions}>
+                        {b.status === 'completed' && (
+                          <>
+                            <button
+                              type="button"
+                              class={styles.iconButton}
+                              onClick={() => window.open(`/api/v1/databases/${selectedDb.id}/backups/${b.id}/download`, '_blank')}
+                              aria-label={`Download ${b.filename}`}
+                            >
+                              <Download size={14} aria-hidden="true" />
+                            </button>
+                            <button
+                              type="button"
+                              class={styles.iconButton}
+                              onClick={() => {
+                                if (confirm(`Restore from ${b.filename}? This will overwrite the current database.`)) {
+                                  fetch(`/api/v1/databases/${selectedDb.id}/backups/${b.id}/restore`, { method: 'POST' })
+                                    .then(() => setSaveMessage('Restore started'))
+                                    .catch(() => setSaveMessage('Restore failed'));
+                                }
+                              }}
+                              aria-label={`Restore from ${b.filename}`}
+                            >
+                              <RotateCcw size={14} aria-hidden="true" />
+                            </button>
+                          </>
+                        )}
+                        <button
+                          type="button"
+                          class={styles.iconButton}
+                          onClick={() => {
+                            fetch(`/api/v1/databases/${selectedDb.id}/backups/${b.id}`, { method: 'DELETE' })
+                              .then(() => setBackups(prev => prev.filter(x => x.id !== b.id)))
+                              .catch(() => {});
+                          }}
+                          aria-label={`Delete ${b.filename}`}
+                        >
+                          <Trash2 size={14} aria-hidden="true" />
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             )}
+          </div>
+
+          <div class={styles.card}>
+            <DatabaseBrowser dbId={selectedDb.id} dbType={selectedDb.db_type} />
           </div>
 
           <div class={styles.dangerCard}>
@@ -185,7 +232,6 @@ export default function DatabasesPage() {
                 <p class={styles.dangerLabel}>Delete Database</p>
                 <p class={styles.dangerDescription}>This will permanently delete the database and all its data.</p>
               </div>
-              {/* a11y [WCAG 3.3.4]: two-step delete confirmation for destructive action */}
               {confirmDelete ? (
                 <div class={styles.confirmActions}>
                   <Button variant="ghost" onClick={() => setConfirmDelete(false)}>Cancel</Button>

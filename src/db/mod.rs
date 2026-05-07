@@ -58,6 +58,12 @@ pub trait Database: Send + Sync + 'static {
         db: &NewManagedDatabase,
     ) -> Result<ManagedDatabase, DbError>;
     async fn list_managed_dbs(&self) -> Result<Vec<ManagedDatabase>, DbError>;
+    async fn update_managed_db_credentials(
+        &self,
+        id: &str,
+        credentials_json: &str,
+        container_id: &str,
+    ) -> Result<(), DbError>;
     async fn delete_managed_db(&self, id: &str) -> Result<(), DbError>;
 
     // Domains

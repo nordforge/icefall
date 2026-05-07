@@ -203,4 +203,46 @@ impl DockerClient {
         let info = self.inner().inspect_container(id, None).await?;
         Ok(info)
     }
+
+    pub async fn exec_in_container(
+        &self,
+        container: &str,
+        cmd: &[String],
+    ) -> Result<String, DockerError> {
+        use bollard::exec::{CreateExecOptions, StartExecResults};
+        use futures_util::StreamExt;
+
+        let exec = self
+            .inner()
+            .create_exec(
+                container,
+                CreateExecOptions {
+                    cmd: Some(cmd.to_vec()),
+                    attach_stdout: Some(true),
+                    attach_stderr: Some(true),
+                    ..Default::default()
+                },
+            )
+            .await?;
+
+        let mut output = String::new();
+        if let StartExecResults::Attached { output: mut exec_output, .. } =
+            self.inner().start_exec(&exec.id, None).await?
+        {
+            while let Some(Ok(msg)) = exec_output.next().await {
+                use bollard::container::LogOutput;
+                match msg {
+                    LogOutput::StdOut { message } => {
+                        output.push_str(&String::from_utf8_lossy(&message));
+                    }
+                    LogOutput::StdErr { message } => {
+                        output.push_str(&String::from_utf8_lossy(&message));
+                    }
+                    _ => {}
+                }
+            }
+        }
+
+        Ok(output)
+    }
 }
