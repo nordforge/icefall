@@ -119,6 +119,70 @@ impl CaddyClient {
         Ok(infos)
     }
 
+    /// Add a file_server route for serving static files directly from disk.
+    /// Uses try_files for SPA fallback (serves index.html for missing paths).
+    pub async fn add_file_server_route(
+        &self,
+        domain: &str,
+        root_path: &str,
+    ) -> Result<(), CaddyError> {
+        let route = CaddyRoute::file_server(domain, root_path);
+        let url = format!(
+            "{}/config/apps/http/servers/srv0/routes",
+            self.base_url()
+        );
+
+        let response = self
+            .client()
+            .post(&url)
+            .json(&route)
+            .send()
+            .await?;
+
+        if !response.status().is_success() {
+            let status = response.status().as_u16();
+            let body = response.text().await.unwrap_or_default();
+            return Err(CaddyError::ApiError { status, body });
+        }
+
+        Ok(())
+    }
+
+    /// Update an existing route to a file_server route for static files.
+    pub async fn update_file_server_route(
+        &self,
+        domain: &str,
+        root_path: &str,
+    ) -> Result<(), CaddyError> {
+        let routes = self.get_routes_raw().await?;
+
+        let index = routes
+            .iter()
+            .position(|r| {
+                r.matchers
+                    .iter()
+                    .any(|m| m.host.contains(&domain.to_string()))
+            })
+            .ok_or_else(|| CaddyError::RouteNotFound(domain.to_string()))?;
+
+        let route = CaddyRoute::file_server(domain, root_path);
+        let url = format!(
+            "{}/config/apps/http/servers/srv0/routes/{}",
+            self.base_url(),
+            index
+        );
+
+        let response = self.client().put(&url).json(&route).send().await?;
+
+        if !response.status().is_success() {
+            let status = response.status().as_u16();
+            let body = response.text().await.unwrap_or_default();
+            return Err(CaddyError::ApiError { status, body });
+        }
+
+        Ok(())
+    }
+
     pub async fn add_wildcard(&self, base_domain: &str) -> Result<(), CaddyError> {
         let wildcard = format!("*.{base_domain}");
         self.add_route(&wildcard, "localhost:0").await

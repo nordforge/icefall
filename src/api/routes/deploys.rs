@@ -7,7 +7,9 @@ use crate::api::AppState;
 use crate::build::orchestrator::BuildOrchestrator;
 use crate::build::BuildConfig;
 use crate::db::models::NewDeploy;
+use crate::deploy::compose::ComposeDeployer;
 use crate::deploy::manager::DeployManager;
+use crate::deploy::native::NativeDeployer;
 
 pub fn routes() -> Router<AppState> {
     Router::new()
@@ -39,9 +41,10 @@ async fn create_deploy(
         .await?
         .ok_or_else(|| ApiError::NotFound(format!("app {id}")))?;
 
+    let is_compose_deploy = app.compose_content.is_some();
     let is_image_deploy = app.image_ref.is_some();
 
-    if !is_image_deploy {
+    if !is_compose_deploy && !is_image_deploy {
         // Git-based apps require a configured repo
         app.git_repo
             .as_ref()
@@ -66,7 +69,36 @@ async fn create_deploy(
     let app_clone = app.clone();
     let env_clone = env.clone();
 
-    if is_image_deploy {
+    if is_compose_deploy {
+        // Compose-based deploy: parse YAML, pull images, create containers
+        let compose_yaml = app.compose_content.clone().unwrap();
+
+        tokio::spawn(async move {
+            let deployer = ComposeDeployer::new(
+                state.docker.clone(),
+                state.db.clone(),
+                state.event_bus.clone(),
+            );
+
+            // Resolve env vars from the environment and convert to a HashMap for interpolation
+            let env_vars_list = state.db.get_env_vars(&env_clone.id).await.unwrap_or_default();
+            let env_map: std::collections::HashMap<String, String> = env_vars_list
+                .into_iter()
+                .map(|v| (v.key, v.value))
+                .collect();
+
+            if let Err(e) = deployer
+                .deploy(&app_clone, &deploy_id, &compose_yaml, &env_map)
+                .await
+            {
+                tracing::error!("Compose deploy failed for {deploy_id}: {e}");
+                let _ = state
+                    .db
+                    .update_deploy_status(&deploy_id, "failed", Some(&e.to_string()))
+                    .await;
+            }
+        });
+    } else if is_image_deploy {
         // Image-based deploy: skip the build pipeline and go straight to pulling + deploying
         let image_ref = app.image_ref.clone().unwrap();
 
@@ -91,8 +123,8 @@ async fn create_deploy(
                 tracing::error!("Image deploy failed for {deploy_id}: {e}");
             }
         });
-    } else {
-        // Git-based deploy: run the build pipeline first
+    } else if app.deploy_mode == "native" {
+        // Native deploy: build on host, serve via Caddy file_server
         let build_config: Option<BuildConfig> = app
             .build_config
             .as_deref()
@@ -103,6 +135,105 @@ async fn create_deploy(
         tokio::spawn(async move {
             let _guard = lock.lock().await;
 
+            let deployer = NativeDeployer::new(
+                state.caddy.clone(),
+                state.db.clone(),
+                state.config.clone(),
+                state.event_bus.clone(),
+            );
+
+            let updated_deploy = match state.db.get_deploy(&deploy_id).await {
+                Ok(Some(d)) => d,
+                _ => return,
+            };
+
+            if let Err(e) = deployer
+                .deploy(&updated_deploy, &app_clone, &env_clone, build_config)
+                .await
+            {
+                tracing::error!("Native deploy failed for {deploy_id}: {e}");
+            }
+        });
+    } else {
+        // Git-based deploy: run the build pipeline first
+        // In "auto" mode, detect the framework and decide between native and container
+        let build_config: Option<BuildConfig> = app
+            .build_config
+            .as_deref()
+            .and_then(|s| serde_json::from_str(s).ok());
+
+        let lock = state.build_locks.acquire(&id).await;
+        let is_auto_mode = app.deploy_mode == "auto";
+
+        tokio::spawn(async move {
+            let _guard = lock.lock().await;
+
+            // For auto mode, peek at the framework to decide the pipeline.
+            // Clone first, then detect, then choose native vs container.
+            if is_auto_mode {
+                // Quick detect: clone + detect to decide the pipeline
+                let work_dir = state.config.data_dir.join("builds").join(&deploy_id);
+                let git_repo = match app_clone.git_repo.as_deref() {
+                    Some(r) => r,
+                    None => {
+                        tracing::error!("Auto-mode deploy failed: no git_repo");
+                        return;
+                    }
+                };
+
+                let clone_opts = crate::build::git::GitCloneOptions {
+                    repo_url: git_repo.to_string(),
+                    branch: Some(app_clone.git_branch.clone()),
+                    sha: None,
+                    ssh_key_path: None,
+                    token: None,
+                };
+
+                match crate::build::git::clone_repo(&clone_opts, &work_dir).await {
+                    Ok(_) => {}
+                    Err(e) => {
+                        tracing::error!("Auto-mode clone failed for {deploy_id}: {e}");
+                        let _ = state
+                            .db
+                            .update_deploy_status(&deploy_id, "failed", Some(&e.to_string()))
+                            .await;
+                        return;
+                    }
+                }
+
+                let detection = crate::build::detect::detect(&work_dir, build_config.as_ref());
+                let use_native = detection
+                    .as_ref()
+                    .map(|d| crate::deploy::native::should_use_native(d))
+                    .unwrap_or(false);
+
+                // Clean up the clone — each pipeline will re-clone
+                let _ = tokio::fs::remove_dir_all(&work_dir).await;
+
+                if use_native {
+                    let deployer = NativeDeployer::new(
+                        state.caddy.clone(),
+                        state.db.clone(),
+                        state.config.clone(),
+                        state.event_bus.clone(),
+                    );
+
+                    let updated_deploy = match state.db.get_deploy(&deploy_id).await {
+                        Ok(Some(d)) => d,
+                        _ => return,
+                    };
+
+                    if let Err(e) = deployer
+                        .deploy(&updated_deploy, &app_clone, &env_clone, build_config.clone())
+                        .await
+                    {
+                        tracing::error!("Native deploy failed for {deploy_id}: {e}");
+                    }
+                    return;
+                }
+            }
+
+            // Container path: build Docker image + deploy container
             let orchestrator = BuildOrchestrator::new(
                 state.docker.clone(),
                 state.db.clone(),

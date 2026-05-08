@@ -50,7 +50,7 @@ async fn get_me(
         .await?
         .ok_or_else(|| ApiError::BadRequest("Not authenticated".into()))?;
 
-    Ok(Json(serde_json::json!({ "data": { "id": user.id, "email": user.email, "role": user.role } })))
+    Ok(Json(serde_json::json!({ "data": { "id": user.id, "email": user.email, "role": user.role, "totp_enabled": user.totp_enabled } })))
 }
 
 #[derive(Deserialize)]

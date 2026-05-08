@@ -96,6 +96,96 @@ fn db_configs() -> HashMap<&'static str, DbTypeConfig> {
         default_memory_mb: 512,
         env_var_name: "MONGODB_URL",
     });
+    m.insert("mariadb", DbTypeConfig {
+        image: "mariadb:11",
+        port: 3306,
+        env_vars: |user, pass, db| vec![
+            format!("MARIADB_USER={user}"),
+            format!("MARIADB_PASSWORD={pass}"),
+            format!("MARIADB_DATABASE={db}"),
+            format!("MARIADB_ROOT_PASSWORD={pass}"),
+        ],
+        connection_string: |container, _port, user, pass| {
+            format!("mysql://{user}:{pass}@{container}:3306/{user}")
+        },
+        default_memory_mb: 1024,
+        env_var_name: "DATABASE_URL",
+    });
+    m.insert("clickhouse", DbTypeConfig {
+        image: "clickhouse/clickhouse-server:24",
+        port: 8123,
+        env_vars: |user, pass, db| vec![
+            format!("CLICKHOUSE_USER={user}"),
+            format!("CLICKHOUSE_PASSWORD={pass}"),
+            format!("CLICKHOUSE_DB={db}"),
+            "CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT=1".to_string(),
+        ],
+        connection_string: |container, _port, user, pass| {
+            format!("clickhouse://{user}:{pass}@{container}:8123/{user}")
+        },
+        default_memory_mb: 2048,
+        env_var_name: "CLICKHOUSE_URL",
+    });
+    m.insert("keydb", DbTypeConfig {
+        image: "eqalpha/keydb:latest",
+        port: 6379,
+        env_vars: |_user, pass, _db| vec![
+            format!("REDIS_PASSWORD={pass}"),
+        ],
+        connection_string: |container, _port, _user, pass| {
+            format!("redis://:{pass}@{container}:6379")
+        },
+        default_memory_mb: 256,
+        env_var_name: "REDIS_URL",
+    });
+    m.insert("dragonfly", DbTypeConfig {
+        image: "docker.dragonflydb.io/dragonflydb/dragonfly:latest",
+        port: 6379,
+        env_vars: |_user, pass, _db| vec![
+            format!("REDIS_PASSWORD={pass}"),
+        ],
+        connection_string: |container, _port, _user, pass| {
+            format!("redis://:{pass}@{container}:6379")
+        },
+        default_memory_mb: 512,
+        env_var_name: "REDIS_URL",
+    });
+    m.insert("valkey", DbTypeConfig {
+        image: "valkey/valkey:8",
+        port: 6379,
+        env_vars: |_user, pass, _db| vec![
+            format!("REDIS_PASSWORD={pass}"),
+        ],
+        connection_string: |container, _port, _user, pass| {
+            format!("redis://:{pass}@{container}:6379")
+        },
+        default_memory_mb: 256,
+        env_var_name: "REDIS_URL",
+    });
+    m.insert("cockroachdb", DbTypeConfig {
+        image: "cockroachdb/cockroach:latest",
+        port: 26257,
+        env_vars: |_user, _pass, _db| vec![],
+        connection_string: |container, _port, _user, _pass| {
+            format!("postgresql://root@{container}:26257/defaultdb?sslmode=disable")
+        },
+        default_memory_mb: 2048,
+        env_var_name: "DATABASE_URL",
+    });
+    m.insert("cassandra", DbTypeConfig {
+        image: "cassandra:5",
+        port: 9042,
+        env_vars: |_user, _pass, db| vec![
+            format!("CASSANDRA_CLUSTER_NAME={db}"),
+            "CASSANDRA_DC=dc1".to_string(),
+            "CASSANDRA_RACK=rack1".to_string(),
+        ],
+        connection_string: |container, _port, _user, _pass| {
+            format!("cassandra://{container}:9042")
+        },
+        default_memory_mb: 2048,
+        env_var_name: "CASSANDRA_URL",
+    });
     m
 }
 
@@ -175,10 +265,13 @@ async fn create_database(
     }
 
     let data_path = match body.db_type.as_str() {
-        "postgres" => "/var/lib/postgresql/data",
-        "mysql" => "/var/lib/mysql",
-        "redis" => "/data",
+        "postgres" | "cockroachdb" => "/var/lib/postgresql/data",
+        "mysql" | "mariadb" => "/var/lib/mysql",
+        "redis" | "keydb" | "valkey" => "/data",
+        "dragonfly" => "/data",
         "mongo" => "/data/db",
+        "clickhouse" => "/var/lib/clickhouse",
+        "cassandra" => "/var/lib/cassandra",
         _ => "/data",
     };
 
@@ -187,6 +280,28 @@ async fn create_database(
             "redis-server".to_string(),
             "--requirepass".to_string(),
             password.clone(),
+        ]),
+        "keydb" => Some(vec![
+            "keydb-server".to_string(),
+            "--requirepass".to_string(),
+            password.clone(),
+            "--server-threads".to_string(),
+            "2".to_string(),
+        ]),
+        "dragonfly" => Some(vec![
+            "dragonfly".to_string(),
+            "--requirepass".to_string(),
+            password.clone(),
+        ]),
+        "valkey" => Some(vec![
+            "valkey-server".to_string(),
+            "--requirepass".to_string(),
+            password.clone(),
+        ]),
+        "cockroachdb" => Some(vec![
+            "start-single-node".to_string(),
+            "--insecure".to_string(),
+            "--store=/var/lib/postgresql/data".to_string(),
         ]),
         _ => None,
     };

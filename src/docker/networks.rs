@@ -33,6 +33,23 @@ impl DockerClient {
         Ok(())
     }
 
+    pub async fn connect_container_to_network_with_alias(
+        &self,
+        network: &str,
+        container: &str,
+        alias: &str,
+    ) -> Result<(), DockerError> {
+        let options = ConnectNetworkOptions {
+            container: container.to_string(),
+            endpoint_config: EndpointSettings {
+                aliases: Some(vec![alias.to_string()]),
+                ..Default::default()
+            },
+        };
+        self.inner().connect_network(network, options).await?;
+        Ok(())
+    }
+
     pub async fn disconnect_container_from_network(
         &self,
         network: &str,

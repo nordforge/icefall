@@ -1,6 +1,9 @@
+pub mod compose;
 pub mod health;
 pub mod manager;
+pub mod native;
 pub mod preview;
+pub mod s3_mount;
 
 use thiserror::Error;
 
@@ -14,6 +17,10 @@ pub enum DeployError {
     RouteUpdate(String),
     #[error("rollback failed: {0}")]
     RollbackFailed(String),
+    #[error("compose file parse error: {0}")]
+    ComposeParseError(String),
+    #[error("native build failed: {0}")]
+    NativeBuild(String),
     #[error("docker error: {0}")]
     Docker(#[from] crate::docker::DockerError),
     #[error("caddy error: {0}")]

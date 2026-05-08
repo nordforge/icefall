@@ -3,7 +3,7 @@ import StatusDot from '@islands/shared/StatusDot/StatusDot';
 import Button from '@islands/shared/Button/Button';
 import { api } from '@lib/api';
 import { useState } from 'preact/hooks';
-import { Settings, Rocket, GitBranch, Container, Square, Play, RotateCw } from 'lucide-preact';
+import { Settings, Rocket, GitBranch, Container, Layers, Square, Play, RotateCw } from 'lucide-preact';
 import styles from './app-header.module.css';
 
 type Props = {
@@ -70,7 +70,12 @@ export default function AppHeader({ app, status, onStatusChange }: Props) {
           <StatusDot status={status || 'online'} />
         </div>
         <div class={styles.meta}>
-          {app.image_ref ? (
+          {app.compose_content ? (
+            <span class={styles.branchInfo}>
+              <Layers size={14} aria-hidden="true" />
+              <span class={styles.mono}>Compose Stack</span>
+            </span>
+          ) : app.image_ref ? (
             <span class={styles.branchInfo}>
               <Container size={14} aria-hidden="true" />
               <span class={styles.mono}>{app.image_ref}</span>

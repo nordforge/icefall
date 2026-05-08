@@ -4,7 +4,9 @@ use bollard::container::{
     Config, CreateContainerOptions, ListContainersOptions, RemoveContainerOptions,
     StopContainerOptions,
 };
-use bollard::models::{ContainerInspectResponse, ContainerSummary, HostConfig, PortBinding};
+use bollard::models::{
+    ContainerInspectResponse, ContainerSummary, DeviceMapping, HostConfig, PortBinding,
+};
 use serde::{Deserialize, Serialize};
 
 use crate::docker::{DockerClient, DockerError};
@@ -125,6 +127,72 @@ impl DockerClient {
             self.connect_container_to_network(network, &response.id)
                 .await?;
         }
+
+        Ok(response.id)
+    }
+
+    /// Create a container with `SYS_ADMIN` capability and `/dev/fuse` device
+    /// access, required for FUSE-based mounts like rclone.
+    pub async fn create_s3_sidecar_container(
+        &self,
+        config: &ContainerConfig,
+    ) -> Result<String, DockerError> {
+        // Use `shared` bind propagation so the FUSE mount is visible
+        // to other containers sharing the same volume.
+        let binds: Vec<String> = config
+            .volumes
+            .iter()
+            .map(|v| {
+                if v.read_only {
+                    format!("{}:{}:ro,shared", v.source, v.target)
+                } else {
+                    format!("{}:{}:shared", v.source, v.target)
+                }
+            })
+            .collect();
+
+        let restart_policy = config.restart_policy.as_deref().map(|policy| {
+            bollard::models::RestartPolicy {
+                name: Some(match policy {
+                    "always" => bollard::models::RestartPolicyNameEnum::ALWAYS,
+                    "unless-stopped" => bollard::models::RestartPolicyNameEnum::UNLESS_STOPPED,
+                    "on-failure" => bollard::models::RestartPolicyNameEnum::ON_FAILURE,
+                    _ => bollard::models::RestartPolicyNameEnum::NO,
+                }),
+                maximum_retry_count: None,
+            }
+        });
+
+        let host_config = HostConfig {
+            binds: Some(binds),
+            restart_policy,
+            cap_add: Some(vec!["SYS_ADMIN".to_string()]),
+            devices: Some(vec![DeviceMapping {
+                path_on_host: Some("/dev/fuse".to_string()),
+                path_in_container: Some("/dev/fuse".to_string()),
+                cgroup_permissions: Some("rwm".to_string()),
+            }]),
+            ..Default::default()
+        };
+
+        let container_config = Config {
+            image: Some(config.image.clone()),
+            env: Some(config.env.clone()),
+            cmd: config.cmd.clone(),
+            host_config: Some(host_config),
+            labels: Some(config.labels.clone()),
+            ..Default::default()
+        };
+
+        let options = CreateContainerOptions {
+            name: &config.name,
+            platform: None,
+        };
+
+        let response = self
+            .inner()
+            .create_container(Some(options), container_config)
+            .await?;
 
         Ok(response.id)
     }

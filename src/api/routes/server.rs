@@ -40,6 +40,12 @@ pub struct ServerMetricsHistory {
     buffer: RwLock<VecDeque<ServerMetricsSnapshot>>,
 }
 
+impl Default for ServerMetricsHistory {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ServerMetricsHistory {
     pub fn new() -> Self {
         Self {

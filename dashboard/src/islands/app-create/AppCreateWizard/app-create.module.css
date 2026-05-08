@@ -100,10 +100,50 @@
   margin-bottom: var(--space-3);
 }
 
+/* Compose step */
+.composeError {
+  color: var(--color-error);
+  font-size: var(--text-xs);
+  margin-top: var(--space-2);
+}
+
+.servicePreview {
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-3);
+}
+
+.servicePreviewLabel {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  color: var(--color-text-secondary);
+}
+
+.serviceList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+  padding: 0;
+  list-style: none;
+}
+
+.serviceItem {
+  display: inline-block;
+  padding: var(--space-1) var(--space-2);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+}
+
 /* Source selection step */
 .sourceGrid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: var(--space-4);
 }
 
@@ -157,7 +197,7 @@
   text-decoration: none;
 }
 
-@media (max-width: 480px) {
+@media (max-width: 640px) {
   .sourceGrid {
     grid-template-columns: 1fr;
   }

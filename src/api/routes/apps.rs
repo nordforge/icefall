@@ -10,6 +10,7 @@ use crate::db::models::{NewApp, NewEnvironment, UpdateApp};
 #[derive(Deserialize, Default)]
 struct ListAppsQuery {
     tag: Option<String>,
+    project_id: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -19,7 +20,9 @@ struct CreateAppRequest {
     git_branch: Option<String>,
     framework: Option<String>,
     image_ref: Option<String>,
+    compose_content: Option<String>,
     port: Option<u16>,
+    deploy_mode: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -35,6 +38,9 @@ struct UpdateAppRequest {
     tags: Option<String>,
     volumes: Option<String>,
     image_ref: Option<Option<String>>,
+    compose_content: Option<Option<String>>,
+    project_id: Option<Option<String>>,
+    deploy_mode: Option<String>,
 }
 
 pub fn routes() -> Router<AppState> {
@@ -53,7 +59,11 @@ async fn list_apps(
     State(state): State<AppState>,
     Query(query): Query<ListAppsQuery>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
-    let mut apps = state.db.list_apps().await?;
+    let mut apps = if let Some(pid) = &query.project_id {
+        state.db.list_apps_by_project(pid).await?
+    } else {
+        state.db.list_apps().await?
+    };
 
     if let Some(tag) = &query.tag {
         let tag = tag.trim().to_lowercase();
@@ -79,6 +89,13 @@ async fn create_app(
         return Err(ApiError::BadRequest("App name must not be empty".to_string()));
     }
 
+    // Validate compose YAML if provided
+    if let Some(ref yaml) = body.compose_content {
+        if crate::deploy::compose::ComposeDeployer::parse(yaml).is_err() {
+            return Err(ApiError::BadRequest("Invalid Docker Compose YAML".to_string()));
+        }
+    }
+
     let app = state
         .db
         .create_app(&NewApp {
@@ -87,6 +104,8 @@ async fn create_app(
             git_branch: body.git_branch.unwrap_or_else(|| "main".into()),
             framework: body.framework,
             image_ref: body.image_ref,
+            compose_content: body.compose_content,
+            deploy_mode: body.deploy_mode,
         })
         .await?;
 
@@ -109,6 +128,9 @@ async fn create_app(
                     tags: None,
                     volumes: None,
                     image_ref: None,
+                    compose_content: None,
+                    project_id: None,
+                    deploy_mode: None,
                 },
             )
             .await;
@@ -167,6 +189,9 @@ async fn update_app(
                 }),
                 volumes: body.volumes,
                 image_ref: body.image_ref,
+                compose_content: body.compose_content,
+                project_id: body.project_id,
+                deploy_mode: body.deploy_mode,
             },
         )
         .await?;

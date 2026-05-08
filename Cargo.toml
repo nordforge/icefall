@@ -16,7 +16,7 @@ tokio = { version = "1", features = ["full"] }
 tokio-stream = { version = "0.1", features = ["sync"] }
 
 # HTTP framework
-axum = { version = "0.8", features = ["macros"] }
+axum = { version = "0.8", features = ["macros", "ws"] }
 axum-extra = { version = "0.10", features = ["typed-header"] }
 tower = "0.5"
 tower-http = { version = "0.6", features = ["cors", "trace", "request-id", "util", "fs"] }
@@ -27,6 +27,7 @@ clap = { version = "4", features = ["derive"] }
 # Serialization
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+serde_yaml = "0.9"
 indexmap = "2"
 toml = "0.8"
 
@@ -47,6 +48,14 @@ aes-gcm = "0.10"
 rand = "0.8"
 base64 = "0.22"
 argon2 = "0.5"
+
+# TOTP / 2FA
+totp-rs = { version = "5", features = ["gen_secret", "otpauth"] }
+qrcode = { version = "0.14", features = ["svg"] }
+data-encoding = "2"
+
+# OAuth 2.0
+oauth2 = { version = "4", features = ["reqwest"] }
 
 # Webhook signature validation
 hmac = "0.12"

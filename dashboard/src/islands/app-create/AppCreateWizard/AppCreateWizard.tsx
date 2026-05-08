@@ -1,19 +1,21 @@
 import { useState, useRef, useEffect, useMemo } from 'preact/hooks';
 import { api } from '@lib/api';
 import Button from '@islands/shared/Button/Button';
-import { ArrowLeft, ArrowRight, Rocket, GitBranch, Container } from 'lucide-preact';
+import { ArrowLeft, ArrowRight, Rocket, GitBranch, Container, Layers } from 'lucide-preact';
 import styles from './app-create.module.css';
 import formStyles from '@styles/form.module.css';
 
-type DeploySource = 'git' | 'image';
+type DeploySource = 'git' | 'image' | 'compose';
 
 const GIT_STEPS = ['Source', 'Repository', 'Build Settings', 'Environment', 'Review'];
 const IMAGE_STEPS = ['Source', 'Docker Image', 'Environment', 'Review'];
+const COMPOSE_STEPS = ['Source', 'Compose File', 'Environment', 'Review'];
 
 export default function AppCreateWizard() {
   const [step, setStep] = useState(0);
   const [deploySource, setDeploySource] = useState<DeploySource | null>(null);
   const [deploying, setDeploying] = useState(false);
+  const [composeError, setComposeError] = useState('');
   const [form, setForm] = useState({
     name: '',
     git_repo: '',
@@ -25,11 +27,14 @@ export default function AppCreateWizard() {
     port: '3000',
     envContent: '',
     image_ref: '',
+    compose_content: '',
   });
 
   const steps = useMemo(() => {
     if (!deploySource) return ['Source'];
-    return deploySource === 'git' ? GIT_STEPS : IMAGE_STEPS;
+    if (deploySource === 'git') return GIT_STEPS;
+    if (deploySource === 'compose') return COMPOSE_STEPS;
+    return IMAGE_STEPS;
   }, [deploySource]);
 
   const lastStep = steps.length - 1;
@@ -46,6 +51,9 @@ export default function AppCreateWizard() {
       const name = value.split(':')[0]?.split('/').pop() || '';
       setForm((prev) => ({ ...prev, name }));
     }
+    if (field === 'compose_content') {
+      setComposeError('');
+    }
   }
 
   function handleSourceSelect(source: DeploySource) {
@@ -59,6 +67,36 @@ export default function AppCreateWizard() {
     cardRef.current?.focus();
   }, [step]);
 
+  /** Parse service names from a compose YAML string (client-side preview). */
+  function parseComposeServices(yaml: string): string[] {
+    try {
+      // Simple YAML service name extraction — look for top-level keys under "services:"
+      const lines = yaml.split('\n');
+      let inServices = false;
+      const names: string[] = [];
+      for (const line of lines) {
+        if (/^services:\s*$/.test(line)) {
+          inServices = true;
+          continue;
+        }
+        if (inServices) {
+          // A service name is indented exactly 2 spaces (standard compose indent)
+          const match = line.match(/^  ([a-zA-Z0-9_-]+):\s*$/);
+          if (match) {
+            names.push(match[1]);
+          }
+          // Stop when we hit another top-level key
+          if (/^[a-zA-Z]/.test(line) && !line.startsWith(' ')) {
+            inServices = false;
+          }
+        }
+      }
+      return names;
+    } catch {
+      return [];
+    }
+  }
+
   function canAdvance(): boolean {
     if (step === 0) return false; // Must pick a source
     if (deploySource === 'git') {
@@ -67,6 +105,9 @@ export default function AppCreateWizard() {
     if (deploySource === 'image') {
       if (step === 1) return !!form.name.trim() && !!form.image_ref.trim() && !!form.port.trim();
     }
+    if (deploySource === 'compose') {
+      if (step === 1) return !!form.name.trim() && !!form.compose_content.trim();
+    }
     return true;
   }
 
@@ -74,12 +115,15 @@ export default function AppCreateWizard() {
     setDeploying(true);
     try {
       const isImage = deploySource === 'image';
+      const isCompose = deploySource === 'compose';
 
       const createBody: Parameters<typeof api.createApp>[0] = {
         name: form.name,
       };
 
-      if (isImage) {
+      if (isCompose) {
+        createBody.compose_content = form.compose_content;
+      } else if (isImage) {
         createBody.image_ref = form.image_ref;
         createBody.port = parseInt(form.port, 10) || 3000;
       } else {
@@ -95,7 +139,10 @@ export default function AppCreateWizard() {
 
       const { data: deploy } = await api.triggerDeploy(app.id);
       window.location.href = `/apps/${app.id}/deploys/${deploy.id}`;
-    } catch {
+    } catch (err: any) {
+      if (err?.message?.includes('Compose YAML')) {
+        setComposeError(err.message);
+      }
       setDeploying(false);
     }
   }
@@ -137,6 +184,18 @@ export default function AppCreateWizard() {
           <span class={styles.sourceCardTitle}>Deploy Docker Image</span>
           <span class={styles.sourceCardDescription}>
             Pull a pre-built image from a registry and deploy it directly.
+          </span>
+        </button>
+        <button
+          type="button"
+          class={styles.sourceCard}
+          onClick={() => handleSourceSelect('compose')}
+          aria-label="Deploy from Docker Compose"
+        >
+          <Layers size={28} aria-hidden="true" />
+          <span class={styles.sourceCardTitle}>Docker Compose</span>
+          <span class={styles.sourceCardDescription}>
+            Deploy a multi-container stack from a docker-compose.yml file.
           </span>
         </button>
       </div>
@@ -224,12 +283,66 @@ export default function AppCreateWizard() {
     );
   }
 
+  function renderComposeStep() {
+    const services = parseComposeServices(form.compose_content);
+    return (
+      <div class={formStyles.fieldGroup}>
+        <div>
+          <label htmlFor="create-compose-name" class={formStyles.label}>Stack Name</label>
+          <input
+            id="create-compose-name"
+            class={formStyles.input}
+            value={form.name}
+            onInput={(e) => update('name', (e.target as HTMLInputElement).value)}
+            placeholder="my-wordpress-stack"
+          />
+        </div>
+        <div>
+          <label htmlFor="create-compose-content" class={formStyles.label}>
+            Compose File
+          </label>
+          <span class={formStyles.hint}>
+            Paste your docker-compose.yml content. Only pre-built images are supported (no build directive).
+          </span>
+          <textarea
+            id="create-compose-content"
+            class={formStyles.textarea}
+            value={form.compose_content}
+            onInput={(e) => update('compose_content', (e.target as HTMLTextAreaElement).value)}
+            placeholder={`services:\n  web:\n    image: nginx:latest\n    ports:\n      - "80:80"\n  db:\n    image: postgres:16\n    environment:\n      POSTGRES_PASSWORD: secret`}
+            rows={14}
+            spellcheck={false}
+            style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)' }}
+          />
+          {composeError && (
+            <p role="alert" class={styles.composeError}>{composeError}</p>
+          )}
+        </div>
+        {services.length > 0 && (
+          <div class={styles.servicePreview}>
+            <span class={styles.servicePreviewLabel}>
+              {services.length} service{services.length !== 1 ? 's' : ''} detected
+            </span>
+            <ul class={styles.serviceList} aria-label="Detected services">
+              {services.map((s) => (
+                <li key={s} class={styles.serviceItem}>{s}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   function renderEnvStep() {
     return (
       <div>
         <label htmlFor="create-env-vars" class={formStyles.label}>Environment Variables</label>
         <p class={styles.envDescription}>
           Paste your .env file content below. One KEY=value pair per line.
+          {deploySource === 'compose' && (
+            <> These will be available for {'${VAR}'} interpolation in your compose file.</>
+          )}
         </p>
         <textarea
           id="create-env-vars"
@@ -245,6 +358,9 @@ export default function AppCreateWizard() {
 
   function renderReviewStep() {
     const isImage = deploySource === 'image';
+    const isCompose = deploySource === 'compose';
+    const services = isCompose ? parseComposeServices(form.compose_content) : [];
+
     return (
       <div class={formStyles.fieldGroup}>
         <h3 class={styles.reviewTitle}>Review</h3>
@@ -253,9 +369,18 @@ export default function AppCreateWizard() {
           <span class={styles.reviewValue}>{form.name || '—'}</span>
 
           <span class={styles.reviewLabel}>Deploy Type</span>
-          <span class={styles.reviewValue}>{isImage ? 'Docker Image' : 'Git Repository'}</span>
+          <span class={styles.reviewValue}>
+            {isCompose ? 'Docker Compose' : isImage ? 'Docker Image' : 'Git Repository'}
+          </span>
 
-          {isImage ? (
+          {isCompose ? (
+            <>
+              <span class={styles.reviewLabel}>Services</span>
+              <span class={styles.reviewValue}>
+                {services.length > 0 ? services.join(', ') : '—'}
+              </span>
+            </>
+          ) : isImage ? (
             <>
               <span class={styles.reviewLabel}>Image</span>
               <span class={styles.reviewMono}>{form.image_ref}</span>
@@ -298,6 +423,12 @@ export default function AppCreateWizard() {
 
     if (deploySource === 'image') {
       if (step === 1) return renderImageStep();
+      if (step === 2) return renderEnvStep();
+      if (step === 3) return renderReviewStep();
+    }
+
+    if (deploySource === 'compose') {
+      if (step === 1) return renderComposeStep();
       if (step === 2) return renderEnvStep();
       if (step === 3) return renderReviewStep();
     }

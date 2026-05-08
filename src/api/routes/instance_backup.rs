@@ -71,7 +71,7 @@ async fn update_config(
         ));
     }
 
-    if retention_count < 1 || retention_count > 365 {
+    if !(1..=365).contains(&retention_count) {
         return Err(ApiError::BadRequest(
             "retention_count must be between 1 and 365".into(),
         ));

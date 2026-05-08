@@ -97,11 +97,20 @@ async fn login(
         return Err(ApiError::BadRequest("Invalid email or password".into()));
     }
 
+    // If 2FA is enabled, don't create a session yet — require 2FA validation first
+    if user.totp_enabled {
+        let body = serde_json::json!({
+            "requires_2fa": true,
+            "user_id": user.id,
+        });
+        return Ok(Json(body).into_response());
+    }
+
     let session = create_session_for_user(&state, &user.id).await?;
 
     let body = serde_json::json!({
         "data": {
-            "user": { "id": user.id, "email": user.email, "role": user.role },
+            "user": { "id": user.id, "email": user.email, "role": user.role, "totp_enabled": user.totp_enabled },
             "session_id": session.id,
         }
     });

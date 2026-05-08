@@ -1,4 +1,4 @@
-import type { App, Deploy, Domain, EnvVar, ServerStatus, ServerMetricsSnapshot, User, ApiToken, HealthCheckResult } from './types';
+import type { App, Deploy, Domain, EnvVar, Project, ServerStatus, ServerMetricsSnapshot, User, ApiToken, HealthCheckResult } from './types';
 
 const API_BASE = '/api/v1';
 
@@ -24,8 +24,13 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 }
 
 export const api = {
-  listApps: (tag?: string) =>
-    request<{ data: App[] }>(`/apps${tag ? `?tag=${encodeURIComponent(tag)}` : ''}`),
+  listApps: (params?: { tag?: string; project_id?: string }) => {
+    const search = new URLSearchParams();
+    if (params?.tag) search.set('tag', params.tag);
+    if (params?.project_id) search.set('project_id', params.project_id);
+    const qs = search.toString();
+    return request<{ data: App[] }>(`/apps${qs ? `?${qs}` : ''}`);
+  },
 
   getApp: (id: string) => request<{ data: App }>(`/apps/${id}`),
 
@@ -35,7 +40,9 @@ export const api = {
     git_branch?: string;
     framework?: string;
     image_ref?: string;
+    compose_content?: string;
     port?: number;
+    deploy_mode?: string;
   }) => request<{ data: App }>('/apps', { method: 'POST', body: JSON.stringify(body) }),
 
   updateApp: (id: string, body: Partial<App>) =>
@@ -204,6 +211,119 @@ export const api = {
     request<{ columns?: string[]; rows?: string[][]; documents?: any[]; row_count: number }>(
       `/databases/${dbId}/query`,
       { method: 'POST', body: JSON.stringify({ query }) },
+    ),
+
+  // Projects
+  listProjects: () =>
+    request<{ data: Project[] }>('/projects'),
+
+  getProject: (id: string) =>
+    request<{ data: Project & { apps: App[]; databases: any[] } }>(`/projects/${id}`),
+
+  createProject: (body: { name: string; description?: string; color?: string }) =>
+    request<{ data: Project }>('/projects', { method: 'POST', body: JSON.stringify(body) }),
+
+  updateProject: (id: string, body: { name?: string; description?: string | null; color?: string | null }) =>
+    request<{ data: Project }>(`/projects/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+
+  deleteProject: (id: string) =>
+    request<{ message: string }>(`/projects/${id}`, { method: 'DELETE' }),
+
+  // 2FA
+  setup2fa: () =>
+    request<{ data: { secret: string; qr_svg: string; otpauth_url: string } }>(
+      '/auth/2fa/setup',
+      { method: 'POST' },
+    ),
+
+  verify2fa: (code: string) =>
+    request<{ data: { totp_enabled: boolean; backup_codes: string[] }; warning: string }>(
+      '/auth/2fa/verify',
+      { method: 'POST', body: JSON.stringify({ code }) },
+    ),
+
+  validate2fa: (userId: string, code: string) =>
+    request<{ data: { user: User; session_id: string } }>(
+      '/auth/2fa/validate',
+      { method: 'POST', body: JSON.stringify({ user_id: userId, code }) },
+    ),
+
+  regenerateBackupCodes: (code: string) =>
+    request<{ data: { backup_codes: string[] }; warning: string }>(
+      '/auth/2fa/backup-codes',
+      { method: 'POST', body: JSON.stringify({ code }) },
+    ),
+
+  disable2fa: (code: string) =>
+    request<{ message: string }>(
+      '/auth/2fa',
+      { method: 'DELETE', body: JSON.stringify({ code }) },
+    ),
+
+  // OAuth
+  getEnabledOAuthProviders: () =>
+    request<{ data: { github: boolean; google: boolean } }>(
+      '/settings/oauth/providers',
+    ),
+
+  listOAuthIdentities: () =>
+    request<{ data: Array<{ id: string; provider: string; provider_email: string | null; created_at: string }> }>(
+      '/auth/oauth/identities',
+    ),
+
+  unlinkOAuthProvider: (provider: string) =>
+    request<{ message: string }>(
+      `/auth/oauth/${provider}/unlink`,
+      { method: 'DELETE' },
+    ),
+
+  getOAuthSettings: () =>
+    request<{ data: {
+      github_client_id: string | null;
+      github_has_secret: boolean;
+      github_enabled: boolean;
+      github_callback_url: string;
+      google_client_id: string | null;
+      google_has_secret: boolean;
+      google_enabled: boolean;
+      google_callback_url: string;
+    } }>('/settings/oauth'),
+
+  updateOAuthSettings: (body: {
+    github_client_id?: string;
+    github_client_secret?: string;
+    github_enabled?: boolean;
+    google_client_id?: string;
+    google_client_secret?: string;
+    google_enabled?: boolean;
+  }) =>
+    request<{ data: any; message: string }>(
+      '/settings/oauth',
+      { method: 'PUT', body: JSON.stringify(body) },
+    ),
+
+  // Volumes
+  listVolumes: (appId: string) =>
+    request<{ data: Array<{ source: string; target: string; read_only: boolean }> }>(
+      `/apps/${appId}/volumes`,
+    ),
+
+  browseVolume: (appId: string, mountIndex: number, path = '/') =>
+    request<{
+      data: Array<{ name: string; size: number; modified: string; is_dir: boolean; permissions: string }>;
+      path: string;
+      mount_target: string;
+    }>(`/apps/${appId}/volumes/${mountIndex}/browse?path=${encodeURIComponent(path)}`),
+
+  volumeSize: (appId: string, mountIndex: number) =>
+    request<{ data: { bytes_used: number; mount_target: string } }>(
+      `/apps/${appId}/volumes/${mountIndex}/size`,
+    ),
+
+  deleteVolumeFile: (appId: string, mountIndex: number, path: string) =>
+    request<{ message: string; path: string }>(
+      `/apps/${appId}/volumes/${mountIndex}/delete`,
+      { method: 'POST', body: JSON.stringify({ path }) },
     ),
 };
 
