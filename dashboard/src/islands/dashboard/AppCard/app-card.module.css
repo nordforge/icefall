@@ -51,6 +51,24 @@
   color: var(--color-text-muted);
 }
 
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.tag {
+  display: inline-block;
+  padding: 1px var(--space-2);
+  border-radius: 9999px;
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  font-size: var(--text-xs);
+  font-family: var(--font-mono);
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
 .actions {
   margin-top: auto;
   padding-top: var(--space-2);

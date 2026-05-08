@@ -53,6 +53,14 @@ export default function AppCard({ app, latestDeployStatus, latestDeployTime }: P
             {formatRelativeTime(latestDeployTime)}
           </span>
         )}
+
+        {app.tags && (
+          <div class={styles.tags}>
+            {app.tags.split(',').map((t) => t.trim()).filter(Boolean).map((tag) => (
+              <span key={tag} class={styles.tag}>{tag}</span>
+            ))}
+          </div>
+        )}
       </a>
 
       <div class={styles.actions}>

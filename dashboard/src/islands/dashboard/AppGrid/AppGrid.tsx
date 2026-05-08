@@ -1,17 +1,31 @@
-import { useEffect, useState } from 'preact/hooks';
+import { useEffect, useMemo, useState } from 'preact/hooks';
 import { useStore } from '@nanostores/preact';
 import { $apps, $appsLoading } from '@stores/apps';
 import { api } from '@lib/api';
 import { createSSEClient } from '@lib/sse';
 import type { App, Deploy } from '@lib/types';
 import AppCard from '@islands/dashboard/AppCard/AppCard';
-import { Plus } from 'lucide-preact';
+import { Plus, X } from 'lucide-preact';
 import styles from './app-grid.module.css';
+
+function collectAllTags(apps: App[]): string[] {
+  const tagSet = new Set<string>();
+  for (const app of apps) {
+    if (app.tags) {
+      for (const t of app.tags.split(',')) {
+        const trimmed = t.trim();
+        if (trimmed) tagSet.add(trimmed);
+      }
+    }
+  }
+  return Array.from(tagSet).sort();
+}
 
 export default function AppGrid() {
   const apps = useStore($apps);
   const loading = useStore($appsLoading);
   const [deploys, setDeploys] = useState<Record<string, Deploy>>({});
+  const [activeTag, setActiveTag] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -57,6 +71,18 @@ export default function AppGrid() {
     };
   }, []);
 
+  const allTags = useMemo(() => collectAllTags(apps), [apps]);
+
+  const filteredApps = useMemo(() => {
+    if (!activeTag) return apps;
+    return apps.filter((app) =>
+      app.tags
+        ?.split(',')
+        .map((t) => t.trim())
+        .includes(activeTag),
+    );
+  }, [apps, activeTag]);
+
   if (loading) {
     return (
       <div class={styles.grid}>
@@ -84,20 +110,39 @@ export default function AppGrid() {
   }
 
   return (
-    <div class={styles.grid}>
-      {apps.map((app: App) => (
-        <AppCard
-          key={app.id}
-          app={app}
-          latestDeployStatus={deploys[app.id]?.status}
-          latestDeployTime={deploys[app.id]?.created_at}
-        />
-      ))}
+    <div>
+      {allTags.length > 0 && (
+        <div class={styles.tagFilters} role="group" aria-label="Filter apps by tag">
+          {allTags.map((tag) => (
+            <button
+              key={tag}
+              type="button"
+              class={`${styles.tagChip} ${activeTag === tag ? styles.tagChipActive : ''}`}
+              onClick={() => setActiveTag(activeTag === tag ? null : tag)}
+              aria-pressed={activeTag === tag}
+            >
+              {tag}
+              {activeTag === tag && <X size={12} aria-hidden="true" />}
+            </button>
+          ))}
+        </div>
+      )}
 
-      <a href="/apps/new" class={styles.newAppCard}>
-        <Plus size={24} />
-        New App
-      </a>
+      <div class={styles.grid}>
+        {filteredApps.map((app: App) => (
+          <AppCard
+            key={app.id}
+            app={app}
+            latestDeployStatus={deploys[app.id]?.status}
+            latestDeployTime={deploys[app.id]?.created_at}
+          />
+        ))}
+
+        <a href="/apps/new" class={styles.newAppCard}>
+          <Plus size={24} />
+          New App
+        </a>
+      </div>
     </div>
   );
 }
