@@ -2,12 +2,49 @@ import { useState } from 'preact/hooks';
 import type { App } from '@lib/types';
 import { api } from '@lib/api';
 import Button from '@islands/shared/Button/Button';
-import { Save, AlertTriangle, Square, Trash2 } from 'lucide-preact';
+import { Save, AlertTriangle, Square, Play, RotateCw, Trash2, Webhook, Copy, Check, X, Plus, HardDrive } from 'lucide-preact';
 import styles from './settings-tab.module.css';
 import formStyles from '@styles/form.module.css';
 
 type Props = {
   app: App;
+}
+
+const TAG_PATTERN = /^[a-z0-9][a-z0-9-]*$/;
+const TAG_MAX_LENGTH = 30;
+
+function parseTags(raw: string | null): string[] {
+  if (!raw) return [];
+  return raw.split(',').map((t) => t.trim()).filter(Boolean);
+}
+
+type VolumeMount = {
+  source: string;
+  target: string;
+  read_only: boolean;
+};
+
+function parseVolumes(raw: string | null): VolumeMount[] {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.map((v: any) => ({
+      source: v.source || '',
+      target: v.target || '',
+      read_only: !!v.read_only,
+    }));
+  } catch { return []; }
+}
+
+function parseResourceLimits(raw: string | null): { memoryMb: string; cpuShares: string } {
+  if (!raw) return { memoryMb: '', cpuShares: '' };
+  try {
+    const parsed = JSON.parse(raw);
+    const memoryMb = parsed.memory_bytes ? String(Math.round(parsed.memory_bytes / (1024 * 1024))) : '';
+    const cpuShares = parsed.cpu_shares ? String(parsed.cpu_shares) : '';
+    return { memoryMb, cpuShares };
+  } catch { return { memoryMb: '', cpuShares: '' }; }
 }
 
 export default function SettingsTab({ app }: Props) {
@@ -17,25 +54,53 @@ export default function SettingsTab({ app }: Props) {
       const parsed = app.build_config ? JSON.parse(app.build_config) : {};
       buildCommand = parsed.build_command || '';
     } catch { /* malformed build_config JSON */ }
+    const limits = parseResourceLimits(app.resource_limits);
     return {
       name: app.name,
       git_repo: app.git_repo || '',
       git_branch: app.git_branch,
       build_command: buildCommand,
+      memory_mb: limits.memoryMb,
+      cpu_shares: limits.cpuShares,
+      preview_enabled: app.preview_enabled,
+      preview_branch_pattern: app.preview_branch_pattern || '*',
     };
   });
+  const [tags, setTags] = useState<string[]>(() => parseTags(app.tags));
+  const [tagInput, setTagInput] = useState('');
+  const [tagError, setTagError] = useState('');
+  const [volumes, setVolumes] = useState<VolumeMount[]>(() => parseVolumes(app.volumes));
+  const [volumeErrors, setVolumeErrors] = useState<Record<number, string>>({});
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState('');
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [stopping, setStopping] = useState(false);
+  const [starting, setStarting] = useState(false);
+  const [restarting, setRestarting] = useState(false);
+  const [copied, setCopied] = useState('');
+
+  const webhookBaseUrl = window.location.origin + '/api/v1/webhooks/' + app.id;
+  const hasWebhookSecret = !!app.webhook_secret;
 
   async function handleSave() {
     setSaving(true);
     try {
+      const resourceLimits: Record<string, number> = {};
+      if (form.memory_mb) resourceLimits.memory_bytes = parseInt(form.memory_mb, 10) * 1024 * 1024;
+      if (form.cpu_shares) resourceLimits.cpu_shares = parseInt(form.cpu_shares, 10);
+
+      const validVolumes = volumes.filter((v) => v.source && v.target);
+
       await api.updateApp(app.id, {
         name: form.name,
         git_repo: form.git_repo || undefined,
         git_branch: form.git_branch,
+        resource_limits: Object.keys(resourceLimits).length > 0 ? JSON.stringify(resourceLimits) : undefined,
+        preview_enabled: form.preview_enabled,
+        preview_branch_pattern: form.preview_enabled ? form.preview_branch_pattern : undefined,
+        tags: tags.join(','),
+        volumes: validVolumes.length > 0 ? JSON.stringify(validVolumes) : null,
       } as any);
       setSaveMessage('Saved');
     } catch {
@@ -54,13 +119,85 @@ export default function SettingsTab({ app }: Props) {
     }
   }
 
+  function copyToClipboard(text: string, label: string) {
+    navigator.clipboard.writeText(text);
+    setCopied(label);
+    setTimeout(() => setCopied(''), 2000);
+  }
+
+  function addTag(raw: string) {
+    const value = raw.trim().toLowerCase();
+    setTagError('');
+    if (!value) return;
+    if (value.length > TAG_MAX_LENGTH) {
+      setTagError(`Tag must be ${TAG_MAX_LENGTH} characters or fewer.`);
+      return;
+    }
+    if (!TAG_PATTERN.test(value)) {
+      setTagError('Tags can only contain lowercase letters, numbers, and hyphens.');
+      return;
+    }
+    if (tags.includes(value)) {
+      setTagInput('');
+      return;
+    }
+    setTags([...tags, value]);
+    setTagInput('');
+  }
+
+  function removeTag(tag: string) {
+    setTags(tags.filter((t) => t !== tag));
+  }
+
+  function handleTagKeyDown(e: KeyboardEvent) {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      addTag(tagInput);
+    }
+    if (e.key === 'Backspace' && !tagInput && tags.length > 0) {
+      setTags(tags.slice(0, -1));
+    }
+  }
+
+  function addVolume() {
+    setVolumes([...volumes, { source: '', target: '', read_only: false }]);
+  }
+
+  function removeVolume(index: number) {
+    setVolumes(volumes.filter((_, i) => i !== index));
+    setVolumeErrors((prev) => {
+      const next = { ...prev };
+      delete next[index];
+      return next;
+    });
+  }
+
+  function updateVolume(index: number, field: keyof VolumeMount, value: string | boolean) {
+    const updated = volumes.map((v, i) => {
+      if (i !== index) return v;
+      return { ...v, [field]: value };
+    });
+    setVolumes(updated);
+
+    if (field === 'target') {
+      const target = value as string;
+      if (target && !target.startsWith('/')) {
+        setVolumeErrors((prev) => ({ ...prev, [index]: 'Container path must start with /' }));
+      } else {
+        setVolumeErrors((prev) => {
+          const next = { ...prev };
+          delete next[index];
+          return next;
+        });
+      }
+    }
+  }
+
   return (
     <div class={styles.container}>
+      {/* General Settings */}
       <div class={styles.card}>
-        <h2 class={styles.sectionTitle}>
-          General Settings
-        </h2>
-
+        <h2 class={styles.sectionTitle}>General Settings</h2>
         <div class={formStyles.fieldRow}>
           <div>
             <label htmlFor="settings-app-name" class={formStyles.label}>App Name</label>
@@ -79,16 +216,258 @@ export default function SettingsTab({ app }: Props) {
             <input id="settings-build-cmd" class={formStyles.inputMono} value={form.build_command} onInput={(e) => setForm({ ...form, build_command: (e.target as HTMLInputElement).value })} placeholder="bun run build" />
           </div>
         </div>
-
-        <div class={styles.saveRow}>
-          <Button variant="primary" onClick={handleSave} loading={saving}>
-            <Save size={14} /> Save Changes
-          </Button>
-          {/* a11y [WCAG 4.1.3]: announce save result to AT */}
-          <span role="status" aria-live="polite">{saveMessage}</span>
-        </div>
       </div>
 
+      {/* Tags */}
+      <div class={styles.card}>
+        <h2 class={styles.sectionTitle}>Tags</h2>
+        <p class={styles.settingsDescription}>
+          Organize apps with freeform tags. Tags are lowercase, alphanumeric with hyphens, max {TAG_MAX_LENGTH} characters.
+        </p>
+        <div class={styles.tagInputWrap}>
+          {tags.map((tag) => (
+            <span key={tag} class={styles.tagChip}>
+              {tag}
+              {/* a11y [WCAG 4.1.2]: button has accessible name via aria-label */}
+              <button
+                type="button"
+                class={styles.tagRemove}
+                onClick={() => removeTag(tag)}
+                aria-label={`Remove tag ${tag}`}
+              >
+                <X size={12} />
+              </button>
+            </span>
+          ))}
+          <input
+            id="settings-tags"
+            class={styles.tagInputField}
+            type="text"
+            value={tagInput}
+            onInput={(e) => {
+              const val = (e.target as HTMLInputElement).value;
+              if (val.includes(',')) {
+                addTag(val.replace(',', ''));
+              } else {
+                setTagInput(val);
+              }
+            }}
+            onKeyDown={handleTagKeyDown}
+            placeholder={tags.length === 0 ? 'Add a tag...' : ''}
+            aria-label="Add tag"
+            maxLength={TAG_MAX_LENGTH}
+          />
+        </div>
+        {tagError && (
+          <p class={styles.tagError} role="alert">{tagError}</p>
+        )}
+        <span class={styles.fieldHint}>Press Enter or comma to add a tag.</span>
+      </div>
+
+      {/* Resource Limits */}
+      <div class={styles.card}>
+        <h2 class={styles.sectionTitle}>Resource Limits</h2>
+        {!form.memory_mb && !form.cpu_shares && (
+          <div class={styles.warningBanner} role="alert">
+            No resource limits configured. A runaway process could consume all server resources.
+          </div>
+        )}
+        <div class={formStyles.fieldRow}>
+          <div>
+            <label htmlFor="settings-memory" class={formStyles.label}>Memory Limit (MB)</label>
+            <input
+              id="settings-memory"
+              class={formStyles.input}
+              type="number"
+              min="64"
+              placeholder="No limit"
+              value={form.memory_mb}
+              onInput={(e) => setForm({ ...form, memory_mb: (e.target as HTMLInputElement).value })}
+            />
+            <span class={styles.fieldHint}>Minimum 64 MB. Leave empty for no limit.</span>
+          </div>
+          <div>
+            <label htmlFor="settings-cpu" class={formStyles.label}>CPU Shares</label>
+            <input
+              id="settings-cpu"
+              class={formStyles.input}
+              type="number"
+              min="1"
+              placeholder="1024 (default)"
+              value={form.cpu_shares}
+              onInput={(e) => setForm({ ...form, cpu_shares: (e.target as HTMLInputElement).value })}
+            />
+            <span class={styles.fieldHint}>Relative weight. Default is 1024. Higher = more CPU time.</span>
+          </div>
+        </div>
+        <p class={styles.settingsNote}>Changes take effect on next deployment.</p>
+      </div>
+
+      {/* Auto-Deploy */}
+      <div class={styles.card}>
+        <h2 class={styles.sectionTitle}>
+          <Webhook size={18} /> Auto-Deploy
+        </h2>
+        <p class={styles.settingsDescription}>
+          Automatically deploy when you push to the configured branch. Configure the webhook URL in your Git provider.
+        </p>
+
+        {hasWebhookSecret ? (
+          <div class={styles.webhookInfo}>
+            <div class={styles.webhookRow}>
+              <label class={formStyles.label}>GitHub Webhook URL</label>
+              <div class={styles.copyRow}>
+                <code class={styles.codeBlock}>{webhookBaseUrl}/github</code>
+                <button type="button" class={styles.copyButton} onClick={() => copyToClipboard(webhookBaseUrl + '/github', 'github')} aria-label="Copy GitHub webhook URL">
+                  {copied === 'github' ? <Check size={14} /> : <Copy size={14} />}
+                </button>
+              </div>
+            </div>
+            <div class={styles.webhookRow}>
+              <label class={formStyles.label}>GitLab Webhook URL</label>
+              <div class={styles.copyRow}>
+                <code class={styles.codeBlock}>{webhookBaseUrl}/gitlab</code>
+                <button type="button" class={styles.copyButton} onClick={() => copyToClipboard(webhookBaseUrl + '/gitlab', 'gitlab')} aria-label="Copy GitLab webhook URL">
+                  {copied === 'gitlab' ? <Check size={14} /> : <Copy size={14} />}
+                </button>
+              </div>
+            </div>
+            <div class={styles.webhookRow}>
+              <label class={formStyles.label}>Webhook Secret</label>
+              <div class={styles.copyRow}>
+                <code class={styles.codeBlock}>{app.webhook_secret}</code>
+                <button type="button" class={styles.copyButton} onClick={() => copyToClipboard(app.webhook_secret || '', 'secret')} aria-label="Copy webhook secret">
+                  {copied === 'secret' ? <Check size={14} /> : <Copy size={14} />}
+                </button>
+              </div>
+            </div>
+            <p class={styles.fieldHint}>
+              Deploys on push to: <code>{app.git_branch}</code>
+            </p>
+          </div>
+        ) : (
+          <p class={styles.settingsNote}>
+            Auto-deploy is not configured. A webhook secret will be generated when the app is deployed for the first time.
+          </p>
+        )}
+      </div>
+
+      {/* Preview Deployments */}
+      <div class={styles.card}>
+        <h2 class={styles.sectionTitle}>Preview Deployments</h2>
+        <p class={styles.settingsDescription}>
+          Automatically deploy branches matching a pattern and assign a preview subdomain. Previews are cleaned up when the branch is deleted.
+        </p>
+        <div class={styles.toggleRow}>
+          <label class={styles.toggleLabel}>
+            <input
+              type="checkbox"
+              checked={form.preview_enabled}
+              onChange={(e) => setForm({ ...form, preview_enabled: (e.target as HTMLInputElement).checked })}
+            />
+            Enable preview deployments
+          </label>
+        </div>
+        {form.preview_enabled && (
+          <div style={{ marginTop: 'var(--space-3)' }}>
+            <label htmlFor="settings-preview-pattern" class={formStyles.label}>Branch Pattern</label>
+            <input
+              id="settings-preview-pattern"
+              class={formStyles.inputMono}
+              value={form.preview_branch_pattern}
+              onInput={(e) => setForm({ ...form, preview_branch_pattern: (e.target as HTMLInputElement).value })}
+              placeholder="feature/*"
+            />
+            <span class={styles.fieldHint}>Glob pattern. Use * to match all branches except the main deploy branch.</span>
+          </div>
+        )}
+      </div>
+
+      {/* Persistent Storage */}
+      <div class={styles.card}>
+        <h2 class={styles.sectionTitle}>
+          <HardDrive size={18} /> Persistent Storage
+        </h2>
+        <p class={styles.settingsDescription}>
+          Mount named volumes or host paths into your container. Data in these mounts persists across deployments.
+        </p>
+
+        {volumes.length > 0 && (
+          <div class={styles.volumeList} role="list" aria-label="Volume mounts">
+            {volumes.map((vol, index) => (
+              <div key={index} class={styles.volumeRow} role="listitem">
+                <div class={styles.volumeFields}>
+                  <div>
+                    <label htmlFor={`vol-source-${index}`} class={formStyles.label}>Source</label>
+                    <input
+                      id={`vol-source-${index}`}
+                      class={formStyles.inputMono}
+                      value={vol.source}
+                      onInput={(e) => updateVolume(index, 'source', (e.target as HTMLInputElement).value)}
+                      placeholder="myapp-data"
+                    />
+                    <span class={styles.fieldHint}>Volume name or host path</span>
+                  </div>
+                  <div>
+                    <label htmlFor={`vol-target-${index}`} class={formStyles.label}>Target</label>
+                    <input
+                      id={`vol-target-${index}`}
+                      class={formStyles.inputMono}
+                      value={vol.target}
+                      onInput={(e) => updateVolume(index, 'target', (e.target as HTMLInputElement).value)}
+                      placeholder="/app/data"
+                      aria-invalid={!!volumeErrors[index]}
+                      aria-describedby={volumeErrors[index] ? `vol-error-${index}` : undefined}
+                    />
+                    {volumeErrors[index] ? (
+                      <span id={`vol-error-${index}`} class={styles.volumeError} role="alert">{volumeErrors[index]}</span>
+                    ) : (
+                      <span class={styles.fieldHint}>Container path (must start with /)</span>
+                    )}
+                  </div>
+                </div>
+                <div class={styles.volumeActions}>
+                  <label class={styles.toggleLabel}>
+                    <input
+                      type="checkbox"
+                      checked={vol.read_only}
+                      onChange={(e) => updateVolume(index, 'read_only', (e.target as HTMLInputElement).checked)}
+                    />
+                    Read-only
+                  </label>
+                  {/* a11y [WCAG 4.1.2]: button has accessible name via aria-label */}
+                  <button
+                    type="button"
+                    class={styles.volumeRemove}
+                    onClick={() => removeVolume(index)}
+                    aria-label={`Remove volume mount ${vol.source || 'unnamed'} to ${vol.target || 'unset'}`}
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div style={{ marginTop: volumes.length > 0 ? 'var(--space-3)' : '0' }}>
+          <Button variant="secondary" onClick={addVolume}>
+            <Plus size={14} /> Add Volume
+          </Button>
+        </div>
+        <p class={styles.settingsNote}>Changes take effect on next deployment.</p>
+      </div>
+
+      {/* Save Button */}
+      <div class={styles.saveRow}>
+        <Button variant="primary" onClick={handleSave} loading={saving}>
+          <Save size={14} /> Save All Settings
+        </Button>
+        {/* a11y [WCAG 4.1.3]: announce save result to AT */}
+        <span role="status" aria-live="polite">{saveMessage}</span>
+      </div>
+
+      {/* Danger Zone */}
       <div class={styles.dangerCard}>
         <h2 class={styles.dangerTitle}>
           <AlertTriangle size={18} /> Danger Zone
@@ -96,10 +475,20 @@ export default function SettingsTab({ app }: Props) {
 
         <div class={styles.dangerRowBorder}>
           <div>
-            <p class={styles.dangerLabel}>Stop Application</p>
-            <p class={styles.dangerDescription}>Temporarily halt all traffic and instances of this application.</p>
+            <p class={styles.dangerLabel}>Application Controls</p>
+            <p class={styles.dangerDescription}>Start, stop, or restart all containers for this application.</p>
           </div>
-          <Button variant="secondary"><Square size={14} /> Stop App</Button>
+          <div class={styles.confirmActions}>
+            <Button variant="secondary" onClick={async () => { setStarting(true); try { await api.startApp(app.id); } catch {} setStarting(false); }} loading={starting}>
+              <Play size={14} /> Start
+            </Button>
+            <Button variant="secondary" onClick={async () => { setRestarting(true); try { await api.restartApp(app.id); } catch {} setRestarting(false); }} loading={restarting}>
+              <RotateCw size={14} /> Restart
+            </Button>
+            <Button variant="danger" onClick={async () => { setStopping(true); try { await api.stopApp(app.id); } catch {} setStopping(false); }} loading={stopping}>
+              <Square size={14} /> Stop
+            </Button>
+          </div>
         </div>
 
         <div class={styles.dangerRow}>
