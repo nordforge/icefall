@@ -110,6 +110,24 @@
   justify-content: center;
 }
 
+.pathInput {
+  max-width: 10rem;
+}
+
+.pathBadge {
+  font-family: var(--font-mono, monospace);
+  font-size: var(--text-xs);
+  background: var(--color-surface-raised, var(--color-surface));
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-0-5, 2px) var(--space-1);
+}
+
+.allPaths {
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+}
+
 .loadingText {
   color: var(--color-text-muted);
 }

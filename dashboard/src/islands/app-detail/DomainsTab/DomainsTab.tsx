@@ -14,6 +14,7 @@ export default function DomainsTab({ appId }: Props) {
   const [domains, setDomains] = useState<Domain[]>([]);
   const [loading, setLoading] = useState(true);
   const [newDomain, setNewDomain] = useState('');
+  const [newPath, setNewPath] = useState('');
   const [adding, setAdding] = useState(false);
 
   useEffect(() => {
@@ -22,11 +23,14 @@ export default function DomainsTab({ appId }: Props) {
 
   async function handleAdd() {
     if (!newDomain.trim()) return;
+    const pathValue = newPath.trim() || undefined;
+    if (pathValue && !pathValue.startsWith('/')) return;
     setAdding(true);
     try {
-      const { data } = await api.addDomain(appId, newDomain.trim());
+      const { data } = await api.addDomain(appId, newDomain.trim(), pathValue);
       setDomains((prev) => [...prev, data]);
       setNewDomain('');
+      setNewPath('');
     } catch { /* show error */ }
     setAdding(false);
   }
@@ -45,6 +49,15 @@ export default function DomainsTab({ appId }: Props) {
             onInput={(e) => setNewDomain((e.target as HTMLInputElement).value)}
             placeholder="example.com"
             class={formStyles.input}
+          />
+          <label htmlFor="new-path-input" class="sr-only">Path prefix (optional)</label>
+          <input
+            id="new-path-input"
+            type="text"
+            value={newPath}
+            onInput={(e) => setNewPath((e.target as HTMLInputElement).value)}
+            placeholder="/api (optional)"
+            class={`${formStyles.input} ${styles.pathInput}`}
           />
           <Button variant="primary" onClick={handleAdd} loading={adding}>
             <Plus size={14} /> Add Domain
@@ -65,7 +78,7 @@ export default function DomainsTab({ appId }: Props) {
           <table class={styles.table}>
             <thead>
               <tr class={styles.tableRow}>
-                {['Domain', 'SSL', 'DNS Status', 'Actions'].map((h) => (
+                {['Domain', 'Path', 'SSL', 'DNS Status', 'Actions'].map((h) => (
                   <th key={h} class={styles.th}>
                     {h}
                   </th>
@@ -80,6 +93,13 @@ export default function DomainsTab({ appId }: Props) {
                       <Shield size={14} class={d.ssl_status === 'active' ? styles.sslActive : styles.sslInactive} />
                       {d.domain}
                     </div>
+                  </td>
+                  <td class={styles.td}>
+                    {d.path ? (
+                      <code class={styles.pathBadge}>{d.path}</code>
+                    ) : (
+                      <span class={styles.allPaths}>/*</span>
+                    )}
                   </td>
                   <td class={`${styles.td} ${d.ssl_status === 'active' ? styles.sslActive : styles.sslInactive}`}>
                     {d.ssl_status === 'active' ? 'Valid' : d.ssl_status}

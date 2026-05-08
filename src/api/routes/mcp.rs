@@ -158,7 +158,7 @@ async fn call_tool(
         "add_domain" => {
             let id = str_param(p, "app_id")?;
             let domain = str_param(p, "domain")?;
-            let d = state.db.add_domain(&crate::db::models::NewDomain { app_id: id, domain: domain.clone() }).await?;
+            let d = state.db.add_domain(&crate::db::models::NewDomain { app_id: id, domain: domain.clone(), path: None }).await?;
             serde_json::json!({ "domain_id": d.id, "domain": d.domain, "message": format!("Added domain {domain}") })
         }
         "restart_app" => {

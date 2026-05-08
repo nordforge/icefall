@@ -6,7 +6,11 @@ use crate::caddy::{CaddyClient, CaddyError};
 
 #[derive(Debug, Clone)]
 pub enum RouteOperation {
-    Add { domain: String, upstream: String },
+    Add {
+        domain: String,
+        path: Option<String>,
+        upstream: String,
+    },
     Remove { domain: String },
     Update { domain: String, upstream: String },
 }
@@ -39,8 +43,14 @@ impl RouteQueue {
 
         for op in ops {
             let result = match &op {
-                RouteOperation::Add { domain, upstream } => {
-                    self.client.add_route(domain, upstream).await
+                RouteOperation::Add {
+                    domain,
+                    path,
+                    upstream,
+                } => {
+                    self.client
+                        .add_route_with_path(domain, path.as_deref(), upstream)
+                        .await
                 }
                 RouteOperation::Remove { domain } => self.client.remove_route(domain).await,
                 RouteOperation::Update { domain, upstream } => {

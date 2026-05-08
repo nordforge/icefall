@@ -11,6 +11,7 @@ use crate::db::models::NewDomain;
 #[derive(Deserialize)]
 struct AddDomainRequest {
     domain: String,
+    path: Option<String>,
 }
 
 pub fn routes() -> Router<AppState> {
@@ -42,11 +43,19 @@ async fn add_domain(
         return Err(ApiError::BadRequest("domain name is required".into()));
     }
 
+    let path = body.path.map(|p| p.trim().to_string()).filter(|p| !p.is_empty());
+    if let Some(ref p) = path {
+        if !p.starts_with('/') {
+            return Err(ApiError::BadRequest("path must start with /".into()));
+        }
+    }
+
     let domain = state
         .db
         .add_domain(&NewDomain {
             app_id: id,
             domain: domain_name.clone(),
+            path,
         })
         .await?;
 
@@ -129,7 +138,14 @@ async fn verify_domain(
                             });
 
                         if let Some(upstream) = upstream {
-                            let _ = state.caddy.add_route(&domain.domain, &upstream).await;
+                            let _ = state
+                                .caddy
+                                .add_route_with_path(
+                                    &domain.domain,
+                                    domain.path.as_deref(),
+                                    &upstream,
+                                )
+                                .await;
                             state
                                 .db
                                 .update_domain_status(&domain_id, true, "active")

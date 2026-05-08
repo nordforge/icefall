@@ -3,7 +3,16 @@ use crate::caddy::{CaddyClient, CaddyError};
 
 impl CaddyClient {
     pub async fn add_route(&self, domain: &str, upstream: &str) -> Result<(), CaddyError> {
-        let route = CaddyRoute::reverse_proxy(domain, upstream);
+        self.add_route_with_path(domain, None, upstream).await
+    }
+
+    pub async fn add_route_with_path(
+        &self,
+        domain: &str,
+        path: Option<&str>,
+        upstream: &str,
+    ) -> Result<(), CaddyError> {
+        let route = CaddyRoute::reverse_proxy_with_path(domain, path, upstream);
         let url = format!(
             "{}/config/apps/http/servers/srv0/routes",
             self.base_url()
