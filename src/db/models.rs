@@ -34,6 +34,9 @@ pub struct App {
     pub preview_enabled: bool,
     pub preview_branch_pattern: Option<String>,
     pub webhook_secret: Option<String>,
+    pub tags: Option<String>,
+    pub volumes: Option<String>,
+    pub image_ref: Option<String>,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -43,6 +46,7 @@ pub struct NewApp {
     pub git_repo: Option<String>,
     pub git_branch: String,
     pub framework: Option<String>,
+    pub image_ref: Option<String>,
 }
 
 pub struct UpdateApp {
@@ -54,6 +58,9 @@ pub struct UpdateApp {
     pub resource_limits: Option<String>,
     pub preview_enabled: Option<bool>,
     pub preview_branch_pattern: Option<Option<String>>,
+    pub tags: Option<String>,
+    pub volumes: Option<String>,
+    pub image_ref: Option<Option<String>>,
 }
 
 // --- Environments ---
@@ -108,6 +115,7 @@ pub struct Deploy {
     pub finished_at: Option<String>,
     pub image_ref: Option<String>,
     pub container_id: Option<String>,
+    pub env_snapshot: Option<String>,
     pub created_at: String,
 }
 
@@ -144,6 +152,7 @@ pub struct Domain {
     pub id: String,
     pub app_id: String,
     pub domain: String,
+    pub path: Option<String>,
     pub verified: bool,
     pub ssl_status: String,
     pub created_at: String,
@@ -152,6 +161,7 @@ pub struct Domain {
 pub struct NewDomain {
     pub app_id: String,
     pub domain: String,
+    pub path: Option<String>,
 }
 
 // --- Notifications ---
@@ -256,6 +266,31 @@ pub struct Invitation {
     pub token: String,
     pub expires_at: String,
     pub created_at: String,
+}
+
+// --- Instance Backup Config ---
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
+pub struct InstanceBackupConfig {
+    pub id: String,
+    pub enabled: bool,
+    pub cron_schedule: String,
+    pub retention_count: i64,
+    pub updated_at: String,
+}
+
+// --- Instance Backup History ---
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
+pub struct InstanceBackupRecord {
+    pub id: String,
+    pub filename: String,
+    pub size_bytes: i64,
+    pub status: String,
+    pub error_message: Option<String>,
+    pub s3_key: Option<String>,
+    pub started_at: String,
+    pub finished_at: Option<String>,
 }
 
 pub fn now_iso8601() -> String {

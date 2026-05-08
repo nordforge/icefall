@@ -56,14 +56,15 @@ impl Database for SqliteDatabase {
         let now = now_iso8601();
 
         sqlx::query(
-            "INSERT INTO apps (id, name, git_repo, git_branch, framework, created_at, updated_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO apps (id, name, git_repo, git_branch, framework, image_ref, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
         )
         .bind(&id)
         .bind(&app.name)
         .bind(&app.git_repo)
         .bind(&app.git_branch)
         .bind(&app.framework)
+        .bind(&app.image_ref)
         .bind(&now)
         .bind(&now)
         .execute(&self.pool)
@@ -126,12 +127,18 @@ impl Database for SqliteDatabase {
             Some(v) => v.as_deref(),
             None => existing.preview_branch_pattern.as_deref(),
         };
+        let tags = update.tags.as_deref().or(existing.tags.as_deref());
+        let volumes = update.volumes.as_deref().or(existing.volumes.as_deref());
+        let image_ref = match &update.image_ref {
+            Some(v) => v.as_deref(),
+            None => existing.image_ref.as_deref(),
+        };
         let now = now_iso8601();
 
         sqlx::query(
             "UPDATE apps SET name = ?, git_repo = ?, git_branch = ?, framework = ?,
              build_config = ?, resource_limits = ?, preview_enabled = ?,
-             preview_branch_pattern = ?, updated_at = ? WHERE id = ?",
+             preview_branch_pattern = ?, tags = ?, volumes = ?, image_ref = ?, updated_at = ? WHERE id = ?",
         )
         .bind(name)
         .bind(git_repo)
@@ -141,6 +148,9 @@ impl Database for SqliteDatabase {
         .bind(resource_limits)
         .bind(preview_enabled)
         .bind(preview_branch_pattern)
+        .bind(tags)
+        .bind(volumes)
+        .bind(image_ref)
         .bind(&now)
         .bind(id)
         .execute(&self.pool)
@@ -436,12 +446,13 @@ impl Database for SqliteDatabase {
         let now = now_iso8601();
 
         sqlx::query(
-            "INSERT INTO domains (id, app_id, domain, verified, ssl_status, created_at)
-             VALUES (?, ?, ?, FALSE, 'pending', ?)",
+            "INSERT INTO domains (id, app_id, domain, path, verified, ssl_status, created_at)
+             VALUES (?, ?, ?, ?, FALSE, 'pending', ?)",
         )
         .bind(&id)
         .bind(&domain.app_id)
         .bind(&domain.domain)
+        .bind(&domain.path)
         .bind(&now)
         .execute(&self.pool)
         .await?;
@@ -450,6 +461,7 @@ impl Database for SqliteDatabase {
             id,
             app_id: domain.app_id.clone(),
             domain: domain.domain.clone(),
+            path: domain.path.clone(),
             verified: false,
             ssl_status: "pending".to_string(),
             created_at: now,
@@ -824,6 +836,19 @@ impl Database for SqliteDatabase {
         Ok(())
     }
 
+    async fn update_deploy_env_snapshot(
+        &self,
+        deploy_id: &str,
+        env_snapshot: &str,
+    ) -> Result<(), DbError> {
+        sqlx::query("UPDATE deploys SET env_snapshot = ? WHERE id = ?")
+            .bind(env_snapshot)
+            .bind(deploy_id)
+            .execute(&self.pool)
+            .await?;
+        Ok(())
+    }
+
     // --- Env var extras ---
 
     async fn delete_env_vars_by_environment(
@@ -940,6 +965,110 @@ impl Database for SqliteDatabase {
             .bind(current_step)
             .bind(completed_steps)
             .bind(completed_at)
+            .execute(&self.pool)
+            .await?;
+        Ok(())
+    }
+
+    // --- Instance Backup ---
+
+    async fn get_instance_backup_config(&self) -> Result<Option<InstanceBackupConfig>, DbError> {
+        let config = sqlx::query_as::<_, InstanceBackupConfig>(
+            "SELECT * FROM instance_backup_config WHERE id = 'singleton'"
+        )
+        .fetch_optional(&self.pool)
+        .await?;
+        Ok(config)
+    }
+
+    async fn upsert_instance_backup_config(
+        &self,
+        enabled: bool,
+        cron_schedule: &str,
+        retention_count: i64,
+    ) -> Result<InstanceBackupConfig, DbError> {
+        let now = now_iso8601();
+        sqlx::query(
+            "INSERT INTO instance_backup_config (id, enabled, cron_schedule, retention_count, updated_at)
+             VALUES ('singleton', ?, ?, ?, ?)
+             ON CONFLICT(id) DO UPDATE SET enabled = excluded.enabled, cron_schedule = excluded.cron_schedule, retention_count = excluded.retention_count, updated_at = excluded.updated_at",
+        )
+        .bind(enabled)
+        .bind(cron_schedule)
+        .bind(retention_count)
+        .bind(&now)
+        .execute(&self.pool)
+        .await?;
+
+        self.get_instance_backup_config()
+            .await?
+            .ok_or_else(|| DbError::NotFound("instance_backup_config".to_string()))
+    }
+
+    async fn create_instance_backup_record(
+        &self,
+        filename: &str,
+        s3_key: Option<&str>,
+    ) -> Result<InstanceBackupRecord, DbError> {
+        let id = new_id();
+        let now = now_iso8601();
+        sqlx::query(
+            "INSERT INTO instance_backup_history (id, filename, size_bytes, status, s3_key, started_at)
+             VALUES (?, ?, 0, 'running', ?, ?)",
+        )
+        .bind(&id)
+        .bind(filename)
+        .bind(s3_key)
+        .bind(&now)
+        .execute(&self.pool)
+        .await?;
+
+        Ok(InstanceBackupRecord {
+            id,
+            filename: filename.to_string(),
+            size_bytes: 0,
+            status: "running".to_string(),
+            error_message: None,
+            s3_key: s3_key.map(String::from),
+            started_at: now,
+            finished_at: None,
+        })
+    }
+
+    async fn update_instance_backup_record(
+        &self,
+        id: &str,
+        status: &str,
+        size_bytes: i64,
+        error_message: Option<&str>,
+    ) -> Result<(), DbError> {
+        let now = now_iso8601();
+        sqlx::query(
+            "UPDATE instance_backup_history SET status = ?, size_bytes = ?, error_message = ?, finished_at = ? WHERE id = ?",
+        )
+        .bind(status)
+        .bind(size_bytes)
+        .bind(error_message)
+        .bind(&now)
+        .bind(id)
+        .execute(&self.pool)
+        .await?;
+        Ok(())
+    }
+
+    async fn list_instance_backup_history(&self, limit: i64) -> Result<Vec<InstanceBackupRecord>, DbError> {
+        let records = sqlx::query_as::<_, InstanceBackupRecord>(
+            "SELECT * FROM instance_backup_history ORDER BY started_at DESC LIMIT ?",
+        )
+        .bind(limit)
+        .fetch_all(&self.pool)
+        .await?;
+        Ok(records)
+    }
+
+    async fn delete_instance_backup_record(&self, id: &str) -> Result<(), DbError> {
+        sqlx::query("DELETE FROM instance_backup_history WHERE id = ?")
+            .bind(id)
             .execute(&self.pool)
             .await?;
         Ok(())

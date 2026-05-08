@@ -131,6 +131,11 @@ pub trait Database: Send + Sync + 'static {
         deploy_id: &str,
         image_ref: &str,
     ) -> Result<(), DbError>;
+    async fn update_deploy_env_snapshot(
+        &self,
+        deploy_id: &str,
+        env_snapshot: &str,
+    ) -> Result<(), DbError>;
 
     // Sessions
     async fn create_session(&self, user_id: &str, expires_at: &str) -> Result<Session, DbError>;
@@ -160,6 +165,14 @@ pub trait Database: Send + Sync + 'static {
     async fn get_onboarding(&self) -> Result<Option<(String, String, String, Option<String>)>, DbError>;
     async fn create_onboarding(&self, started_at: &str) -> Result<(), DbError>;
     async fn update_onboarding_state(&self, current_step: &str, completed_steps: &str, completed_at: Option<&str>) -> Result<(), DbError>;
+
+    // Instance Backup
+    async fn get_instance_backup_config(&self) -> Result<Option<InstanceBackupConfig>, DbError>;
+    async fn upsert_instance_backup_config(&self, enabled: bool, cron_schedule: &str, retention_count: i64) -> Result<InstanceBackupConfig, DbError>;
+    async fn create_instance_backup_record(&self, filename: &str, s3_key: Option<&str>) -> Result<InstanceBackupRecord, DbError>;
+    async fn update_instance_backup_record(&self, id: &str, status: &str, size_bytes: i64, error_message: Option<&str>) -> Result<(), DbError>;
+    async fn list_instance_backup_history(&self, limit: i64) -> Result<Vec<InstanceBackupRecord>, DbError>;
+    async fn delete_instance_backup_record(&self, id: &str) -> Result<(), DbError>;
 
     // Migrations
     async fn run_migrations(&self) -> Result<(), DbError>;

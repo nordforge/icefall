@@ -43,6 +43,17 @@ impl DeployManager {
         env: &Environment,
         image_ref: &str,
     ) -> Result<(), DeployError> {
+        self.deploy_with_env(deploy, app, env, image_ref, None).await
+    }
+
+    pub async fn deploy_with_env(
+        &self,
+        deploy: &Deploy,
+        app: &App,
+        env: &Environment,
+        image_ref: &str,
+        env_override: Option<Vec<String>>,
+    ) -> Result<(), DeployError> {
         self.emit_status(app, deploy, "deploying");
 
         let network_name = format!("icefall-{}", app.name);
@@ -50,7 +61,10 @@ impl DeployManager {
             tracing::debug!("Network {network_name} may already exist: {e}");
         }
 
-        let env_vars = self.resolve_env_vars(env).await?;
+        let env_vars = match env_override {
+            Some(vars) => vars,
+            None => self.resolve_env_vars(env).await?,
+        };
 
         let detected_port = self.detected_port(app);
         let container_name = format!(
@@ -69,6 +83,8 @@ impl DeployManager {
             .resource_limits
             .as_deref()
             .and_then(|s| serde_json::from_str(s).ok());
+
+        let snapshot = serde_json::to_string(&env_vars).unwrap_or_default();
 
         let container_config = ContainerConfig {
             name: container_name,
@@ -101,6 +117,7 @@ impl DeployManager {
         self.db
             .update_deploy_image_ref(&deploy.id, image_ref)
             .await?;
+        let _ = self.db.update_deploy_env_snapshot(&deploy.id, &snapshot).await;
 
         self.emit_status(app, deploy, "starting");
 
@@ -127,10 +144,10 @@ impl DeployManager {
         let upstream = format!("localhost:{host_port}");
         let domains = self.resolve_domains(app, env).await?;
 
-        for domain in &domains {
+        for (domain, path) in &domains {
             if self.caddy.update_route(domain, &upstream).await.is_err() {
                 self.caddy
-                    .add_route(domain, &upstream)
+                    .add_route_with_path(domain, path.as_deref(), &upstream)
                     .await
                     .map_err(|e| DeployError::RouteUpdate(e.to_string()))?;
             }
@@ -164,7 +181,7 @@ impl DeployManager {
         }
 
         let domains = self.resolve_domains(app, env).await?;
-        for domain in &domains {
+        for (domain, _path) in &domains {
             let _ = self.caddy.remove_route(domain).await;
         }
 
@@ -231,7 +248,7 @@ impl DeployManager {
         &self,
         app: &App,
         env: &Environment,
-    ) -> Result<Vec<String>, DeployError> {
+    ) -> Result<Vec<(String, Option<String>)>, DeployError> {
         let mut domains = Vec::new();
 
         if env.env_type == "preview" {
@@ -240,16 +257,16 @@ impl DeployManager {
             {
                 let sanitized =
                     crate::deploy::preview::sanitize_branch_for_subdomain(branch);
-                domains.push(format!("{sanitized}--{}.{base_domain}", app.name));
+                domains.push((format!("{sanitized}--{}.{base_domain}", app.name), None));
             }
         } else {
             let custom_domains = self.db.list_domains(&app.id).await?;
             for d in custom_domains {
-                domains.push(d.domain);
+                domains.push((d.domain, d.path));
             }
 
             if let Some(ref base_domain) = self.config.base_domain {
-                domains.push(format!("{}.{base_domain}", app.name));
+                domains.push((format!("{}.{base_domain}", app.name), None));
             }
         }
 

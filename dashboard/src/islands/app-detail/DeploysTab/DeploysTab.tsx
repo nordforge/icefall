@@ -3,6 +3,8 @@ import { api } from '@lib/api';
 import type { Deploy } from '@lib/types';
 import { formatRelativeTime, formatDuration, shortSha } from '@lib/format';
 import StatusDot from '@islands/shared/StatusDot/StatusDot';
+import Button from '@islands/shared/Button/Button';
+import { RotateCcw } from 'lucide-preact';
 import styles from './deploys-tab.module.css';
 
 type Props = {
@@ -12,6 +14,17 @@ type Props = {
 export default function DeploysTab({ appId }: Props) {
   const [deploys, setDeploys] = useState<Deploy[]>([]);
   const [loading, setLoading] = useState(true);
+  const [rollingBack, setRollingBack] = useState('');
+
+  async function handleRollback(deployId: string) {
+    setRollingBack(deployId);
+    try {
+      await api.rollbackDeploy(appId, deployId);
+      const { data } = await api.listDeploys(appId);
+      setDeploys(data);
+    } catch { /* handled by API error */ }
+    setRollingBack('');
+  }
 
   useEffect(() => {
     api.listDeploys(appId).then(({ data }) => { setDeploys(data); setLoading(false); }).catch(() => setLoading(false));
@@ -21,12 +34,14 @@ export default function DeploysTab({ appId }: Props) {
 
   if (deploys.length === 0) return <p class={styles.message}>No deploys yet.</p>;
 
+  const latestRunning = deploys.find((d) => d.status === 'running');
+
   return (
     <div class={styles.wrapper}>
       <table class={styles.table}>
         <thead>
           <tr class={styles.theadRow}>
-            {['Deploy', 'Commit', 'Branch', 'Status', 'Duration', 'Time'].map((h) => (
+            {['Deploy', 'Commit', 'Branch', 'Status', 'Duration', 'Time', ''].map((h) => (
               <th key={h} class={styles.th}>
                 {h}
               </th>
@@ -39,6 +54,7 @@ export default function DeploysTab({ appId }: Props) {
               ? (new Date(d.finished_at).getTime() - new Date(d.started_at).getTime()) / 1000
               : null;
             const isLast = i === deploys.length - 1;
+            const canRollback = d.image_ref && d.status !== 'running' && d.status !== 'pending' && d.status !== 'building' && d.status !== 'deploying' && latestRunning?.id !== d.id;
             return (
               <tr key={d.id} class={isLast ? styles.rowLast : styles.row}>
                 <td class={styles.cell}>
@@ -56,6 +72,18 @@ export default function DeploysTab({ appId }: Props) {
                 </td>
                 <td class={`${styles.cell} ${styles.time}`}>
                   {formatRelativeTime(d.created_at)}
+                </td>
+                <td class={styles.cell}>
+                  {canRollback && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleRollback(d.id)}
+                      loading={rollingBack === d.id}
+                    >
+                      <RotateCcw size={12} /> Rollback
+                    </Button>
+                  )}
                 </td>
               </tr>
             );

@@ -9,6 +9,9 @@ export type App = {
   preview_enabled: boolean;
   preview_branch_pattern: string | null;
   webhook_secret: string | null;
+  tags: string | null;
+  volumes: string | null;
+  image_ref: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -24,6 +27,7 @@ export type Deploy = {
   finished_at: string | null;
   image_ref: string | null;
   container_id: string | null;
+  env_snapshot: string | null;
   created_at: string;
 }
 
@@ -48,6 +52,7 @@ export type Domain = {
   id: string;
   app_id: string;
   domain: string;
+  path: string | null;
   verified: boolean;
   ssl_status: string;
   created_at: string;
@@ -98,4 +103,29 @@ export type ApiToken = {
   last_used_at: string | null;
   expires_at: string | null;
   created_at: string;
+}
+
+export type HealthCheck = {
+  id: string;
+  app_id: string;
+  check_type: string;
+  config: string | null;
+  interval_secs: number;
+  failure_threshold: number;
+  auto_restart: boolean;
+  created_at: string;
+}
+
+export type HealthCheckEvent = {
+  id: string;
+  health_check_id: string;
+  status: 'healthy' | 'unhealthy';
+  checked_at: string;
+}
+
+export type HealthCheckResult = {
+  check: HealthCheck;
+  current_status: string;
+  uptime_percent: number;
+  recent_events: HealthCheckEvent[];
 }
