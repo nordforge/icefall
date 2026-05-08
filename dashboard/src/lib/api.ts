@@ -1,4 +1,4 @@
-import type { App, Deploy, Domain, EnvVar, ServerStatus, User, ApiToken } from './types';
+import type { App, Deploy, Domain, EnvVar, ServerStatus, ServerMetricsSnapshot, User, ApiToken } from './types';
 
 const API_BASE = '/api/v1';
 
@@ -12,6 +12,7 @@ class ApiError extends Error {
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
+    credentials: 'same-origin',
     headers: { 'Content-Type': 'application/json' },
     ...options,
   });
@@ -106,6 +107,11 @@ export const api = {
     request<{ message: string }>(`/tokens/${tokenId}`, { method: 'DELETE' }),
 
   getServerIp: () => request<{ ip: string }>('/server/ip'),
+
+  getServerMetricsHistory: (limit?: number) =>
+    request<{ data: ServerMetricsSnapshot[] }>(
+      `/server/metrics/history${limit ? `?limit=${limit}` : ''}`
+    ),
 
   listDbTables: (dbId: string) =>
     request<{ data: string[]; types?: Record<string, string> }>(`/databases/${dbId}/tables`),

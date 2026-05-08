@@ -10,7 +10,7 @@ use tracing::{error, info, warn};
 
 use tokio::sync::RwLock;
 
-use crate::api::routes::server::{spawn_metrics_collector as spawn_server_metrics, ServerMetrics};
+use crate::api::routes::server::{spawn_metrics_collector as spawn_server_metrics, ServerMetrics, ServerMetricsHistory};
 use crate::api::{self, AppState, BuildLockMap};
 use crate::caddy::CaddyClient;
 use crate::config::IcefallConfig;
@@ -115,12 +115,13 @@ impl DaemonRunner {
         let event_bus = Arc::new(EventBus::new(1024));
         let build_locks = Arc::new(BuildLockMap::new());
         let server_metrics = Arc::new(RwLock::new(ServerMetrics::default()));
+        let server_metrics_history = Arc::new(ServerMetricsHistory::new());
         let metrics_store = Arc::new(MetricsStore::new());
         let log_store = Arc::new(LogStore::new(&config.data_dir));
         let backup_store = Arc::new(BackupStore::new(&config.data_dir));
 
         // Start background tasks
-        spawn_server_metrics(server_metrics.clone());
+        spawn_server_metrics(server_metrics.clone(), server_metrics_history.clone());
         spawn_health_runner(db.clone(), docker.clone(), event_bus.clone());
         spawn_container_metrics(
             docker.clone(),
@@ -140,6 +141,7 @@ impl DaemonRunner {
             event_bus,
             build_locks,
             server_metrics,
+            server_metrics_history,
             metrics_store,
             log_store,
             backup_store,

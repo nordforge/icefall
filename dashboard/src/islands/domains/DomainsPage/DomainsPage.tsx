@@ -1,15 +1,18 @@
 import { useEffect, useState } from 'preact/hooks';
+import { useStore } from '@nanostores/preact';
+import { $domains, $domainsLoaded } from '@stores/domains';
+import type { DomainWithApp } from '@stores/domains';
 import { api } from '@lib/api';
 import type { App, Domain } from '@lib/types';
 import StatusDot from '@islands/shared/StatusDot/StatusDot';
 import { Globe, Shield, ExternalLink } from 'lucide-preact';
 import styles from './domains-page.module.css';
 
-type DomainWithApp = Domain & { appName: string };
-
 export default function DomainsPage() {
-  const [domains, setDomains] = useState<DomainWithApp[]>([]);
-  const [loading, setLoading] = useState(true);
+  const cachedDomains = useStore($domains);
+  const wasLoaded = useStore($domainsLoaded);
+  const [domains, setDomains] = useState<DomainWithApp[]>(cachedDomains);
+  const [loading, setLoading] = useState(!wasLoaded);
 
   useEffect(() => {
     async function load() {
@@ -23,7 +26,9 @@ export default function DomainsPage() {
           } catch {}
         }
         setDomains(all);
+        $domains.set(all);
       } catch {}
+      $domainsLoaded.set(true);
       setLoading(false);
     }
     load();

@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'preact/hooks';
+import { useStore } from '@nanostores/preact';
+import { $users, $tokens, $usersLoaded } from '@stores/users';
 import { api } from '@lib/api';
 import type { User, ApiToken } from '@lib/types';
 import { formatRelativeTime } from '@lib/format';
@@ -9,9 +11,12 @@ import styles from './users-page.module.css';
 import formStyles from '@styles/form.module.css';
 
 export default function UsersPage() {
-  const [users, setUsers] = useState<User[]>([]);
-  const [tokens, setTokens] = useState<ApiToken[]>([]);
-  const [loading, setLoading] = useState(true);
+  const cachedUsers = useStore($users);
+  const cachedTokens = useStore($tokens);
+  const wasLoaded = useStore($usersLoaded);
+  const [users, setUsers] = useState<User[]>(cachedUsers);
+  const [tokens, setTokens] = useState<ApiToken[]>(cachedTokens);
+  const [loading, setLoading] = useState(!wasLoaded);
   const [showInvite, setShowInvite] = useState(false);
   const [showCreateToken, setShowCreateToken] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
@@ -22,9 +27,9 @@ export default function UsersPage() {
 
   useEffect(() => {
     Promise.all([
-      api.listUsers().then(({ data }) => setUsers(data)).catch(() => {}),
-      api.listTokens().then(({ data }) => setTokens(data)).catch(() => {}),
-    ]).then(() => setLoading(false));
+      api.listUsers().then(({ data }) => { setUsers(data); $users.set(data); }).catch(() => {}),
+      api.listTokens().then(({ data }) => { setTokens(data); $tokens.set(data); }).catch(() => {}),
+    ]).then(() => { setLoading(false); $usersLoaded.set(true); });
   }, []);
 
   async function handleInvite() {

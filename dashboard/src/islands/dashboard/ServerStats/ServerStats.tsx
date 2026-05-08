@@ -2,27 +2,34 @@ import { useEffect, useState } from 'preact/hooks';
 import { useStore } from '@nanostores/preact';
 import { $serverStatus } from '@stores/server';
 import { api } from '@lib/api';
+import type { ServerMetricsSnapshot } from '@lib/types';
 import { formatBytes, formatPercent } from '@lib/format';
 import ProgressBar from '@islands/shared/ProgressBar/ProgressBar';
+import Sparkline from '@islands/shared/Sparkline/Sparkline';
 import styles from './server-stats.module.css';
 
 export default function ServerStats() {
   const status = useStore($serverStatus);
   const [loaded, setLoaded] = useState(false);
+  const [history, setHistory] = useState<ServerMetricsSnapshot[]>([]);
 
   useEffect(() => {
     let active = true;
 
-    async function fetch() {
+    async function fetchAll() {
       try {
         const data = await api.getServerStatus();
         if (active) $serverStatus.set(data);
       } catch {}
+      try {
+        const { data } = await api.getServerMetricsHistory(60);
+        if (active) setHistory(data);
+      } catch {}
       if (active) setLoaded(true);
     }
 
-    fetch();
-    const interval = setInterval(fetch, 30_000);
+    fetchAll();
+    const interval = setInterval(fetchAll, 30_000);
     return () => {
       active = false;
       clearInterval(interval);
@@ -40,6 +47,10 @@ export default function ServerStats() {
     );
   }
 
+  const cpuData = history.map(s => s.cpu_percent);
+  const memData = history.map(s => s.memory_total_bytes > 0 ? (s.memory_used_bytes / s.memory_total_bytes) * 100 : 0);
+  const diskData = history.map(s => s.disk_total_bytes > 0 ? (s.disk_used_bytes / s.disk_total_bytes) * 100 : 0);
+
   return (
     <div class={styles.grid}>
       <div class={styles.card}>
@@ -49,6 +60,11 @@ export default function ServerStats() {
           max={100}
           formatValue={(v) => formatPercent(v)}
         />
+        {cpuData.length > 1 && (
+          <div class={styles.sparklineWrap}>
+            <Sparkline data={cpuData} max={100} color="var(--color-primary)" />
+          </div>
+        )}
       </div>
       <div class={styles.card}>
         <ProgressBar
@@ -57,6 +73,11 @@ export default function ServerStats() {
           max={status.memory_total_bytes}
           formatValue={(v, m) => `${formatBytes(v)} / ${formatBytes(m)}`}
         />
+        {memData.length > 1 && (
+          <div class={styles.sparklineWrap}>
+            <Sparkline data={memData} max={100} color="var(--color-info)" />
+          </div>
+        )}
       </div>
       <div class={styles.card}>
         <ProgressBar
@@ -65,6 +86,11 @@ export default function ServerStats() {
           max={status.disk_total_bytes}
           formatValue={(v, m) => `${formatBytes(v)} / ${formatBytes(m)}`}
         />
+        {diskData.length > 1 && (
+          <div class={styles.sparklineWrap}>
+            <Sparkline data={diskData} max={100} color="var(--color-warning)" />
+          </div>
+        )}
       </div>
     </div>
   );

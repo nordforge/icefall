@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'preact/hooks';
+import { useStore } from '@nanostores/preact';
+import { $serverStatus, $serverMetricsHistory } from '@stores/server';
 import { api } from '@lib/api';
-import type { ServerStatus } from '@lib/types';
+import type { ServerStatus, ServerMetricsSnapshot } from '@lib/types';
 import { formatBytes, formatPercent } from '@lib/format';
 import ProgressBar from '@islands/shared/ProgressBar/ProgressBar';
+import MetricsChart from '@islands/shared/MetricsChart/MetricsChart';
 import Button from '@islands/shared/Button/Button';
-import { Cpu, HardDrive, MemoryStick, Wifi, LayoutGrid, List, Server, Hash, Globe, Database } from 'lucide-preact';
+import { Cpu, HardDrive, MemoryStick, Globe, Server, Hash, LayoutGrid, List, Clock } from 'lucide-preact';
 import styles from './server-page.module.css';
 
 type InfoItem = {
@@ -14,11 +17,19 @@ type InfoItem = {
   mono?: boolean;
 }
 
+type Range = '10m' | '1h';
+
 export default function ServerPage() {
-  const [status, setStatus] = useState<ServerStatus | null>(null);
+  const cachedStatus = useStore($serverStatus);
+  const cachedHistory = useStore($serverMetricsHistory);
+  const [status, setStatus] = useState<ServerStatus | null>(cachedStatus);
   const [serverIp, setServerIp] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!cachedStatus);
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
+  const [history, setHistory] = useState<ServerMetricsSnapshot[]>(cachedHistory);
+  const [range, setRange] = useState<Range>('10m');
+
+  const historyLimit = range === '10m' ? 60 : 360;
 
   useEffect(() => {
     let active = true;
@@ -26,11 +37,15 @@ export default function ServerPage() {
     async function load() {
       try {
         const data = await api.getServerStatus();
-        if (active) setStatus(data);
+        if (active) { setStatus(data); $serverStatus.set(data); }
       } catch {}
       try {
         const { ip } = await api.getServerIp();
         if (active) setServerIp(ip);
+      } catch {}
+      try {
+        const { data } = await api.getServerMetricsHistory(historyLimit);
+        if (active) { setHistory(data); $serverMetricsHistory.set(data); }
       } catch {}
       if (active) setLoading(false);
     }
@@ -38,13 +53,19 @@ export default function ServerPage() {
     load();
     const interval = setInterval(async () => {
       try {
-        const data = await api.getServerStatus();
-        if (active) setStatus(data);
+        const [statusRes, historyRes] = await Promise.all([
+          api.getServerStatus(),
+          api.getServerMetricsHistory(historyLimit),
+        ]);
+        if (active) {
+          setStatus(statusRes); $serverStatus.set(statusRes);
+          setHistory(historyRes.data); $serverMetricsHistory.set(historyRes.data);
+        }
       } catch {}
     }, 10_000);
 
     return () => { active = false; clearInterval(interval); };
-  }, []);
+  }, [historyLimit]);
 
   if (loading) return (
     <div>
@@ -63,6 +84,16 @@ export default function ServerPage() {
     </div>
   );
 
+  const cpuHistory = history.map(s => ({ timestamp: s.timestamp, value: s.cpu_percent }));
+  const memHistory = history.map(s => ({
+    timestamp: s.timestamp,
+    value: s.memory_total_bytes > 0 ? (s.memory_used_bytes / s.memory_total_bytes) * 100 : 0,
+  }));
+  const diskHistory = history.map(s => ({
+    timestamp: s.timestamp,
+    value: s.disk_total_bytes > 0 ? (s.disk_used_bytes / s.disk_total_bytes) * 100 : 0,
+  }));
+
   const infoItems: InfoItem[] = [
     { icon: Hash, label: 'Version', value: status.version },
     { icon: Server, label: 'Status', value: status.status },
@@ -76,39 +107,95 @@ export default function ServerPage() {
     <div>
       <div class={styles.pageHeader}>
         <h1 class={styles.pageTitle}>Server</h1>
+        <div class={styles.rangeToggle}>
+          <button
+            type="button"
+            class={`${styles.rangeButton} ${range === '10m' ? styles.rangeActive : ''}`}
+            onClick={() => setRange('10m')}
+            aria-pressed={range === '10m'}
+          >
+            <Clock size={12} aria-hidden="true" /> 10 min
+          </button>
+          <button
+            type="button"
+            class={`${styles.rangeButton} ${range === '1h' ? styles.rangeActive : ''}`}
+            onClick={() => setRange('1h')}
+            aria-pressed={range === '1h'}
+          >
+            <Clock size={12} aria-hidden="true" /> 1 hour
+          </button>
+        </div>
       </div>
 
       <div class={styles.metricsGrid}>
         <div class={styles.metricCard}>
-          <div class={styles.metricIcon}><Cpu size={20} aria-hidden="true" /></div>
-          <div class={styles.metricContent}>
-            <ProgressBar
+          <div class={styles.metricHeader}>
+            <div class={styles.metricIcon}><Cpu size={20} aria-hidden="true" /></div>
+            <div class={styles.metricContent}>
+              <ProgressBar
+                label="CPU"
+                value={status.cpu_percent}
+                max={100}
+                formatValue={(v) => formatPercent(v)}
+              />
+            </div>
+          </div>
+          <div class={styles.chartWrap}>
+            <MetricsChart
+              data={cpuHistory}
               label="CPU"
-              value={status.cpu_percent}
+              formatValue={v => formatPercent(v)}
+              min={0}
               max={100}
-              formatValue={(v) => formatPercent(v)}
+              color="var(--color-primary)"
             />
           </div>
         </div>
+
         <div class={styles.metricCard}>
-          <div class={styles.metricIcon}><MemoryStick size={20} aria-hidden="true" /></div>
-          <div class={styles.metricContent}>
-            <ProgressBar
+          <div class={styles.metricHeader}>
+            <div class={styles.metricIcon}><MemoryStick size={20} aria-hidden="true" /></div>
+            <div class={styles.metricContent}>
+              <ProgressBar
+                label="Memory"
+                value={status.memory_used_bytes}
+                max={status.memory_total_bytes}
+                formatValue={(v, m) => `${formatBytes(v)} / ${formatBytes(m)}`}
+              />
+            </div>
+          </div>
+          <div class={styles.chartWrap}>
+            <MetricsChart
+              data={memHistory}
               label="Memory"
-              value={status.memory_used_bytes}
-              max={status.memory_total_bytes}
-              formatValue={(v, m) => `${formatBytes(v)} / ${formatBytes(m)}`}
+              formatValue={v => `${Math.round(v)}%`}
+              min={0}
+              max={100}
+              color="var(--color-info)"
             />
           </div>
         </div>
+
         <div class={styles.metricCard}>
-          <div class={styles.metricIcon}><HardDrive size={20} aria-hidden="true" /></div>
-          <div class={styles.metricContent}>
-            <ProgressBar
+          <div class={styles.metricHeader}>
+            <div class={styles.metricIcon}><HardDrive size={20} aria-hidden="true" /></div>
+            <div class={styles.metricContent}>
+              <ProgressBar
+                label="Disk"
+                value={status.disk_used_bytes}
+                max={status.disk_total_bytes}
+                formatValue={(v, m) => `${formatBytes(v)} / ${formatBytes(m)}`}
+              />
+            </div>
+          </div>
+          <div class={styles.chartWrap}>
+            <MetricsChart
+              data={diskHistory}
               label="Disk"
-              value={status.disk_used_bytes}
-              max={status.disk_total_bytes}
-              formatValue={(v, m) => `${formatBytes(v)} / ${formatBytes(m)}`}
+              formatValue={v => `${Math.round(v)}%`}
+              min={0}
+              max={100}
+              color="var(--color-warning)"
             />
           </div>
         </div>

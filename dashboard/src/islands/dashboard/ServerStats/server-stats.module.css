@@ -42,3 +42,10 @@
   border-radius: var(--radius-md);
   padding: var(--space-4);
 }
+
+.sparklineWrap {
+  margin-top: var(--space-2);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  height: 36px;
+}

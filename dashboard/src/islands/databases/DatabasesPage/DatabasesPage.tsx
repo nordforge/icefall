@@ -1,4 +1,7 @@
 import { useEffect, useState } from 'preact/hooks';
+import { useStore } from '@nanostores/preact';
+import { $databases, $databasesLoaded } from '@stores/databases';
+import type { ManagedDb } from '@stores/databases';
 import Button from '@islands/shared/Button/Button';
 import StatusDot from '@islands/shared/StatusDot/StatusDot';
 import DatabaseBrowser from '@islands/databases/DatabaseBrowser/DatabaseBrowser';
@@ -7,7 +10,7 @@ import { Plus, Database, Trash2, Copy, Eye, EyeOff, RefreshCw, Download, RotateC
 import styles from './databases-page.module.css';
 import formStyles from '@styles/form.module.css';
 
-type ManagedDb = {
+type _ManagedDb = {
   id: string;
   name: string;
   db_type: string;
@@ -41,8 +44,10 @@ const DB_COLORS: Record<string, string> = {
 };
 
 export default function DatabasesPage() {
-  const [dbs, setDbs] = useState<ManagedDb[]>([]);
-  const [loading, setLoading] = useState(true);
+  const cachedDbs = useStore($databases);
+  const wasLoaded = useStore($databasesLoaded);
+  const [dbs, setDbs] = useState<ManagedDb[]>(cachedDbs);
+  const [loading, setLoading] = useState(!wasLoaded);
   const [selectedDb, setSelectedDb] = useState<ManagedDb | null>(null);
   const [backups, setBackups] = useState<BackupInfo[]>([]);
   const [showCreate, setShowCreate] = useState(false);
@@ -53,7 +58,13 @@ export default function DatabasesPage() {
   const [newDb, setNewDb] = useState({ name: '', db_type: 'postgres', memory_mb: '' });
 
   useEffect(() => {
-    fetch('/api/v1/databases').then(r => r.json()).then(d => { setDbs(d.data || []); setLoading(false); }).catch(() => setLoading(false));
+    fetch('/api/v1/databases', { credentials: 'same-origin' }).then(r => r.json()).then(d => {
+      const data = d.data || [];
+      setDbs(data);
+      $databases.set(data);
+      $databasesLoaded.set(true);
+      setLoading(false);
+    }).catch(() => setLoading(false));
   }, []);
 
   useEffect(() => {

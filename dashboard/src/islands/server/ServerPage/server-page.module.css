@@ -10,6 +10,39 @@
   font-weight: var(--weight-semibold);
 }
 
+.rangeToggle {
+  display: flex;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.rangeButton {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-3);
+  background: var(--color-surface);
+  border: none;
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.rangeButton:first-child {
+  border-right: 1px solid var(--color-border);
+}
+
+.rangeButton:hover {
+  color: var(--color-text);
+}
+
+.rangeActive {
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
+}
+
 .loadingText {
   color: var(--color-text-muted);
   font-size: var(--text-sm);
@@ -51,6 +84,12 @@
   border-radius: var(--radius-md);
   padding: var(--space-4);
   display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.metricHeader {
+  display: flex;
   align-items: flex-start;
   gap: var(--space-3);
 }
@@ -64,6 +103,11 @@
 .metricContent {
   flex: 1;
   min-width: 0;
+}
+
+.chartWrap {
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-3);
 }
 
 /* Section header with toggle */

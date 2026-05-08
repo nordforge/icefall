@@ -1,6 +1,7 @@
 
 use axum::extract::State;
-use axum::http::HeaderMap;
+use axum::http::{HeaderMap, HeaderValue};
+use axum::response::IntoResponse;
 use axum::routing::{get, post, put};
 use axum::{Json, Router};
 use serde::Deserialize;
@@ -48,7 +49,7 @@ async fn setup_status(
 async fn setup_admin(
     State(state): State<AppState>,
     Json(body): Json<SetupRequest>,
-) -> Result<Json<serde_json::Value>, ApiError> {
+) -> Result<axum::response::Response, ApiError> {
     let users = state.db.list_users().await?;
     if !users.is_empty() {
         return Err(ApiError::BadRequest("Admin account already exists".into()));
@@ -70,18 +71,22 @@ async fn setup_admin(
 
     let session = create_session_for_user(&state, &user.id).await?;
 
-    Ok(Json(serde_json::json!({
+    let body = serde_json::json!({
         "data": {
             "user": { "id": user.id, "email": user.email, "role": user.role },
             "session_id": session.id,
         }
-    })))
+    });
+    let cookie = format!("icefall_session={}; Path=/; HttpOnly; SameSite=Lax; Max-Age=604800", session.id);
+    let mut headers = HeaderMap::new();
+    headers.insert("set-cookie", HeaderValue::from_str(&cookie).unwrap());
+    Ok((headers, Json(body)).into_response())
 }
 
 async fn login(
     State(state): State<AppState>,
     Json(body): Json<LoginRequest>,
-) -> Result<Json<serde_json::Value>, ApiError> {
+) -> Result<axum::response::Response, ApiError> {
     let user = state
         .db
         .get_user_by_email(&body.email)
@@ -94,12 +99,16 @@ async fn login(
 
     let session = create_session_for_user(&state, &user.id).await?;
 
-    Ok(Json(serde_json::json!({
+    let body = serde_json::json!({
         "data": {
             "user": { "id": user.id, "email": user.email, "role": user.role },
             "session_id": session.id,
         }
-    })))
+    });
+    let cookie = format!("icefall_session={}; Path=/; HttpOnly; SameSite=Lax; Max-Age=604800", session.id);
+    let mut headers = HeaderMap::new();
+    headers.insert("set-cookie", HeaderValue::from_str(&cookie).unwrap());
+    Ok((headers, Json(body)).into_response())
 }
 
 async fn logout(

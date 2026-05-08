@@ -73,6 +73,15 @@ export type BuildStep = {
 
 export type AppStatus = 'online' | 'building' | 'deploying' | 'failed' | 'stopped';
 
+export type ServerMetricsSnapshot = {
+  timestamp: string;
+  cpu_percent: number;
+  memory_used_bytes: number;
+  memory_total_bytes: number;
+  disk_used_bytes: number;
+  disk_total_bytes: number;
+}
+
 export type User = {
   id: string;
   email: string;

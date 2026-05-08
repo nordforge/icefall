@@ -40,7 +40,7 @@
 }
 
 .saveRow {
-  margin-top: var(--space-4);
+  margin-top: var(--space-6);
   display: flex;
   justify-content: flex-end;
 }

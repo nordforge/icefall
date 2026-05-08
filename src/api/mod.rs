@@ -10,7 +10,7 @@ use axum::Router;
 use tokio::sync::{Mutex, RwLock};
 use tower_http::services::ServeDir;
 
-use crate::api::routes::server::ServerMetrics;
+use crate::api::routes::server::{ServerMetrics, ServerMetricsHistory};
 use crate::caddy::CaddyClient;
 use crate::config::IcefallConfig;
 use crate::db::Database;
@@ -29,6 +29,7 @@ pub struct AppState {
     pub event_bus: Arc<EventBus>,
     pub build_locks: Arc<BuildLockMap>,
     pub server_metrics: Arc<RwLock<ServerMetrics>>,
+    pub server_metrics_history: Arc<ServerMetricsHistory>,
     pub metrics_store: Arc<MetricsStore>,
     pub log_store: Arc<LogStore>,
     pub backup_store: Arc<BackupStore>,

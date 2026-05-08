@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'preact/hooks';
 import Button from '@islands/shared/Button/Button';
 import { Save, Globe, Bell, Database, Shield, RefreshCw, Plus, Trash2, Send } from 'lucide-preact';
+import { useStore } from '@nanostores/preact';
+import { $settings, $channels, $settingsLoaded } from '@stores/settings';
+import type { NotificationChannel as NCType } from '@stores/settings';
+import { TIMEZONES } from '@lib/timezones';
 import styles from './settings-page.module.css';
 import formStyles from '@styles/form.module.css';
 
@@ -32,9 +36,14 @@ const CHANNEL_TYPES = [
 ];
 
 export default function SettingsPage() {
-  const [settings, setSettings] = useState<SettingsData | null>(null);
-  const [baseDomain, setBaseDomain] = useState('');
-  const [channels, setChannels] = useState<NotificationChannel[]>([]);
+  const cachedSettings = useStore($settings);
+  const cachedChannels = useStore($channels);
+  const [settings, setSettings] = useState<SettingsData | null>(cachedSettings);
+  const [baseDomain, setBaseDomain] = useState(cachedSettings?.base_domain || '');
+  const [platformName, setPlatformName] = useState('');
+  const [recoveryEmail, setRecoveryEmail] = useState('');
+  const [timezone, setTimezone] = useState('UTC');
+  const [channels, setChannels] = useState<NotificationChannel[]>(cachedChannels);
   const [backups, setBackups] = useState<BackupLocation[]>([]);
   const [saving, setSaving] = useState('');
   const [saveMessage, setSaveMessage] = useState('');
@@ -50,13 +59,17 @@ export default function SettingsPage() {
   const [newBackup, setNewBackup] = useState({ name: '', bucket: '', endpoint: '', region: '', access_key: '', secret_key: '' });
 
   useEffect(() => {
-    fetch('/api/v1/settings').then(r => r.json()).then(d => {
+    fetch('/api/v1/settings', { credentials: 'same-origin' }).then(r => r.json()).then(d => {
       setSettings(d.data);
+      $settings.set(d.data);
       if (d.data.base_domain) setBaseDomain(d.data.base_domain);
     }).catch(() => {});
 
-    fetch('/api/v1/notifications/channels').then(r => r.json()).then(d => {
-      setChannels(d.data || []);
+    fetch('/api/v1/notifications/channels', { credentials: 'same-origin' }).then(r => r.json()).then(d => {
+      const data = d.data || [];
+      setChannels(data);
+      $channels.set(data);
+      $settingsLoaded.set(true);
     }).catch(() => {});
   }, []);
 
@@ -160,17 +173,33 @@ export default function SettingsPage() {
         <h2 class={styles.sectionHeading}><Globe size={18} aria-hidden="true" /> General</h2>
         <div class={formStyles.fieldRow}>
           <div>
-            <label htmlFor="sp-base-domain" class={formStyles.label}>Base Domain</label>
-            <input id="sp-base-domain" class={formStyles.input} value={baseDomain} onInput={e => setBaseDomain((e.target as HTMLInputElement).value)} placeholder="apps.example.com" />
+            <label htmlFor="sp-platform-name" class={formStyles.label}>Platform Name</label>
+            <input id="sp-platform-name" class={formStyles.input} value={platformName} onInput={e => setPlatformName((e.target as HTMLInputElement).value)} placeholder="Icefall" />
+            <p class={formStyles.hint}>Displayed in the dashboard header and emails.</p>
           </div>
           <div>
-            <label htmlFor="sp-server-version" class={formStyles.label}>Server Version</label>
-            <input id="sp-server-version" class={formStyles.input} value={settings?.version || ''} disabled style={{ background: 'var(--color-surface-alt)' }} />
+            <label htmlFor="sp-base-domain" class={formStyles.label}>Base Domain</label>
+            <input id="sp-base-domain" class={formStyles.input} value={baseDomain} onInput={e => setBaseDomain((e.target as HTMLInputElement).value)} placeholder="apps.example.com" />
+            <p class={formStyles.hint}>Used for app subdomains and SSL certificates.</p>
+          </div>
+        </div>
+        <div class={formStyles.fieldRow}>
+          <div>
+            <label htmlFor="sp-recovery-email" class={formStyles.label}>Recovery Email</label>
+            <input id="sp-recovery-email" class={formStyles.input} type="email" autoComplete="email" value={recoveryEmail} onInput={e => setRecoveryEmail((e.target as HTMLInputElement).value)} placeholder="recovery@example.com" />
+            <p class={formStyles.hint}>Receives password reset links if the admin account is locked out.</p>
+          </div>
+          <div>
+            <label htmlFor="sp-timezone" class={formStyles.label}>Timezone</label>
+            <select id="sp-timezone" class={formStyles.select} value={timezone} onChange={e => setTimezone((e.target as HTMLSelectElement).value)}>
+              {TIMEZONES.map(tz => <option key={tz} value={tz}>{tz.replace(/_/g, ' ')}</option>)}
+            </select>
+            <p class={formStyles.hint}>Used for log timestamps, backup schedules, and notifications.</p>
           </div>
         </div>
         <div class={styles.saveRow}>
           <Button variant="primary" onClick={saveDomain} loading={saving === 'domain'}>
-            <Save size={14} aria-hidden="true" /> Save Domain
+            <Save size={14} aria-hidden="true" /> Save General
           </Button>
         </div>
       </div>
