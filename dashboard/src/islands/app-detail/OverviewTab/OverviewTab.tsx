@@ -23,6 +23,32 @@ export default function OverviewTab({ app }: Props) {
   const healthCheck = healthResults[0];
   const healthStatus = healthCheck?.current_status || 'unknown';
   const isImageApp = !!app.image_ref;
+  const isComposeApp = !!app.compose_content;
+  const isNativeApp = app.deploy_mode === 'native';
+
+  /** Parse service names from compose YAML for display. */
+  const composeServices: string[] = (() => {
+    if (!app.compose_content) return [];
+    try {
+      const lines = app.compose_content.split('\n');
+      let inServices = false;
+      const names: string[] = [];
+      for (const line of lines) {
+        if (/^services:\s*$/.test(line)) {
+          inServices = true;
+          continue;
+        }
+        if (inServices) {
+          const match = line.match(/^  ([a-zA-Z0-9_-]+):\s*$/);
+          if (match) names.push(match[1]);
+          if (/^[a-zA-Z]/.test(line) && !line.startsWith(' ')) inServices = false;
+        }
+      }
+      return names;
+    } catch {
+      return [];
+    }
+  })();
 
   return (
     <div class={styles.grid}>
@@ -35,9 +61,18 @@ export default function OverviewTab({ app }: Props) {
           <span class={styles.statusText}>
             {latestDeploy?.status === 'running' ? `Running ${latestDeploy.started_at ? formatRelativeTime(latestDeploy.started_at) : ''}` : latestDeploy?.status || 'No deploys yet'}
           </span>
+          {isComposeApp && (
+            <span class={styles.composeBadge}>Compose Stack</span>
+          )}
+          {isNativeApp && (
+            <span class={styles.nativeBadge}>Native</span>
+          )}
+          {!isNativeApp && !isComposeApp && app.deploy_mode === 'container' && (
+            <span class={styles.containerBadge}>Container</span>
+          )}
         </div>
 
-        {latestDeploy?.container_id && (
+        {latestDeploy?.container_id && !isComposeApp && !isNativeApp && (
           <div class={styles.detailBlock}>
             <span class={styles.detailLabel}>Container ID</span>
             <div class={styles.detailValue}>
@@ -46,10 +81,30 @@ export default function OverviewTab({ app }: Props) {
           </div>
         )}
 
-        <div class={styles.detailBlock}>
-          <span class={styles.detailLabel}>Port</span>
-          <div class={styles.detailValueBase}>3000</div>
-        </div>
+        {!isComposeApp && !isNativeApp && (
+          <div class={styles.detailBlock}>
+            <span class={styles.detailLabel}>Port</span>
+            <div class={styles.detailValueBase}>3000</div>
+          </div>
+        )}
+
+        {isNativeApp && (
+          <div class={styles.detailBlock}>
+            <span class={styles.detailLabel}>Serving</span>
+            <div class={styles.detailValueBase}>Static files via Caddy</div>
+          </div>
+        )}
+
+        {isComposeApp && composeServices.length > 0 && (
+          <div class={styles.detailBlock}>
+            <span class={styles.detailLabel}>Services ({composeServices.length})</span>
+            <ul class={styles.composeServiceList} aria-label="Compose services">
+              {composeServices.map((name) => (
+                <li key={name} class={styles.composeServiceItem}>{name}</li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         {isImageApp && (
           <div class={styles.detailBlock}>
@@ -60,7 +115,7 @@ export default function OverviewTab({ app }: Props) {
           </div>
         )}
 
-        {!isImageApp && latestDeploy?.image_ref && (
+        {!isImageApp && !isComposeApp && latestDeploy?.image_ref && (
           <div class={styles.detailBlock}>
             <span class={styles.detailLabel}>Build Image</span>
             <div class={styles.detailValue}>
@@ -124,7 +179,9 @@ export default function OverviewTab({ app }: Props) {
           <table class={styles.deploysTable}>
             <thead>
               <tr class={styles.deploysTheadRow}>
-                {isImageApp ? (
+                {isComposeApp ? (
+                  <th>Deploy</th>
+                ) : isImageApp ? (
                   <th>Image</th>
                 ) : (
                   <>
@@ -139,7 +196,13 @@ export default function OverviewTab({ app }: Props) {
             <tbody>
               {deploys.map((d) => (
                 <tr key={d.id} class={styles.deploysRow}>
-                  {isImageApp ? (
+                  {isComposeApp ? (
+                    <td class={styles.deploysCell}>
+                      <a href={`/apps/${app.id}/deploys/${d.id}`} class={styles.commitLink}>
+                        {d.id.slice(0, 8)}
+                      </a>
+                    </td>
+                  ) : isImageApp ? (
                     <td class={styles.deploysCell}>
                       <a href={`/apps/${app.id}/deploys/${d.id}`} class={styles.commitLink}>
                         {d.image_ref || app.image_ref || '—'}

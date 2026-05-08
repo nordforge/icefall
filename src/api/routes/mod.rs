@@ -13,11 +13,16 @@ pub mod logs;
 pub mod mcp;
 pub mod metrics;
 pub mod notifications;
+pub mod oauth;
 pub mod onboarding;
 pub mod openapi;
+pub mod projects;
 pub mod server;
 pub mod settings;
+pub mod terminal;
+pub mod two_factor;
 pub mod users;
+pub mod volumes;
 pub mod webhooks;
 
 use axum::Router;
@@ -46,5 +51,10 @@ pub fn api_routes() -> Router<AppState> {
         .merge(onboarding::routes())
         .merge(mcp::routes())
         .merge(instance_backup::routes())
+        .merge(terminal::routes())
+        .merge(two_factor::routes())
+        .merge(oauth::routes())
+        .merge(projects::routes())
+        .merge(volumes::routes())
         .merge(openapi::routes())
 }

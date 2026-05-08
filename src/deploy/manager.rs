@@ -6,8 +6,9 @@ use crate::config::IcefallConfig;
 use crate::db::models::{App, Deploy, Environment};
 use crate::db::Database;
 use crate::deploy::health::wait_for_healthy;
+use crate::deploy::s3_mount;
 use crate::deploy::DeployError;
-use crate::docker::containers::{ContainerConfig, PortMapping};
+use crate::docker::containers::{ContainerConfig, PortMapping, VolumeMount};
 use crate::docker::DockerClient;
 use crate::events::{EventBus, EventType};
 
@@ -43,7 +44,7 @@ impl DeployManager {
         env: &Environment,
         image_ref: &str,
     ) -> Result<(), DeployError> {
-        self.deploy_with_env(deploy, app, env, image_ref, None).await
+        self.deploy_inner(deploy, app, env, image_ref, None, true).await
     }
 
     pub async fn deploy_with_env(
@@ -53,6 +54,18 @@ impl DeployManager {
         env: &Environment,
         image_ref: &str,
         env_override: Option<Vec<String>>,
+    ) -> Result<(), DeployError> {
+        self.deploy_inner(deploy, app, env, image_ref, env_override, true).await
+    }
+
+    async fn deploy_inner(
+        &self,
+        deploy: &Deploy,
+        app: &App,
+        env: &Environment,
+        image_ref: &str,
+        env_override: Option<Vec<String>>,
+        auto_rollback: bool,
     ) -> Result<(), DeployError> {
         self.emit_status(app, deploy, "deploying");
 
@@ -86,6 +99,47 @@ impl DeployManager {
 
         let snapshot = serde_json::to_string(&env_vars).unwrap_or_default();
 
+        // Parse volume configuration, separating local and S3 volumes.
+        let volume_entries = s3_mount::parse_volume_entries(app.volumes.as_deref());
+        let (local_volumes, s3_configs) = s3_mount::split_volumes(&volume_entries);
+
+        // Start S3 sidecar containers before the app container so the FUSE
+        // mounts are ready. Each sidecar shares a named Docker volume with
+        // the app container.
+        let mut app_volumes: Vec<VolumeMount> = local_volumes;
+        for (i, s3_cfg) in s3_configs.iter().enumerate() {
+            match s3_mount::create_s3_sidecar(
+                &self.docker,
+                &app.id,
+                &app.name,
+                i,
+                s3_cfg,
+            )
+            .await
+            {
+                Ok(sidecar_id) => {
+                    tracing::info!(
+                        "S3 sidecar {sidecar_id} started for bucket {}",
+                        s3_cfg.bucket
+                    );
+                    // Add the shared volume so the app container can access
+                    // the FUSE-mounted bucket.
+                    app_volumes.push(VolumeMount {
+                        source: s3_mount::s3_volume_name(&app.name, i),
+                        target: s3_cfg.target.clone(),
+                        read_only: s3_cfg.read_only,
+                    });
+                }
+                Err(e) => {
+                    tracing::error!(
+                        "Failed to start S3 sidecar for bucket {}: {e}",
+                        s3_cfg.bucket
+                    );
+                    // Non-fatal: the deploy continues but without this mount.
+                }
+            }
+        }
+
         let container_config = ContainerConfig {
             name: container_name,
             image: image_ref.to_string(),
@@ -96,7 +150,7 @@ impl DeployManager {
                 host_port: None,
                 protocol: "tcp".to_string(),
             }],
-            volumes: Vec::new(),
+            volumes: app_volumes,
             memory_bytes: resource_limits.as_ref().and_then(|r| r.memory_bytes),
             cpu_shares: resource_limits.as_ref().and_then(|r| r.cpu_shares),
             restart_policy: Some("unless-stopped".to_string()),
@@ -138,6 +192,43 @@ impl DeployManager {
             self.db
                 .update_deploy_status(&deploy.id, "failed", Some("Health check failed"))
                 .await?;
+
+            // Auto-rollback: find the previous successful deploy and redeploy it
+            if auto_rollback {
+            if let Ok(deploys) = self.db.list_deploys(&app.id, 10).await {
+                let previous = deploys.iter().find(|d| {
+                    d.id != deploy.id && d.status == "running" && d.image_ref.is_some()
+                });
+                if let Some(prev) = previous {
+                    let prev_image = prev.image_ref.clone().unwrap();
+                    let prev_snapshot: Option<Vec<String>> = prev
+                        .env_snapshot
+                        .as_deref()
+                        .and_then(|s| serde_json::from_str(s).ok());
+                    tracing::info!(
+                        "Auto-rolling back app {} to deploy {} (image: {})",
+                        app.name, prev.id, prev_image
+                    );
+                    self.event_bus.emit(
+                        EventType::DeployStatus,
+                        Some(&app.id),
+                        Some(&deploy.id),
+                        serde_json::json!({"status": "auto-rollback", "previous_deploy": prev.id}),
+                    );
+                    if let Ok(rollback_deploy) = self.db.create_deploy(&crate::db::models::NewDeploy {
+                        app_id: app.id.clone(),
+                        environment_id: env.id.clone(),
+                        git_sha: prev.git_sha.clone(),
+                    }).await {
+                        let _ = Box::pin(self.deploy_inner(
+                            &rollback_deploy, app, env, &prev_image, prev_snapshot, false,
+                        )).await;
+                    }
+                    return Err(e);
+                }
+            }
+            }
+
             return Err(e);
         }
 
@@ -178,6 +269,16 @@ impl DeployManager {
                 .stop_container(&container.id, Some(self.config.deploy_stop_timeout_secs))
                 .await;
             let _ = self.docker.remove_container(&container.id, true).await;
+        }
+
+        // Stop and remove any S3 sidecar containers for this app.
+        s3_mount::stop_s3_sidecars(&self.docker, &app.id).await;
+
+        // Clean up S3 shared volumes.
+        let volume_entries = s3_mount::parse_volume_entries(app.volumes.as_deref());
+        let (_, s3_configs) = s3_mount::split_volumes(&volume_entries);
+        if !s3_configs.is_empty() {
+            s3_mount::remove_s3_volumes(&self.docker, &app.name, s3_configs.len()).await;
         }
 
         let domains = self.resolve_domains(app, env).await?;
@@ -290,7 +391,14 @@ impl DeployManager {
                 .map(|id| id == current_deploy_id)
                 .unwrap_or(false);
 
-            if is_current {
+            // Skip S3 sidecar containers — they are shared across deploys.
+            let is_sidecar = container
+                .labels
+                .get("icefall.s3-sidecar")
+                .map(|v| v == "true")
+                .unwrap_or(false);
+
+            if is_current || is_sidecar {
                 continue;
             }
 

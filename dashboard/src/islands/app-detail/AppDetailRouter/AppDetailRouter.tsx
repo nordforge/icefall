@@ -19,6 +19,7 @@ const TAB_LOADERS: Record<string, () => Promise<{ default: ComponentType<any> }>
   logs: () => import('@islands/logs/LogViewer/LogViewer'),
   env: () => import('@islands/env-vars/EnvVarEditor/EnvVarEditor'),
   databases: () => import('@islands/app-detail/DatabaseTab/DatabaseTab'),
+  terminal: () => import('@islands/app-detail/TerminalTab/TerminalTab'),
   domains: () => import('@islands/app-detail/DomainsTab/DomainsTab'),
   settings: () => import('@islands/app-detail/SettingsTab/SettingsTab'),
 };

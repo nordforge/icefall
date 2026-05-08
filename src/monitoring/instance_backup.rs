@@ -225,7 +225,7 @@ async fn cleanup_old_backups(db: &Arc<dyn Database>, retention_count: i64) {
     for record in to_delete {
         // Try to remove from S3
         if let Some(ref s3_key) = record.s3_key {
-            if let Some(bucket) = std::env::var("ICEFALL_BACKUP_S3_BUCKET").ok() {
+            if let Ok(bucket) = std::env::var("ICEFALL_BACKUP_S3_BUCKET") {
                 let s3_url = format!("s3://{bucket}/{s3_key}");
                 let _ = Command::new("aws")
                     .args(["s3", "rm", &s3_url])

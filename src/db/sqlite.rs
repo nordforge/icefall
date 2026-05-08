@@ -49,15 +49,119 @@ impl SqliteDatabase {
 
 #[async_trait]
 impl Database for SqliteDatabase {
+    // --- Projects ---
+
+    async fn list_projects(&self) -> Result<Vec<Project>, DbError> {
+        let projects = sqlx::query_as::<_, Project>(
+            "SELECT * FROM projects ORDER BY name ASC",
+        )
+        .fetch_all(&self.pool)
+        .await?;
+        Ok(projects)
+    }
+
+    async fn create_project(&self, project: &NewProject) -> Result<Project, DbError> {
+        let id = new_id();
+        let now = now_iso8601();
+
+        sqlx::query(
+            "INSERT INTO projects (id, name, description, color, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?)",
+        )
+        .bind(&id)
+        .bind(&project.name)
+        .bind(&project.description)
+        .bind(&project.color)
+        .bind(&now)
+        .bind(&now)
+        .execute(&self.pool)
+        .await
+        .map_err(|e| match e {
+            sqlx::Error::Database(ref db_err) if db_err.message().contains("UNIQUE") => {
+                DbError::Duplicate(format!("project '{}' already exists", project.name))
+            }
+            other => DbError::Sqlx(other),
+        })?;
+
+        self.get_project(&id)
+            .await?
+            .ok_or_else(|| DbError::NotFound(id))
+    }
+
+    async fn get_project(&self, id: &str) -> Result<Option<Project>, DbError> {
+        let project = sqlx::query_as::<_, Project>("SELECT * FROM projects WHERE id = ?")
+            .bind(id)
+            .fetch_optional(&self.pool)
+            .await?;
+        Ok(project)
+    }
+
+    async fn update_project(&self, id: &str, update: &UpdateProject) -> Result<Project, DbError> {
+        let existing = self
+            .get_project(id)
+            .await?
+            .ok_or_else(|| DbError::NotFound(format!("project {id}")))?;
+
+        let name = update.name.as_deref().unwrap_or(&existing.name);
+        let description = match &update.description {
+            Some(v) => v.as_deref(),
+            None => existing.description.as_deref(),
+        };
+        let color = match &update.color {
+            Some(v) => v.as_deref(),
+            None => existing.color.as_deref(),
+        };
+        let now = now_iso8601();
+
+        sqlx::query(
+            "UPDATE projects SET name = ?, description = ?, color = ?, updated_at = ? WHERE id = ?",
+        )
+        .bind(name)
+        .bind(description)
+        .bind(color)
+        .bind(&now)
+        .bind(id)
+        .execute(&self.pool)
+        .await?;
+
+        self.get_project(id)
+            .await?
+            .ok_or_else(|| DbError::NotFound(id.to_string()))
+    }
+
+    async fn delete_project(&self, id: &str) -> Result<(), DbError> {
+        // Unassign all apps and databases from this project (don't delete them)
+        sqlx::query("UPDATE apps SET project_id = NULL WHERE project_id = ?")
+            .bind(id)
+            .execute(&self.pool)
+            .await?;
+
+        sqlx::query("UPDATE databases SET project_id = NULL WHERE project_id = ?")
+            .bind(id)
+            .execute(&self.pool)
+            .await?;
+
+        let result = sqlx::query("DELETE FROM projects WHERE id = ?")
+            .bind(id)
+            .execute(&self.pool)
+            .await?;
+
+        if result.rows_affected() == 0 {
+            return Err(DbError::NotFound(format!("project {id}")));
+        }
+        Ok(())
+    }
+
     // --- Apps ---
 
     async fn create_app(&self, app: &NewApp) -> Result<App, DbError> {
         let id = new_id();
         let now = now_iso8601();
+        let deploy_mode = app.deploy_mode.as_deref().unwrap_or("auto");
 
         sqlx::query(
-            "INSERT INTO apps (id, name, git_repo, git_branch, framework, image_ref, created_at, updated_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO apps (id, name, git_repo, git_branch, framework, image_ref, compose_content, deploy_mode, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         )
         .bind(&id)
         .bind(&app.name)
@@ -65,6 +169,8 @@ impl Database for SqliteDatabase {
         .bind(&app.git_branch)
         .bind(&app.framework)
         .bind(&app.image_ref)
+        .bind(&app.compose_content)
+        .bind(deploy_mode)
         .bind(&now)
         .bind(&now)
         .execute(&self.pool)
@@ -104,6 +210,16 @@ impl Database for SqliteDatabase {
         Ok(apps)
     }
 
+    async fn list_apps_by_project(&self, project_id: &str) -> Result<Vec<App>, DbError> {
+        let apps = sqlx::query_as::<_, App>(
+            "SELECT * FROM apps WHERE project_id = ? ORDER BY created_at DESC",
+        )
+        .bind(project_id)
+        .fetch_all(&self.pool)
+        .await?;
+        Ok(apps)
+    }
+
     async fn update_app(&self, id: &str, update: &UpdateApp) -> Result<App, DbError> {
         let existing = self
             .get_app(id)
@@ -133,12 +249,21 @@ impl Database for SqliteDatabase {
             Some(v) => v.as_deref(),
             None => existing.image_ref.as_deref(),
         };
+        let compose_content = match &update.compose_content {
+            Some(v) => v.as_deref(),
+            None => existing.compose_content.as_deref(),
+        };
+        let project_id = match &update.project_id {
+            Some(v) => v.as_deref(),
+            None => existing.project_id.as_deref(),
+        };
+        let deploy_mode = update.deploy_mode.as_deref().unwrap_or(&existing.deploy_mode);
         let now = now_iso8601();
 
         sqlx::query(
             "UPDATE apps SET name = ?, git_repo = ?, git_branch = ?, framework = ?,
              build_config = ?, resource_limits = ?, preview_enabled = ?,
-             preview_branch_pattern = ?, tags = ?, volumes = ?, image_ref = ?, updated_at = ? WHERE id = ?",
+             preview_branch_pattern = ?, tags = ?, volumes = ?, image_ref = ?, compose_content = ?, project_id = ?, deploy_mode = ?, updated_at = ? WHERE id = ?",
         )
         .bind(name)
         .bind(git_repo)
@@ -151,6 +276,9 @@ impl Database for SqliteDatabase {
         .bind(tags)
         .bind(volumes)
         .bind(image_ref)
+        .bind(compose_content)
+        .bind(project_id)
+        .bind(deploy_mode)
         .bind(&now)
         .bind(id)
         .execute(&self.pool)
@@ -381,6 +509,7 @@ impl Database for SqliteDatabase {
             credentials: "{}".to_string(),
             backup_schedule: None,
             app_id: db.app_id.clone(),
+            project_id: None,
             created_at: now,
         })
     }
@@ -405,7 +534,7 @@ impl Database for SqliteDatabase {
 
     async fn list_managed_dbs(&self) -> Result<Vec<ManagedDatabase>, DbError> {
         let rows = sqlx::query(
-            "SELECT id, name, db_type, container_id, credentials_encrypted, backup_schedule, app_id, created_at
+            "SELECT id, name, db_type, container_id, credentials_encrypted, backup_schedule, app_id, project_id, created_at
              FROM databases ORDER BY created_at DESC",
         )
         .fetch_all(&self.pool)
@@ -425,6 +554,37 @@ impl Database for SqliteDatabase {
                 credentials,
                 backup_schedule: row.get("backup_schedule"),
                 app_id: row.get("app_id"),
+                project_id: row.get("project_id"),
+                created_at: row.get("created_at"),
+            });
+        }
+        Ok(dbs)
+    }
+
+    async fn list_managed_dbs_by_project(&self, project_id: &str) -> Result<Vec<ManagedDatabase>, DbError> {
+        let rows = sqlx::query(
+            "SELECT id, name, db_type, container_id, credentials_encrypted, backup_schedule, app_id, project_id, created_at
+             FROM databases WHERE project_id = ? ORDER BY created_at DESC",
+        )
+        .bind(project_id)
+        .fetch_all(&self.pool)
+        .await?;
+
+        let mut dbs = Vec::with_capacity(rows.len());
+        for row in rows {
+            let encrypted: Vec<u8> = row.get("credentials_encrypted");
+            let decrypted = self.encryptor.decrypt(&encrypted)?;
+            let credentials = String::from_utf8(decrypted).unwrap_or_default();
+
+            dbs.push(ManagedDatabase {
+                id: row.get("id"),
+                name: row.get("name"),
+                db_type: row.get("db_type"),
+                container_id: row.get("container_id"),
+                credentials,
+                backup_schedule: row.get("backup_schedule"),
+                app_id: row.get("app_id"),
+                project_id: row.get("project_id"),
                 created_at: row.get("created_at"),
             });
         }
@@ -531,6 +691,9 @@ impl Database for SqliteDatabase {
             email: user.email.clone(),
             password_hash: user.password_hash.clone(),
             role: user.role.clone(),
+            totp_secret: None,
+            totp_enabled: false,
+            totp_backup_codes: None,
             created_at: now.clone(),
             updated_at: now,
         })
@@ -542,6 +705,53 @@ impl Database for SqliteDatabase {
             .fetch_optional(&self.pool)
             .await?;
         Ok(user)
+    }
+
+    async fn get_user_by_id(&self, id: &str) -> Result<Option<User>, DbError> {
+        let user = sqlx::query_as::<_, User>("SELECT * FROM users WHERE id = ?")
+            .bind(id)
+            .fetch_optional(&self.pool)
+            .await?;
+        Ok(user)
+    }
+
+    async fn update_user_totp_secret(&self, user_id: &str, secret: Option<&str>) -> Result<(), DbError> {
+        sqlx::query("UPDATE users SET totp_secret = ?, updated_at = ? WHERE id = ?")
+            .bind(secret)
+            .bind(now_iso8601())
+            .bind(user_id)
+            .execute(&self.pool)
+            .await?;
+        Ok(())
+    }
+
+    async fn enable_user_totp(&self, user_id: &str, backup_codes: &str) -> Result<(), DbError> {
+        sqlx::query("UPDATE users SET totp_enabled = 1, totp_backup_codes = ?, updated_at = ? WHERE id = ?")
+            .bind(backup_codes)
+            .bind(now_iso8601())
+            .bind(user_id)
+            .execute(&self.pool)
+            .await?;
+        Ok(())
+    }
+
+    async fn disable_user_totp(&self, user_id: &str) -> Result<(), DbError> {
+        sqlx::query("UPDATE users SET totp_enabled = 0, totp_secret = NULL, totp_backup_codes = NULL, updated_at = ? WHERE id = ?")
+            .bind(now_iso8601())
+            .bind(user_id)
+            .execute(&self.pool)
+            .await?;
+        Ok(())
+    }
+
+    async fn update_user_backup_codes(&self, user_id: &str, backup_codes: &str) -> Result<(), DbError> {
+        sqlx::query("UPDATE users SET totp_backup_codes = ?, updated_at = ? WHERE id = ?")
+            .bind(backup_codes)
+            .bind(now_iso8601())
+            .bind(user_id)
+            .execute(&self.pool)
+            .await?;
+        Ok(())
     }
 
     async fn list_users(&self) -> Result<Vec<User>, DbError> {
@@ -1071,6 +1281,170 @@ impl Database for SqliteDatabase {
             .bind(id)
             .execute(&self.pool)
             .await?;
+        Ok(())
+    }
+
+    // --- OAuth Identities ---
+
+    async fn create_oauth_identity(
+        &self,
+        user_id: &str,
+        provider: &str,
+        provider_user_id: &str,
+        provider_email: Option<&str>,
+    ) -> Result<OAuthIdentity, DbError> {
+        let id = new_id();
+        let now = now_iso8601();
+
+        sqlx::query(
+            "INSERT INTO oauth_identities (id, user_id, provider, provider_user_id, provider_email, created_at)
+             VALUES (?, ?, ?, ?, ?, ?)",
+        )
+        .bind(&id)
+        .bind(user_id)
+        .bind(provider)
+        .bind(provider_user_id)
+        .bind(provider_email)
+        .bind(&now)
+        .execute(&self.pool)
+        .await
+        .map_err(|e| match e {
+            sqlx::Error::Database(ref db_err) if db_err.message().contains("UNIQUE") => {
+                DbError::Duplicate(format!("OAuth identity for {provider} already linked"))
+            }
+            other => DbError::Sqlx(other),
+        })?;
+
+        Ok(OAuthIdentity {
+            id,
+            user_id: user_id.to_string(),
+            provider: provider.to_string(),
+            provider_user_id: provider_user_id.to_string(),
+            provider_email: provider_email.map(String::from),
+            created_at: now,
+        })
+    }
+
+    async fn get_oauth_identity(
+        &self,
+        provider: &str,
+        provider_user_id: &str,
+    ) -> Result<Option<OAuthIdentity>, DbError> {
+        let identity = sqlx::query_as::<_, OAuthIdentity>(
+            "SELECT * FROM oauth_identities WHERE provider = ? AND provider_user_id = ?",
+        )
+        .bind(provider)
+        .bind(provider_user_id)
+        .fetch_optional(&self.pool)
+        .await?;
+        Ok(identity)
+    }
+
+    async fn list_oauth_identities_for_user(
+        &self,
+        user_id: &str,
+    ) -> Result<Vec<OAuthIdentity>, DbError> {
+        let identities = sqlx::query_as::<_, OAuthIdentity>(
+            "SELECT * FROM oauth_identities WHERE user_id = ? ORDER BY created_at",
+        )
+        .bind(user_id)
+        .fetch_all(&self.pool)
+        .await?;
+        Ok(identities)
+    }
+
+    async fn delete_oauth_identity(&self, id: &str) -> Result<(), DbError> {
+        let result = sqlx::query("DELETE FROM oauth_identities WHERE id = ?")
+            .bind(id)
+            .execute(&self.pool)
+            .await?;
+        if result.rows_affected() == 0 {
+            return Err(DbError::NotFound(format!("oauth_identity {id}")));
+        }
+        Ok(())
+    }
+
+    // --- OAuth Settings ---
+
+    async fn get_oauth_settings(&self) -> Result<Option<OAuthSettings>, DbError> {
+        let row = sqlx::query(
+            "SELECT github_client_id, github_client_secret_encrypted, github_enabled,
+                    google_client_id, google_client_secret_encrypted, google_enabled
+             FROM oauth_settings WHERE id = 'singleton'",
+        )
+        .fetch_optional(&self.pool)
+        .await?;
+
+        match row {
+            Some(row) => {
+                let github_secret: Option<Vec<u8>> = row.get("github_client_secret_encrypted");
+                let google_secret: Option<Vec<u8>> = row.get("google_client_secret_encrypted");
+
+                let github_client_secret = match github_secret {
+                    Some(enc) if !enc.is_empty() => {
+                        let dec = self.encryptor.decrypt(&enc)?;
+                        Some(String::from_utf8(dec).unwrap_or_default())
+                    }
+                    _ => None,
+                };
+
+                let google_client_secret = match google_secret {
+                    Some(enc) if !enc.is_empty() => {
+                        let dec = self.encryptor.decrypt(&enc)?;
+                        Some(String::from_utf8(dec).unwrap_or_default())
+                    }
+                    _ => None,
+                };
+
+                Ok(Some(OAuthSettings {
+                    github_client_id: row.get("github_client_id"),
+                    github_client_secret,
+                    github_enabled: row.get::<bool, _>("github_enabled"),
+                    google_client_id: row.get("google_client_id"),
+                    google_client_secret,
+                    google_enabled: row.get::<bool, _>("google_enabled"),
+                }))
+            }
+            None => Ok(None),
+        }
+    }
+
+    async fn upsert_oauth_settings(&self, settings: &OAuthSettings) -> Result<(), DbError> {
+        let now = now_iso8601();
+
+        let github_secret_enc: Option<Vec<u8>> = match &settings.github_client_secret {
+            Some(s) if !s.is_empty() => Some(self.encryptor.encrypt(s.as_bytes())?),
+            _ => None,
+        };
+
+        let google_secret_enc: Option<Vec<u8>> = match &settings.google_client_secret {
+            Some(s) if !s.is_empty() => Some(self.encryptor.encrypt(s.as_bytes())?),
+            _ => None,
+        };
+
+        sqlx::query(
+            "INSERT INTO oauth_settings (id, github_client_id, github_client_secret_encrypted, github_enabled,
+                                          google_client_id, google_client_secret_encrypted, google_enabled, updated_at)
+             VALUES ('singleton', ?, ?, ?, ?, ?, ?, ?)
+             ON CONFLICT(id) DO UPDATE SET
+                github_client_id = excluded.github_client_id,
+                github_client_secret_encrypted = excluded.github_client_secret_encrypted,
+                github_enabled = excluded.github_enabled,
+                google_client_id = excluded.google_client_id,
+                google_client_secret_encrypted = excluded.google_client_secret_encrypted,
+                google_enabled = excluded.google_enabled,
+                updated_at = excluded.updated_at",
+        )
+        .bind(&settings.github_client_id)
+        .bind(&github_secret_enc)
+        .bind(settings.github_enabled)
+        .bind(&settings.google_client_id)
+        .bind(&google_secret_enc)
+        .bind(settings.google_enabled)
+        .bind(&now)
+        .execute(&self.pool)
+        .await?;
+
         Ok(())
     }
 

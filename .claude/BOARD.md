@@ -171,15 +171,16 @@
 ### Phase 16 — v1.1 Fast Follow
 | Ticket | Title | Completed | Notes |
 |--------|-------|-----------|-------|
-| [IF-073](tickets/phase-16-v1.1-fast-follow/IF-073-docker-compose-support.md) | Docker Compose support | — | Multi-container stacks, isolated networks, raw mode |
-| [IF-074](tickets/phase-16-v1.1-fast-follow/IF-074-projects.md) | Projects (resource grouping) | — | Project CRUD, app/db assignment, sidebar grouping |
-| [IF-075](tickets/phase-16-v1.1-fast-follow/IF-075-two-factor-authentication.md) | Two-Factor Authentication (2FA) | — | TOTP setup, backup codes, login flow, admin reset |
-| [IF-076](tickets/phase-16-v1.1-fast-follow/IF-076-oauth-sso.md) | OAuth SSO (GitHub + Google) | — | PKCE flow, account linking, provider config |
-| [IF-077](tickets/phase-16-v1.1-fast-follow/IF-077-container-terminal.md) | Container terminal (browser shell) | — | xterm.js + WebSocket + Docker exec, role-based access |
-| [IF-078](tickets/phase-16-v1.1-fast-follow/IF-078-command-palette.md) | Command palette | — | Cmd+K global search + quick actions |
-| [IF-079](tickets/phase-16-v1.1-fast-follow/IF-079-volume-management.md) | Volume management & browsing | — | File browser, size limits, volume backups, shared volumes |
-| [IF-080](tickets/phase-16-v1.1-fast-follow/IF-080-s3-object-storage-mounts.md) | S3 / object storage mounts | — | FUSE-based S3 mount as filesystem path via s3fs/rclone |
-| [IF-081](tickets/phase-16-v1.1-fast-follow/IF-081-expanded-database-support.md) | Expanded database support | — | MariaDB, ClickHouse, KeyDB, DragonFly, CockroachDB, SQLite, Valkey, Cassandra + backups for all |
+| [IF-073](tickets/phase-16-v1.1-fast-follow/IF-073-docker-compose-support.md) | Docker Compose support | 2026-05-08 | Compose parser, multi-service deploy, isolated networks, variable interpolation, depends_on ordering |
+| [IF-074](tickets/phase-16-v1.1-fast-follow/IF-074-projects.md) | Projects (resource grouping) | 2026-05-08 | Project CRUD, app/db assignment, sidebar grouping, settings dropdown, project detail page |
+| [IF-075](tickets/phase-16-v1.1-fast-follow/IF-075-two-factor-authentication.md) | Two-Factor Authentication (2FA) | 2026-05-08 | TOTP setup with QR code, backup codes, login flow, admin reset, settings UI |
+| [IF-076](tickets/phase-16-v1.1-fast-follow/IF-076-oauth-sso.md) | OAuth SSO (GitHub + Google) | 2026-05-08 | PKCE flow, account linking, provider config, login buttons, settings admin |
+| [IF-077](tickets/phase-16-v1.1-fast-follow/IF-077-container-terminal.md) | Container terminal (browser shell) | 2026-05-08 | xterm.js + WebSocket + Docker exec, resize, dark theme, new tab |
+| [IF-078](tickets/phase-16-v1.1-fast-follow/IF-078-command-palette.md) | Command palette | 2026-05-08 | Cmd+K fuzzy search, actions, recent items, keyboard nav, layout mount |
+| [IF-079](tickets/phase-16-v1.1-fast-follow/IF-079-volume-management.md) | Volume management & browsing | 2026-05-08 | File browser drawer, upload/download, size tracking, path validation |
+| [IF-080](tickets/phase-16-v1.1-fast-follow/IF-080-s3-object-storage-mounts.md) | S3 / object storage mounts | 2026-05-08 | rclone sidecar, S3 volume type in settings, shared Docker volumes |
+| [IF-081](tickets/phase-16-v1.1-fast-follow/IF-081-expanded-database-support.md) | Expanded database support | 2026-05-08 | MariaDB, ClickHouse, KeyDB, DragonFly, CockroachDB, Valkey, Cassandra + backups for all |
+| [IF-082](tickets/phase-16-v1.1-fast-follow/IF-082-native-static-deploy.md) | Native static site deployment | — | No-Docker deploy for static sites, Caddy file_server, symlink rollback, <5s deploys |
 
 ---
 
@@ -187,11 +188,11 @@
 
 | Metric | Count |
 |--------|-------|
-| Total tickets | 88 |
-| Done | 79 |
-| Backlog | 9 |
+| Total tickets | 89 |
+| Done | 88 |
+| Backlog | 1 |
 | Superseded | 1 |
-| Phases complete | 15 / 16 |
+| Phases complete | 16 / 16 |
 
 ### Progress
 | Phase | Status | Tickets |
@@ -211,7 +212,7 @@
 | 13 — Onboarding | **Done** | 10/10 |
 | 14 — Dashboard Surface | **Done** | 6/6 |
 | 15 — Critical Gaps | **Done** | 8/8 |
-| 16 — v1.1 Fast Follow | Backlog | 0/9 |
+| 16 — v1.1 Fast Follow | **Done** | 9/10 |
 
 ### Size breakdown
 | Size | Count | Estimated effort |

@@ -10,6 +10,11 @@ pub struct User {
     #[serde(skip_serializing)]
     pub password_hash: String,
     pub role: String,
+    #[serde(skip_serializing)]
+    pub totp_secret: Option<String>,
+    pub totp_enabled: bool,
+    #[serde(skip_serializing)]
+    pub totp_backup_codes: Option<String>,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -37,6 +42,9 @@ pub struct App {
     pub tags: Option<String>,
     pub volumes: Option<String>,
     pub image_ref: Option<String>,
+    pub compose_content: Option<String>,
+    pub project_id: Option<String>,
+    pub deploy_mode: String,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -47,6 +55,8 @@ pub struct NewApp {
     pub git_branch: String,
     pub framework: Option<String>,
     pub image_ref: Option<String>,
+    pub compose_content: Option<String>,
+    pub deploy_mode: Option<String>,
 }
 
 pub struct UpdateApp {
@@ -61,6 +71,33 @@ pub struct UpdateApp {
     pub tags: Option<String>,
     pub volumes: Option<String>,
     pub image_ref: Option<Option<String>>,
+    pub compose_content: Option<Option<String>>,
+    pub project_id: Option<Option<String>>,
+    pub deploy_mode: Option<String>,
+}
+
+// --- Projects ---
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
+pub struct Project {
+    pub id: String,
+    pub name: String,
+    pub description: Option<String>,
+    pub color: Option<String>,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+pub struct NewProject {
+    pub name: String,
+    pub description: Option<String>,
+    pub color: Option<String>,
+}
+
+pub struct UpdateProject {
+    pub name: Option<String>,
+    pub description: Option<Option<String>>,
+    pub color: Option<Option<String>>,
 }
 
 // --- Environments ---
@@ -136,6 +173,7 @@ pub struct ManagedDatabase {
     pub credentials: String,
     pub backup_schedule: Option<String>,
     pub app_id: Option<String>,
+    pub project_id: Option<String>,
     pub created_at: String,
 }
 
@@ -291,6 +329,30 @@ pub struct InstanceBackupRecord {
     pub s3_key: Option<String>,
     pub started_at: String,
     pub finished_at: Option<String>,
+}
+
+// --- OAuth Identities ---
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
+pub struct OAuthIdentity {
+    pub id: String,
+    pub user_id: String,
+    pub provider: String,
+    pub provider_user_id: String,
+    pub provider_email: Option<String>,
+    pub created_at: String,
+}
+
+// --- OAuth Settings ---
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OAuthSettings {
+    pub github_client_id: Option<String>,
+    pub github_client_secret: Option<String>,
+    pub github_enabled: bool,
+    pub google_client_id: Option<String>,
+    pub google_client_secret: Option<String>,
+    pub google_enabled: bool,
 }
 
 pub fn now_iso8601() -> String {

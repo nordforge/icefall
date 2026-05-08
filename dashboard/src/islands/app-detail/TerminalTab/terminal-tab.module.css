@@ -1,0 +1,174 @@
+/* Terminal tab — always dark, consistent with log viewer */
+.terminal {
+  --term-bg: oklch(0.14 0.015 250);
+  --term-toolbar-bg: oklch(0.18 0.015 250);
+  --term-toolbar-border: oklch(0.25 0.015 250);
+  --term-text: oklch(0.9 0.005 250);
+  --term-text-muted: oklch(0.58 0.01 250);
+
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 250px);
+  min-height: 400px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-4);
+  background: var(--term-toolbar-bg);
+  border-bottom: 1px solid var(--term-toolbar-border);
+}
+
+.toolbarLeft {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.toolbarRight {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.statusIndicator {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+  font-family: var(--font-mono);
+  color: var(--term-text-muted);
+}
+
+.statusDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.statusConnected {
+  composes: statusDot;
+  background: var(--color-success);
+}
+
+.statusConnecting {
+  composes: statusDot;
+  background: var(--color-warning);
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .statusConnecting {
+    animation: none;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.statusDisconnected {
+  composes: statusDot;
+  background: var(--color-error);
+}
+
+.terminalContainer {
+  flex: 1;
+  background: var(--term-bg);
+  padding: var(--space-2);
+  overflow: hidden;
+}
+
+/* xterm.js container needs full dimensions */
+.terminalContainer :global(.xterm) {
+  height: 100%;
+}
+
+.terminalContainer :global(.xterm-viewport) {
+  overflow-y: auto;
+}
+
+.ghostButton {
+  background: none;
+  border: 1px solid var(--term-toolbar-border);
+  color: var(--term-text-muted);
+  cursor: pointer;
+  font-size: var(--text-xs);
+  font-family: var(--font-mono);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-sm);
+  transition: opacity 0.15s ease;
+}
+
+/* a11y [WCAG 2.4.7]: visible focus ring on terminal toolbar buttons */
+.ghostButton:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+.ghostButton:hover {
+  color: var(--term-text);
+  border-color: var(--term-text-muted);
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: var(--space-4);
+  color: var(--term-text-muted);
+  font-size: var(--text-sm);
+  background: var(--term-bg);
+  padding: var(--space-8);
+}
+
+.emptyStateTitle {
+  font-size: var(--text-base);
+  color: var(--term-text);
+  font-weight: 600;
+}
+
+.emptyStateHint {
+  color: var(--term-text-muted);
+  font-size: var(--text-sm);
+  max-width: 400px;
+  text-align: center;
+  line-height: 1.5;
+}
+
+.connectButton {
+  background: var(--color-primary);
+  color: var(--color-text-on-primary);
+  border: none;
+  cursor: pointer;
+  font-size: var(--text-sm);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-sm);
+  font-weight: 500;
+}
+
+/* a11y [WCAG 2.4.7]: visible focus ring on connect button */
+.connectButton:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+.connectButton:hover {
+  opacity: 0.9;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ghostButton,
+  .connectButton {
+    transition: none;
+  }
+}

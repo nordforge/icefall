@@ -12,6 +12,22 @@ export type App = {
   tags: string | null;
   volumes: string | null;
   image_ref: string | null;
+  compose_content: string | null;
+  project_id: string | null;
+  deploy_mode: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type DeployMode = 'auto' | 'native' | 'container';
+
+export type Project = {
+  id: string;
+  name: string;
+  description: string | null;
+  color: string | null;
+  app_count?: number;
+  database_count?: number;
   created_at: string;
   updated_at: string;
 }
@@ -91,6 +107,7 @@ export type User = {
   id: string;
   email: string;
   role: 'admin' | 'deployer' | 'viewer';
+  totp_enabled: boolean;
   is_active: boolean;
   last_login_at: string | null;
   created_at: string;

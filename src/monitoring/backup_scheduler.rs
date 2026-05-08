@@ -37,8 +37,13 @@ impl BackupStore {
         let dump_cmd = match db_type {
             "postgres" => "pg_dumpall -U icefall | gzip",
             "mysql" => "mysqldump -u icefall --all-databases | gzip",
-            "redis" => "redis-cli BGSAVE && sleep 2 && cat /data/dump.rdb | gzip",
+            "mariadb" => "mariadb-dump -u icefall --all-databases | gzip",
+            "redis" | "keydb" | "valkey" => "redis-cli BGSAVE && sleep 2 && cat /data/dump.rdb | gzip",
+            "dragonfly" => "redis-cli BGSAVE && sleep 2 && cat /data/dump.rdb | gzip",
             "mongo" => "mongodump --archive --gzip --username icefall",
+            "clickhouse" => "clickhouse-client --query 'SELECT * FROM system.tables FORMAT TabSeparated' | gzip",
+            "cockroachdb" => "cockroach dump --insecure defaultdb | gzip",
+            "cassandra" => "nodetool snapshot -t backup && tar czf /tmp/cassandra-backup.tar.gz /var/lib/cassandra/data/*/snapshots/backup/ && cat /tmp/cassandra-backup.tar.gz",
             _ => return Err(format!("unsupported db type: {db_type}")),
         };
 

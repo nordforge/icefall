@@ -23,11 +23,19 @@ pub enum DbError {
 
 #[async_trait]
 pub trait Database: Send + Sync + 'static {
+    // Projects
+    async fn list_projects(&self) -> Result<Vec<Project>, DbError>;
+    async fn create_project(&self, project: &NewProject) -> Result<Project, DbError>;
+    async fn get_project(&self, id: &str) -> Result<Option<Project>, DbError>;
+    async fn update_project(&self, id: &str, update: &UpdateProject) -> Result<Project, DbError>;
+    async fn delete_project(&self, id: &str) -> Result<(), DbError>;
+
     // Apps
     async fn create_app(&self, app: &NewApp) -> Result<App, DbError>;
     async fn get_app(&self, id: &str) -> Result<Option<App>, DbError>;
     async fn get_app_by_name(&self, name: &str) -> Result<Option<App>, DbError>;
     async fn list_apps(&self) -> Result<Vec<App>, DbError>;
+    async fn list_apps_by_project(&self, project_id: &str) -> Result<Vec<App>, DbError>;
     async fn update_app(&self, id: &str, update: &UpdateApp) -> Result<App, DbError>;
     async fn delete_app(&self, id: &str) -> Result<(), DbError>;
 
@@ -58,6 +66,7 @@ pub trait Database: Send + Sync + 'static {
         db: &NewManagedDatabase,
     ) -> Result<ManagedDatabase, DbError>;
     async fn list_managed_dbs(&self) -> Result<Vec<ManagedDatabase>, DbError>;
+    async fn list_managed_dbs_by_project(&self, project_id: &str) -> Result<Vec<ManagedDatabase>, DbError>;
     async fn update_managed_db_credentials(
         &self,
         id: &str,
@@ -80,7 +89,14 @@ pub trait Database: Send + Sync + 'static {
     // Users
     async fn create_user(&self, user: &NewUser) -> Result<User, DbError>;
     async fn get_user_by_email(&self, email: &str) -> Result<Option<User>, DbError>;
+    async fn get_user_by_id(&self, id: &str) -> Result<Option<User>, DbError>;
     async fn list_users(&self) -> Result<Vec<User>, DbError>;
+
+    // TOTP / 2FA
+    async fn update_user_totp_secret(&self, user_id: &str, secret: Option<&str>) -> Result<(), DbError>;
+    async fn enable_user_totp(&self, user_id: &str, backup_codes: &str) -> Result<(), DbError>;
+    async fn disable_user_totp(&self, user_id: &str) -> Result<(), DbError>;
+    async fn update_user_backup_codes(&self, user_id: &str, backup_codes: &str) -> Result<(), DbError>;
 
     // Server Metrics
     async fn insert_server_metric(&self, snapshot: &crate::api::routes::server::ServerMetricsSnapshot) -> Result<(), DbError>;
@@ -173,6 +189,29 @@ pub trait Database: Send + Sync + 'static {
     async fn update_instance_backup_record(&self, id: &str, status: &str, size_bytes: i64, error_message: Option<&str>) -> Result<(), DbError>;
     async fn list_instance_backup_history(&self, limit: i64) -> Result<Vec<InstanceBackupRecord>, DbError>;
     async fn delete_instance_backup_record(&self, id: &str) -> Result<(), DbError>;
+
+    // OAuth Identities
+    async fn create_oauth_identity(
+        &self,
+        user_id: &str,
+        provider: &str,
+        provider_user_id: &str,
+        provider_email: Option<&str>,
+    ) -> Result<OAuthIdentity, DbError>;
+    async fn get_oauth_identity(
+        &self,
+        provider: &str,
+        provider_user_id: &str,
+    ) -> Result<Option<OAuthIdentity>, DbError>;
+    async fn list_oauth_identities_for_user(
+        &self,
+        user_id: &str,
+    ) -> Result<Vec<OAuthIdentity>, DbError>;
+    async fn delete_oauth_identity(&self, id: &str) -> Result<(), DbError>;
+
+    // OAuth Settings
+    async fn get_oauth_settings(&self) -> Result<Option<OAuthSettings>, DbError>;
+    async fn upsert_oauth_settings(&self, settings: &OAuthSettings) -> Result<(), DbError>;
 
     // Migrations
     async fn run_migrations(&self) -> Result<(), DbError>;

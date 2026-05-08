@@ -7,6 +7,7 @@ const currentPath = Astro.url.pathname;
 
 const navItems = [
   { href: '/', label: 'Apps', icon: 'grid' },
+  { href: '/projects', label: 'Projects', icon: 'folder' },
   { href: '/databases', label: 'Databases', icon: 'database' },
   { href: '/server', label: 'Server', icon: 'server' },
   { href: '/users', label: 'Users', icon: 'users' },
@@ -44,6 +45,7 @@ function isActive(href: string): boolean {
       >
         <svg aria-hidden="true" class={styles.navIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
           {item.icon === 'grid' && <><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /></>}
+          {item.icon === 'folder' && <><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" /></>}
           {item.icon === 'database' && <><ellipse cx="12" cy="5" rx="9" ry="3" /><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" /><path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3" /></>}
           {item.icon === 'server' && <><rect x="2" y="2" width="20" height="8" rx="2" /><rect x="2" y="14" width="20" height="8" rx="2" /><circle cx="6" cy="6" r="1" fill="currentColor" /><circle cx="6" cy="18" r="1" fill="currentColor" /></>}
           {item.icon === 'users' && <><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></>}

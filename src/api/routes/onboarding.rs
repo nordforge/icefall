@@ -224,6 +224,8 @@ async fn create_first_app(
         git_branch: body.git_branch.unwrap_or_else(|| "main".into()),
         framework: None,
         image_ref: None,
+        compose_content: None,
+        deploy_mode: None,
     }).await?;
 
     let _ = state.db.create_environment(&crate::db::models::NewEnvironment {

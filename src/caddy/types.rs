@@ -21,6 +21,10 @@ pub struct CaddyHandler {
     pub handler: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub upstreams: Option<Vec<CaddyUpstream>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub root: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub try_files: Option<Vec<String>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -46,7 +50,7 @@ impl CaddyRoute {
             } else if p.ends_with('/') {
                 format!("{p}*")
             } else {
-                format!("{p}*")
+                format!("{p}/*")
             };
             vec![pattern]
         });
@@ -61,7 +65,47 @@ impl CaddyRoute {
                 upstreams: Some(vec![CaddyUpstream {
                     dial: upstream.to_string(),
                 }]),
+                root: None,
+                try_files: None,
             }],
+            terminal: Some(true),
+        }
+    }
+
+    /// Create a file_server route for serving static files with SPA fallback.
+    pub fn file_server(domain: &str, root_path: &str) -> Self {
+        Self {
+            matchers: vec![CaddyMatch {
+                host: vec![domain.to_string()],
+                path: None,
+            }],
+            handle: vec![
+                // rewrite handler for SPA try_files
+                CaddyHandler {
+                    handler: "rewrite".to_string(),
+                    upstreams: None,
+                    root: None,
+                    try_files: Some(vec![
+                        "{http.request.uri.path}".to_string(),
+                        "{http.request.uri.path}/index.html".to_string(),
+                        "/index.html".to_string(),
+                    ]),
+                },
+                // vars handler to set the root
+                CaddyHandler {
+                    handler: "vars".to_string(),
+                    upstreams: None,
+                    root: Some(root_path.to_string()),
+                    try_files: None,
+                },
+                // file_server handler
+                CaddyHandler {
+                    handler: "file_server".to_string(),
+                    upstreams: None,
+                    root: Some(root_path.to_string()),
+                    try_files: None,
+                },
+            ],
             terminal: Some(true),
         }
     }

@@ -1,0 +1,1 @@
+ALTER TABLE apps ADD COLUMN deploy_mode TEXT NOT NULL DEFAULT 'auto';

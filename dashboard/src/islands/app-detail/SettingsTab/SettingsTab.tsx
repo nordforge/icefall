@@ -1,8 +1,9 @@
-import { useState } from 'preact/hooks';
-import type { App } from '@lib/types';
+import { useEffect, useState } from 'preact/hooks';
+import type { App, Project, DeployMode } from '@lib/types';
 import { api } from '@lib/api';
 import Button from '@islands/shared/Button/Button';
-import { Save, AlertTriangle, Square, Play, RotateCw, Trash2, Webhook, Copy, Check, X, Plus, HardDrive } from 'lucide-preact';
+import { Save, AlertTriangle, Square, Play, RotateCw, Trash2, Webhook, Copy, Check, X, Plus, HardDrive, FolderOpen, Cloud, Search, Zap } from 'lucide-preact';
+import VolumeBrowser from '@islands/app-detail/VolumeBrowser/VolumeBrowser';
 import styles from './settings-tab.module.css';
 import formStyles from '@styles/form.module.css';
 
@@ -18,22 +19,52 @@ function parseTags(raw: string | null): string[] {
   return raw.split(',').map((t) => t.trim()).filter(Boolean);
 }
 
-type VolumeMount = {
+type LocalVolume = {
+  type: 'local';
   source: string;
   target: string;
   read_only: boolean;
 };
 
-function parseVolumes(raw: string | null): VolumeMount[] {
+type S3Volume = {
+  type: 's3';
+  bucket: string;
+  endpoint: string;
+  access_key: string;
+  secret_key: string;
+  region: string;
+  target: string;
+  read_only: boolean;
+};
+
+type VolumeEntry = LocalVolume | S3Volume;
+
+function parseVolumes(raw: string | null): VolumeEntry[] {
   if (!raw) return [];
   try {
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
-    return parsed.map((v: any) => ({
-      source: v.source || '',
-      target: v.target || '',
-      read_only: !!v.read_only,
-    }));
+    return parsed.map((v: any): VolumeEntry => {
+      if (v.type === 's3') {
+        return {
+          type: 's3',
+          bucket: v.bucket || '',
+          endpoint: v.endpoint || '',
+          access_key: v.access_key || '',
+          secret_key: v.secret_key || '',
+          region: v.region || 'auto',
+          target: v.target || '',
+          read_only: !!v.read_only,
+        };
+      }
+      // Legacy entries without a type field are treated as local.
+      return {
+        type: 'local',
+        source: v.source || '',
+        target: v.target || '',
+        read_only: !!v.read_only,
+      };
+    });
   } catch { return []; }
 }
 
@@ -66,10 +97,13 @@ export default function SettingsTab({ app }: Props) {
       preview_branch_pattern: app.preview_branch_pattern || '*',
     };
   });
+  const [deployMode, setDeployMode] = useState<DeployMode>(
+    (app.deploy_mode as DeployMode) || 'auto'
+  );
   const [tags, setTags] = useState<string[]>(() => parseTags(app.tags));
   const [tagInput, setTagInput] = useState('');
   const [tagError, setTagError] = useState('');
-  const [volumes, setVolumes] = useState<VolumeMount[]>(() => parseVolumes(app.volumes));
+  const [volumes, setVolumes] = useState<VolumeEntry[]>(() => parseVolumes(app.volumes));
   const [volumeErrors, setVolumeErrors] = useState<Record<number, string>>({});
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState('');
@@ -79,6 +113,13 @@ export default function SettingsTab({ app }: Props) {
   const [starting, setStarting] = useState(false);
   const [restarting, setRestarting] = useState(false);
   const [copied, setCopied] = useState('');
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [selectedProjectId, setSelectedProjectId] = useState<string>(app.project_id || '');
+  const [browsingVolume, setBrowsingVolume] = useState<number | null>(null);
+
+  useEffect(() => {
+    api.listProjects().then(({ data }) => setProjects(data)).catch(() => {});
+  }, []);
 
   const webhookBaseUrl = window.location.origin + '/api/v1/webhooks/' + app.id;
   const hasWebhookSecret = !!app.webhook_secret;
@@ -90,7 +131,10 @@ export default function SettingsTab({ app }: Props) {
       if (form.memory_mb) resourceLimits.memory_bytes = parseInt(form.memory_mb, 10) * 1024 * 1024;
       if (form.cpu_shares) resourceLimits.cpu_shares = parseInt(form.cpu_shares, 10);
 
-      const validVolumes = volumes.filter((v) => v.source && v.target);
+      const validVolumes = volumes.filter((v) => {
+        if (v.type === 's3') return v.bucket && v.target;
+        return v.source && v.target;
+      });
 
       await api.updateApp(app.id, {
         name: form.name,
@@ -101,6 +145,8 @@ export default function SettingsTab({ app }: Props) {
         preview_branch_pattern: form.preview_enabled ? form.preview_branch_pattern : undefined,
         tags: tags.join(','),
         volumes: validVolumes.length > 0 ? JSON.stringify(validVolumes) : null,
+        project_id: selectedProjectId || null,
+        deploy_mode: deployMode,
       } as any);
       setSaveMessage('Saved');
     } catch {
@@ -159,8 +205,21 @@ export default function SettingsTab({ app }: Props) {
     }
   }
 
-  function addVolume() {
-    setVolumes([...volumes, { source: '', target: '', read_only: false }]);
+  function addVolume(volumeType: 'local' | 's3' = 'local') {
+    if (volumeType === 's3') {
+      setVolumes([...volumes, {
+        type: 's3',
+        bucket: '',
+        endpoint: '',
+        access_key: '',
+        secret_key: '',
+        region: 'auto',
+        target: '',
+        read_only: false,
+      }]);
+    } else {
+      setVolumes([...volumes, { type: 'local', source: '', target: '', read_only: false }]);
+    }
   }
 
   function removeVolume(index: number) {
@@ -172,10 +231,10 @@ export default function SettingsTab({ app }: Props) {
     });
   }
 
-  function updateVolume(index: number, field: keyof VolumeMount, value: string | boolean) {
+  function updateVolume(index: number, field: string, value: string | boolean) {
     const updated = volumes.map((v, i) => {
       if (i !== index) return v;
-      return { ...v, [field]: value };
+      return { ...v, [field]: value } as VolumeEntry;
     });
     setVolumes(updated);
 
@@ -191,6 +250,31 @@ export default function SettingsTab({ app }: Props) {
         });
       }
     }
+  }
+
+  function switchVolumeType(index: number, newType: 'local' | 's3') {
+    const updated = volumes.map((v, i): VolumeEntry => {
+      if (i !== index) return v;
+      if (newType === 's3') {
+        return {
+          type: 's3',
+          bucket: '',
+          endpoint: '',
+          access_key: '',
+          secret_key: '',
+          region: 'auto',
+          target: v.target,
+          read_only: v.read_only,
+        };
+      }
+      return {
+        type: 'local',
+        source: '',
+        target: v.target,
+        read_only: v.read_only,
+      };
+    });
+    setVolumes(updated);
   }
 
   return (
@@ -215,7 +299,58 @@ export default function SettingsTab({ app }: Props) {
             <label htmlFor="settings-build-cmd" class={formStyles.label}>Build Command</label>
             <input id="settings-build-cmd" class={formStyles.inputMono} value={form.build_command} onInput={(e) => setForm({ ...form, build_command: (e.target as HTMLInputElement).value })} placeholder="bun run build" />
           </div>
+          <div>
+            <label htmlFor="settings-project" class={formStyles.label}>
+              <FolderOpen size={14} style={{ verticalAlign: 'text-bottom', marginRight: '4px' }} />
+              Project
+            </label>
+            {/* a11y [WCAG 4.1.2]: select has associated label via htmlFor/id */}
+            <select
+              id="settings-project"
+              class={formStyles.select}
+              value={selectedProjectId}
+              onChange={(e) => setSelectedProjectId((e.target as HTMLSelectElement).value)}
+            >
+              <option value="">Unassigned</option>
+              {projects.map((p) => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+            <span class={styles.fieldHint}>Group this app with others in a project.</span>
+          </div>
         </div>
+      </div>
+
+      {/* Deploy Mode */}
+      <div class={styles.card}>
+        <h2 class={styles.sectionTitle}>
+          <Zap size={18} /> Deploy Mode
+        </h2>
+        <p class={styles.settingsDescription}>
+          Controls how this app is built and served. Native mode builds on the host and serves static files directly through Caddy — no container overhead. Container mode uses Docker for apps that need a running server.
+        </p>
+        <div class={formStyles.fieldRow}>
+          <div>
+            {/* a11y [WCAG 4.1.2]: select has associated label via htmlFor/id */}
+            <label htmlFor="settings-deploy-mode" class={formStyles.label}>Deploy Mode</label>
+            <select
+              id="settings-deploy-mode"
+              class={formStyles.select}
+              value={deployMode}
+              onChange={(e) => setDeployMode((e.target as HTMLSelectElement).value as DeployMode)}
+            >
+              <option value="auto">Auto (recommended)</option>
+              <option value="native">Native (static)</option>
+              <option value="container">Container</option>
+            </select>
+            <span class={styles.fieldHint}>
+              {deployMode === 'auto' && 'Icefall detects whether your app is static or needs a server, then picks the fastest deploy method.'}
+              {deployMode === 'native' && 'Build output is served directly by Caddy. Best for static sites (React, Vue, Astro static, plain HTML). No container overhead.'}
+              {deployMode === 'container' && 'App runs in a Docker container. Required for SSR frameworks (Next.js, Nuxt, Astro SSR) and Node.js servers.'}
+            </span>
+          </div>
+        </div>
+        <p class={styles.settingsNote}>Changes take effect on next deployment.</p>
       </div>
 
       {/* Tags */}
@@ -389,7 +524,7 @@ export default function SettingsTab({ app }: Props) {
           <HardDrive size={18} /> Persistent Storage
         </h2>
         <p class={styles.settingsDescription}>
-          Mount named volumes or host paths into your container. Data in these mounts persists across deployments.
+          Mount named volumes, host paths, or S3-compatible object storage into your container. Data in these mounts persists across deployments.
         </p>
 
         {volumes.length > 0 && (
@@ -397,34 +532,129 @@ export default function SettingsTab({ app }: Props) {
             {volumes.map((vol, index) => (
               <div key={index} class={styles.volumeRow} role="listitem">
                 <div class={styles.volumeFields}>
-                  <div>
-                    <label htmlFor={`vol-source-${index}`} class={formStyles.label}>Source</label>
-                    <input
-                      id={`vol-source-${index}`}
-                      class={formStyles.inputMono}
-                      value={vol.source}
-                      onInput={(e) => updateVolume(index, 'source', (e.target as HTMLInputElement).value)}
-                      placeholder="myapp-data"
-                    />
-                    <span class={styles.fieldHint}>Volume name or host path</span>
+                  {/* a11y [WCAG 4.1.2]: select has associated label via htmlFor/id */}
+                  <div class={styles.volumeTypeRow}>
+                    <label htmlFor={`vol-type-${index}`} class={formStyles.label}>Type</label>
+                    <select
+                      id={`vol-type-${index}`}
+                      class={formStyles.select}
+                      value={vol.type}
+                      onChange={(e) => switchVolumeType(index, (e.target as HTMLSelectElement).value as 'local' | 's3')}
+                    >
+                      <option value="local">Local Volume</option>
+                      <option value="s3">S3 Mount</option>
+                    </select>
                   </div>
-                  <div>
-                    <label htmlFor={`vol-target-${index}`} class={formStyles.label}>Target</label>
-                    <input
-                      id={`vol-target-${index}`}
-                      class={formStyles.inputMono}
-                      value={vol.target}
-                      onInput={(e) => updateVolume(index, 'target', (e.target as HTMLInputElement).value)}
-                      placeholder="/app/data"
-                      aria-invalid={!!volumeErrors[index]}
-                      aria-describedby={volumeErrors[index] ? `vol-error-${index}` : undefined}
-                    />
-                    {volumeErrors[index] ? (
-                      <span id={`vol-error-${index}`} class={styles.volumeError} role="alert">{volumeErrors[index]}</span>
-                    ) : (
-                      <span class={styles.fieldHint}>Container path (must start with /)</span>
-                    )}
-                  </div>
+
+                  {vol.type === 'local' ? (
+                    <>
+                      <div>
+                        <label htmlFor={`vol-source-${index}`} class={formStyles.label}>Source</label>
+                        <input
+                          id={`vol-source-${index}`}
+                          class={formStyles.inputMono}
+                          value={vol.source}
+                          onInput={(e) => updateVolume(index, 'source', (e.target as HTMLInputElement).value)}
+                          placeholder="myapp-data"
+                        />
+                        <span class={styles.fieldHint}>Volume name or host path</span>
+                      </div>
+                      <div>
+                        <label htmlFor={`vol-target-${index}`} class={formStyles.label}>Container Path</label>
+                        <input
+                          id={`vol-target-${index}`}
+                          class={formStyles.inputMono}
+                          value={vol.target}
+                          onInput={(e) => updateVolume(index, 'target', (e.target as HTMLInputElement).value)}
+                          placeholder="/app/data"
+                          aria-invalid={!!volumeErrors[index]}
+                          aria-describedby={volumeErrors[index] ? `vol-error-${index}` : undefined}
+                        />
+                        {volumeErrors[index] ? (
+                          <span id={`vol-error-${index}`} class={styles.volumeError} role="alert">{volumeErrors[index]}</span>
+                        ) : (
+                          <span class={styles.fieldHint}>Must start with /</span>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div>
+                        <label htmlFor={`vol-bucket-${index}`} class={formStyles.label}>
+                          <Cloud size={14} style={{ verticalAlign: 'text-bottom', marginRight: '4px' }} />
+                          Bucket Name
+                        </label>
+                        <input
+                          id={`vol-bucket-${index}`}
+                          class={formStyles.inputMono}
+                          value={vol.bucket}
+                          onInput={(e) => updateVolume(index, 'bucket', (e.target as HTMLInputElement).value)}
+                          placeholder="my-bucket"
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor={`vol-endpoint-${index}`} class={formStyles.label}>Endpoint URL</label>
+                        <input
+                          id={`vol-endpoint-${index}`}
+                          class={formStyles.inputMono}
+                          value={vol.endpoint}
+                          onInput={(e) => updateVolume(index, 'endpoint', (e.target as HTMLInputElement).value)}
+                          placeholder="https://s3.amazonaws.com"
+                        />
+                        <span class={styles.fieldHint}>S3-compatible endpoint (R2, MinIO, etc.)</span>
+                      </div>
+                      <div>
+                        <label htmlFor={`vol-accesskey-${index}`} class={formStyles.label}>Access Key</label>
+                        <input
+                          id={`vol-accesskey-${index}`}
+                          class={formStyles.inputMono}
+                          value={vol.access_key}
+                          onInput={(e) => updateVolume(index, 'access_key', (e.target as HTMLInputElement).value)}
+                          placeholder="AKIA..."
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor={`vol-secretkey-${index}`} class={formStyles.label}>Secret Key</label>
+                        <input
+                          id={`vol-secretkey-${index}`}
+                          class={formStyles.inputMono}
+                          type="password"
+                          value={vol.secret_key}
+                          onInput={(e) => updateVolume(index, 'secret_key', (e.target as HTMLInputElement).value)}
+                          placeholder="Secret key"
+                          autocomplete="off"
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor={`vol-region-${index}`} class={formStyles.label}>Region</label>
+                        <input
+                          id={`vol-region-${index}`}
+                          class={formStyles.inputMono}
+                          value={vol.region}
+                          onInput={(e) => updateVolume(index, 'region', (e.target as HTMLInputElement).value)}
+                          placeholder="auto"
+                        />
+                        <span class={styles.fieldHint}>Use "auto" for most S3-compatible providers.</span>
+                      </div>
+                      <div>
+                        <label htmlFor={`vol-target-${index}`} class={formStyles.label}>Container Path</label>
+                        <input
+                          id={`vol-target-${index}`}
+                          class={formStyles.inputMono}
+                          value={vol.target}
+                          onInput={(e) => updateVolume(index, 'target', (e.target as HTMLInputElement).value)}
+                          placeholder="/app/s3"
+                          aria-invalid={!!volumeErrors[index]}
+                          aria-describedby={volumeErrors[index] ? `vol-error-${index}` : undefined}
+                        />
+                        {volumeErrors[index] ? (
+                          <span id={`vol-error-${index}`} class={styles.volumeError} role="alert">{volumeErrors[index]}</span>
+                        ) : (
+                          <span class={styles.fieldHint}>Must start with /</span>
+                        )}
+                      </div>
+                    </>
+                  )}
                 </div>
                 <div class={styles.volumeActions}>
                   <label class={styles.toggleLabel}>
@@ -435,12 +665,22 @@ export default function SettingsTab({ app }: Props) {
                     />
                     Read-only
                   </label>
+                  {vol.type !== 's3' && vol.target && (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => setBrowsingVolume(index)}
+                      aria-label={`Browse volume ${vol.type === 'local' ? vol.source : ''} mounted at ${vol.target}`}
+                    >
+                      <Search size={14} /> Browse
+                    </Button>
+                  )}
                   {/* a11y [WCAG 4.1.2]: button has accessible name via aria-label */}
                   <button
                     type="button"
                     class={styles.volumeRemove}
                     onClick={() => removeVolume(index)}
-                    aria-label={`Remove volume mount ${vol.source || 'unnamed'} to ${vol.target || 'unset'}`}
+                    aria-label={`Remove volume mount ${vol.type === 'local' ? (vol.source || 'unnamed') : (vol.bucket || 'unnamed bucket')} to ${vol.target || 'unset'}`}
                   >
                     <X size={14} />
                   </button>
@@ -450,12 +690,15 @@ export default function SettingsTab({ app }: Props) {
           </div>
         )}
 
-        <div style={{ marginTop: volumes.length > 0 ? 'var(--space-3)' : '0' }}>
-          <Button variant="secondary" onClick={addVolume}>
+        <div class={styles.volumeAddRow} style={{ marginTop: volumes.length > 0 ? 'var(--space-3)' : '0' }}>
+          <Button variant="secondary" onClick={() => addVolume('local')}>
             <Plus size={14} /> Add Volume
           </Button>
+          <Button variant="secondary" onClick={() => addVolume('s3')}>
+            <Cloud size={14} /> Add S3 Mount
+          </Button>
         </div>
-        <p class={styles.settingsNote}>Changes take effect on next deployment.</p>
+        <p class={styles.settingsNote}>Changes take effect on next deployment. S3 mounts use an rclone sidecar container with FUSE.</p>
       </div>
 
       {/* Save Button */}
@@ -510,6 +753,20 @@ export default function SettingsTab({ app }: Props) {
           )}
         </div>
       </div>
+
+      {/* Volume Browser Drawer */}
+      {browsingVolume !== null && volumes[browsingVolume] && volumes[browsingVolume].type !== 's3' && (
+        <VolumeBrowser
+          appId={app.id}
+          mountIndex={browsingVolume}
+          volume={{
+            source: (volumes[browsingVolume] as LocalVolume).source,
+            target: volumes[browsingVolume].target,
+            read_only: volumes[browsingVolume].read_only,
+          }}
+          onClose={() => setBrowsingVolume(null)}
+        />
+      )}
     </div>
   );
 }

@@ -1,10 +1,11 @@
 import { useEffect, useState, useCallback } from 'preact/hooks';
 import Button from '@islands/shared/Button/Button';
-import { Save, Globe, Bell, Database, Shield, RefreshCw, Plus, Trash2, Send, Filter, HardDrive, Play, CheckCircle, XCircle, Clock } from 'lucide-preact';
+import { Save, Globe, Bell, Database, Shield, RefreshCw, Plus, Trash2, Send, Filter, HardDrive, Play, CheckCircle, XCircle, Clock, Key, Copy } from 'lucide-preact';
 import { useStore } from '@nanostores/preact';
 import { $settings, $channels, $settingsLoaded } from '@stores/settings';
 import type { NotificationChannel as NCType } from '@stores/settings';
 import { TIMEZONES } from '@lib/timezones';
+import TwoFactorSection from '@islands/settings/TwoFactorSection/TwoFactorSection';
 import styles from './settings-page.module.css';
 import formStyles from '@styles/form.module.css';
 
@@ -94,6 +95,20 @@ export default function SettingsPage() {
   const [ibSaving, setIbSaving] = useState(false);
   const [ibTriggering, setIbTriggering] = useState(false);
 
+  // OAuth state
+  const [oauthGithubClientId, setOauthGithubClientId] = useState('');
+  const [oauthGithubClientSecret, setOauthGithubClientSecret] = useState('');
+  const [oauthGithubEnabled, setOauthGithubEnabled] = useState(false);
+  const [oauthGithubHasSecret, setOauthGithubHasSecret] = useState(false);
+  const [oauthGithubCallbackUrl, setOauthGithubCallbackUrl] = useState('');
+  const [oauthGoogleClientId, setOauthGoogleClientId] = useState('');
+  const [oauthGoogleClientSecret, setOauthGoogleClientSecret] = useState('');
+  const [oauthGoogleEnabled, setOauthGoogleEnabled] = useState(false);
+  const [oauthGoogleHasSecret, setOauthGoogleHasSecret] = useState(false);
+  const [oauthGoogleCallbackUrl, setOauthGoogleCallbackUrl] = useState('');
+  const [oauthSaving, setOauthSaving] = useState(false);
+  const [copiedCallback, setCopiedCallback] = useState('');
+
   useEffect(() => {
     fetch('/api/v1/settings', { credentials: 'same-origin' }).then(r => r.json()).then(d => {
       setSettings(d.data);
@@ -119,6 +134,20 @@ export default function SettingsPage() {
 
     fetch('/api/v1/settings/instance-backup/history', { credentials: 'same-origin' }).then(r => r.json()).then(d => {
       setIbHistory(d.data || []);
+    }).catch(() => {});
+
+    // Load OAuth settings
+    fetch('/api/v1/settings/oauth', { credentials: 'same-origin' }).then(r => r.json()).then(d => {
+      if (d.data) {
+        setOauthGithubClientId(d.data.github_client_id || '');
+        setOauthGithubEnabled(d.data.github_enabled || false);
+        setOauthGithubHasSecret(d.data.github_has_secret || false);
+        setOauthGithubCallbackUrl(d.data.github_callback_url || '');
+        setOauthGoogleClientId(d.data.google_client_id || '');
+        setOauthGoogleEnabled(d.data.google_enabled || false);
+        setOauthGoogleHasSecret(d.data.google_has_secret || false);
+        setOauthGoogleCallbackUrl(d.data.google_callback_url || '');
+      }
     }).catch(() => {});
   }, []);
 
@@ -221,6 +250,44 @@ export default function SettingsPage() {
       }, 2000);
     } catch { setSaveMessage('Failed to trigger instance backup'); }
     setIbTriggering(false);
+  }
+
+  async function saveOAuthSettings() {
+    setOauthSaving(true);
+    try {
+      const body: Record<string, any> = {
+        github_client_id: oauthGithubClientId || undefined,
+        github_enabled: oauthGithubEnabled,
+        google_client_id: oauthGoogleClientId || undefined,
+        google_enabled: oauthGoogleEnabled,
+      };
+      // Only send secrets if they were actually changed (non-empty)
+      if (oauthGithubClientSecret) body.github_client_secret = oauthGithubClientSecret;
+      if (oauthGoogleClientSecret) body.google_client_secret = oauthGoogleClientSecret;
+
+      const res = await fetch('/api/v1/settings/oauth', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify(body),
+      });
+      const d = await res.json();
+      if (d.data) {
+        setOauthGithubHasSecret(d.data.github_has_secret);
+        setOauthGoogleHasSecret(d.data.google_has_secret);
+        setOauthGithubClientSecret('');
+        setOauthGoogleClientSecret('');
+      }
+      setSaveMessage('OAuth settings saved');
+    } catch { setSaveMessage('Failed to save OAuth settings'); }
+    setOauthSaving(false);
+  }
+
+  function copyCallback(url: string, provider: string) {
+    navigator.clipboard.writeText(url).then(() => {
+      setCopiedCallback(provider);
+      setTimeout(() => setCopiedCallback(''), 2000);
+    });
   }
 
   function formatBytes(bytes: number): string {
@@ -601,6 +668,145 @@ export default function SettingsPage() {
           </div>
         )}
       </div>
+
+      <div class={styles.section}>
+        <h2 class={styles.sectionHeading}><Key size={18} aria-hidden="true" /> OAuth Providers</h2>
+        <p class={styles.hint} style={{ marginTop: 0, marginBottom: 'var(--space-4)' }}>
+          Allow users to sign in with GitHub or Google. Create an OAuth App with each provider and enter the credentials below.
+        </p>
+
+        {/* GitHub */}
+        <div style={{ marginBottom: 'var(--space-5)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-3)' }}>
+            <h3 class={styles.subHeading} style={{ margin: 0 }}>GitHub</h3>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={oauthGithubEnabled}
+              aria-label="Enable GitHub OAuth"
+              class={`${styles.toggle} ${oauthGithubEnabled ? styles.toggleOn : ''}`}
+              onClick={() => setOauthGithubEnabled(!oauthGithubEnabled)}
+            >
+              <span class={styles.toggleKnob} />
+            </button>
+          </div>
+          <div class={formStyles.fieldRow}>
+            <div>
+              <label htmlFor="oauth-gh-id" class={formStyles.label}>Client ID</label>
+              <input
+                id="oauth-gh-id"
+                class={formStyles.inputMono}
+                value={oauthGithubClientId}
+                onInput={e => setOauthGithubClientId((e.target as HTMLInputElement).value)}
+                placeholder="Iv1.abc123..."
+              />
+            </div>
+            <div>
+              <label htmlFor="oauth-gh-secret" class={formStyles.label}>
+                Client Secret {oauthGithubHasSecret && <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>(configured)</span>}
+              </label>
+              <input
+                id="oauth-gh-secret"
+                class={formStyles.inputMono}
+                type="password"
+                autoComplete="off"
+                value={oauthGithubClientSecret}
+                onInput={e => setOauthGithubClientSecret((e.target as HTMLInputElement).value)}
+                placeholder={oauthGithubHasSecret ? 'Leave blank to keep current' : 'Enter client secret'}
+              />
+            </div>
+          </div>
+          {oauthGithubCallbackUrl && (
+            <div style={{ marginTop: 'var(--space-2)' }}>
+              <label class={formStyles.label}>Callback URL</label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                <code class={styles.codeInline}>{oauthGithubCallbackUrl}</code>
+                <button
+                  type="button"
+                  class={styles.iconButton}
+                  onClick={() => copyCallback(oauthGithubCallbackUrl, 'github')}
+                  aria-label="Copy GitHub callback URL"
+                >
+                  {copiedCallback === 'github' ? <CheckCircle size={14} aria-hidden="true" /> : <Copy size={14} aria-hidden="true" />}
+                </button>
+              </div>
+              <p class={formStyles.hint}>
+                Add this URL as the callback in your <a href="https://github.com/settings/developers" target="_blank" rel="noopener noreferrer">GitHub OAuth App settings</a>.
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Google */}
+        <div style={{ marginBottom: 'var(--space-3)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-3)' }}>
+            <h3 class={styles.subHeading} style={{ margin: 0 }}>Google</h3>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={oauthGoogleEnabled}
+              aria-label="Enable Google OAuth"
+              class={`${styles.toggle} ${oauthGoogleEnabled ? styles.toggleOn : ''}`}
+              onClick={() => setOauthGoogleEnabled(!oauthGoogleEnabled)}
+            >
+              <span class={styles.toggleKnob} />
+            </button>
+          </div>
+          <div class={formStyles.fieldRow}>
+            <div>
+              <label htmlFor="oauth-gl-id" class={formStyles.label}>Client ID</label>
+              <input
+                id="oauth-gl-id"
+                class={formStyles.inputMono}
+                value={oauthGoogleClientId}
+                onInput={e => setOauthGoogleClientId((e.target as HTMLInputElement).value)}
+                placeholder="123456789.apps.googleusercontent.com"
+              />
+            </div>
+            <div>
+              <label htmlFor="oauth-gl-secret" class={formStyles.label}>
+                Client Secret {oauthGoogleHasSecret && <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>(configured)</span>}
+              </label>
+              <input
+                id="oauth-gl-secret"
+                class={formStyles.inputMono}
+                type="password"
+                autoComplete="off"
+                value={oauthGoogleClientSecret}
+                onInput={e => setOauthGoogleClientSecret((e.target as HTMLInputElement).value)}
+                placeholder={oauthGoogleHasSecret ? 'Leave blank to keep current' : 'Enter client secret'}
+              />
+            </div>
+          </div>
+          {oauthGoogleCallbackUrl && (
+            <div style={{ marginTop: 'var(--space-2)' }}>
+              <label class={formStyles.label}>Callback URL</label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                <code class={styles.codeInline}>{oauthGoogleCallbackUrl}</code>
+                <button
+                  type="button"
+                  class={styles.iconButton}
+                  onClick={() => copyCallback(oauthGoogleCallbackUrl, 'google')}
+                  aria-label="Copy Google callback URL"
+                >
+                  {copiedCallback === 'google' ? <CheckCircle size={14} aria-hidden="true" /> : <Copy size={14} aria-hidden="true" />}
+                </button>
+              </div>
+              <p class={formStyles.hint}>
+                Add this URL as an authorized redirect URI in the <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer">Google Cloud Console</a>.
+              </p>
+            </div>
+          )}
+        </div>
+
+        <div class={styles.saveRow}>
+          <Button variant="primary" onClick={saveOAuthSettings} loading={oauthSaving}>
+            <Save size={14} aria-hidden="true" /> Save OAuth Settings
+          </Button>
+        </div>
+      </div>
+
+      <TwoFactorSection />
 
       <div class={styles.section}>
         <h2 class={styles.sectionHeading}><Shield size={18} aria-hidden="true" /> MCP Server</h2>
