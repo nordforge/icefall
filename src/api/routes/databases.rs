@@ -16,6 +16,9 @@ pub fn routes() -> Router<AppState> {
         .route("/databases/{id}", get(get_database).delete(delete_database))
         .route("/databases/{id}/link/{app_id}", post(link_to_app))
         .route("/databases/{id}/link/{app_id}", delete(unlink_from_app))
+        .route("/databases/{id}/start", post(start_database))
+        .route("/databases/{id}/stop", post(stop_database))
+        .route("/databases/{id}/restart", post(restart_database))
 }
 
 #[derive(Deserialize)]
@@ -354,5 +357,41 @@ async fn unlink_from_app(
     }
 
     Ok(Json(serde_json::json!({ "message": "unlinked" })))
+}
+
+async fn resolve_db_container(state: &AppState, id: &str) -> Result<String, ApiError> {
+    let dbs = state.db.list_managed_dbs().await?;
+    let db = dbs
+        .iter()
+        .find(|d| d.id == id)
+        .ok_or_else(|| ApiError::NotFound(format!("database {id}")))?;
+    Ok(format!("icefall-db-{}", db.name.to_lowercase()))
+}
+
+async fn start_database(
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+) -> Result<Json<serde_json::Value>, ApiError> {
+    let container_name = resolve_db_container(&state, &id).await?;
+    state.docker.start_container(&container_name).await?;
+    Ok(Json(serde_json::json!({ "message": "started" })))
+}
+
+async fn stop_database(
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+) -> Result<Json<serde_json::Value>, ApiError> {
+    let container_name = resolve_db_container(&state, &id).await?;
+    state.docker.stop_container(&container_name, Some(10)).await?;
+    Ok(Json(serde_json::json!({ "message": "stopped" })))
+}
+
+async fn restart_database(
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+) -> Result<Json<serde_json::Value>, ApiError> {
+    let container_name = resolve_db_container(&state, &id).await?;
+    state.docker.restart_container(&container_name).await?;
+    Ok(Json(serde_json::json!({ "message": "restarted" })))
 }
 

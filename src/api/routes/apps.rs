@@ -1,5 +1,5 @@
-use axum::extract::{Path, State};
-use axum::routing::get;
+use axum::extract::{Path, Query, State};
+use axum::routing::{get, post};
 use axum::{Json, Router};
 use serde::Deserialize;
 
@@ -7,12 +7,19 @@ use crate::api::error::ApiError;
 use crate::api::AppState;
 use crate::db::models::{NewApp, NewEnvironment, UpdateApp};
 
+#[derive(Deserialize, Default)]
+struct ListAppsQuery {
+    tag: Option<String>,
+}
+
 #[derive(Deserialize)]
 struct CreateAppRequest {
     name: String,
     git_repo: Option<String>,
     git_branch: Option<String>,
     framework: Option<String>,
+    image_ref: Option<String>,
+    port: Option<u16>,
 }
 
 #[derive(Deserialize)]
@@ -25,6 +32,9 @@ struct UpdateAppRequest {
     resource_limits: Option<String>,
     preview_enabled: Option<bool>,
     preview_branch_pattern: Option<Option<String>>,
+    tags: Option<String>,
+    volumes: Option<String>,
+    image_ref: Option<Option<String>>,
 }
 
 pub fn routes() -> Router<AppState> {
@@ -34,12 +44,30 @@ pub fn routes() -> Router<AppState> {
             "/apps/{id}",
             get(get_app).put(update_app).delete(delete_app),
         )
+        .route("/apps/{id}/start", post(start_app))
+        .route("/apps/{id}/stop", post(stop_app))
+        .route("/apps/{id}/restart", post(restart_app))
 }
 
 async fn list_apps(
     State(state): State<AppState>,
+    Query(query): Query<ListAppsQuery>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
-    let apps = state.db.list_apps().await?;
+    let mut apps = state.db.list_apps().await?;
+
+    if let Some(tag) = &query.tag {
+        let tag = tag.trim().to_lowercase();
+        if !tag.is_empty() {
+            apps.retain(|app| {
+                app.tags
+                    .as_deref()
+                    .unwrap_or("")
+                    .split(',')
+                    .any(|t| t.trim() == tag)
+            });
+        }
+    }
+
     Ok(Json(serde_json::json!({ "data": apps })))
 }
 
@@ -54,12 +82,37 @@ async fn create_app(
     let app = state
         .db
         .create_app(&NewApp {
-            name: body.name,
+            name: body.name.clone(),
             git_repo: body.git_repo,
             git_branch: body.git_branch.unwrap_or_else(|| "main".into()),
             framework: body.framework,
+            image_ref: body.image_ref,
         })
         .await?;
+
+    // If a port was provided (typically for image-based apps), store it in build_config
+    if let Some(port) = body.port {
+        let build_config = serde_json::json!({ "port": port }).to_string();
+        let _ = state
+            .db
+            .update_app(
+                &app.id,
+                &UpdateApp {
+                    name: None,
+                    git_repo: None,
+                    git_branch: None,
+                    framework: None,
+                    build_config: Some(build_config),
+                    resource_limits: None,
+                    preview_enabled: None,
+                    preview_branch_pattern: None,
+                    tags: None,
+                    volumes: None,
+                    image_ref: None,
+                },
+            )
+            .await;
+    }
 
     // Create a default production environment for the new app
     let _ = state
@@ -105,6 +158,15 @@ async fn update_app(
                 resource_limits: body.resource_limits,
                 preview_enabled: body.preview_enabled,
                 preview_branch_pattern: body.preview_branch_pattern,
+                tags: body.tags.map(|t| {
+                    t.split(',')
+                        .map(|s| s.trim().to_lowercase())
+                        .filter(|s| !s.is_empty())
+                        .collect::<Vec<_>>()
+                        .join(",")
+                }),
+                volumes: body.volumes,
+                image_ref: body.image_ref,
             },
         )
         .await?;
@@ -118,4 +180,76 @@ async fn delete_app(
 ) -> Result<Json<serde_json::Value>, ApiError> {
     state.db.delete_app(&id).await?;
     Ok(Json(serde_json::json!({ "message": "deleted" })))
+}
+
+async fn start_app(
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+) -> Result<Json<serde_json::Value>, ApiError> {
+    state
+        .db
+        .get_app(&id)
+        .await?
+        .ok_or_else(|| ApiError::NotFound(format!("App '{id}' not found")))?;
+
+    let label = format!("icefall.app={id}");
+    let containers = state.docker.list_containers(Some(&label)).await?;
+
+    let mut started = 0u32;
+    for container in &containers {
+        if container.state != "running" {
+            state.docker.start_container(&container.id).await?;
+            started += 1;
+        }
+    }
+
+    Ok(Json(serde_json::json!({ "message": "started", "containers": started })))
+}
+
+async fn stop_app(
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+) -> Result<Json<serde_json::Value>, ApiError> {
+    state
+        .db
+        .get_app(&id)
+        .await?
+        .ok_or_else(|| ApiError::NotFound(format!("App '{id}' not found")))?;
+
+    let label = format!("icefall.app={id}");
+    let containers = state.docker.list_containers(Some(&label)).await?;
+
+    let mut stopped = 0u32;
+    for container in &containers {
+        if container.state == "running" {
+            state.docker.stop_container(&container.id, Some(10)).await?;
+            stopped += 1;
+        }
+    }
+
+    Ok(Json(serde_json::json!({ "message": "stopped", "containers": stopped })))
+}
+
+async fn restart_app(
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+) -> Result<Json<serde_json::Value>, ApiError> {
+    state
+        .db
+        .get_app(&id)
+        .await?
+        .ok_or_else(|| ApiError::NotFound(format!("App '{id}' not found")))?;
+
+    let label = format!("icefall.app={id}");
+    let containers = state.docker.list_containers(Some(&label)).await?;
+
+    let mut restarted = 0u32;
+    for container in &containers {
+        if container.state == "running" {
+            state.docker.restart_container(&container.id).await?;
+            restarted += 1;
+        }
+    }
+
+    Ok(Json(serde_json::json!({ "message": "restarted", "containers": restarted })))
 }

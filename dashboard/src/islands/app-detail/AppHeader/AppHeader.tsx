@@ -1,17 +1,25 @@
-import type { App } from '@lib/types';
+import type { App, DeployStatus } from '@lib/types';
 import StatusDot from '@islands/shared/StatusDot/StatusDot';
 import Button from '@islands/shared/Button/Button';
 import { api } from '@lib/api';
 import { useState } from 'preact/hooks';
-import { Settings, Rocket, GitBranch } from 'lucide-preact';
+import { Settings, Rocket, GitBranch, Container, Square, Play, RotateCw } from 'lucide-preact';
 import styles from './app-header.module.css';
 
 type Props = {
   app: App;
+  status?: DeployStatus | 'online';
+  onStatusChange?: () => void;
 }
 
-export default function AppHeader({ app }: Props) {
+export default function AppHeader({ app, status, onStatusChange }: Props) {
   const [deploying, setDeploying] = useState(false);
+  const [stopping, setStopping] = useState(false);
+  const [starting, setStarting] = useState(false);
+  const [restarting, setRestarting] = useState(false);
+
+  const isRunning = status === 'running' || status === 'online';
+  const isStopped = status === 'stopped';
 
   async function handleDeploy() {
     setDeploying(true);
@@ -23,6 +31,33 @@ export default function AppHeader({ app }: Props) {
     }
   }
 
+  async function handleStop() {
+    setStopping(true);
+    try {
+      await api.stopApp(app.id);
+      onStatusChange?.();
+    } catch { /* handled by API error */ }
+    setStopping(false);
+  }
+
+  async function handleStart() {
+    setStarting(true);
+    try {
+      await api.startApp(app.id);
+      onStatusChange?.();
+    } catch { /* handled by API error */ }
+    setStarting(false);
+  }
+
+  async function handleRestart() {
+    setRestarting(true);
+    try {
+      await api.restartApp(app.id);
+      onStatusChange?.();
+    } catch { /* handled by API error */ }
+    setRestarting(false);
+  }
+
   return (
     <div class={styles.header}>
       <div>
@@ -32,23 +67,47 @@ export default function AppHeader({ app }: Props) {
         </nav>
         <div class={styles.titleRow}>
           <h1 class={styles.title}>{app.name}</h1>
-          <StatusDot status="online" />
+          <StatusDot status={status || 'online'} />
         </div>
         <div class={styles.meta}>
-          {app.git_repo && (
+          {app.image_ref ? (
             <span class={styles.branchInfo}>
-              <GitBranch size={14} />
-              <span class={styles.mono}>{app.git_branch}</span>
+              <Container size={14} aria-hidden="true" />
+              <span class={styles.mono}>{app.image_ref}</span>
             </span>
-          )}
-          {app.git_repo && (
-            <span class={styles.repoUrl}>
-              {app.git_repo.replace(/^https?:\/\//, '')}
-            </span>
+          ) : (
+            <>
+              {app.git_repo && (
+                <span class={styles.branchInfo}>
+                  <GitBranch size={14} />
+                  <span class={styles.mono}>{app.git_branch}</span>
+                </span>
+              )}
+              {app.git_repo && (
+                <span class={styles.repoUrl}>
+                  {app.git_repo.replace(/^https?:\/\//, '')}
+                </span>
+              )}
+            </>
           )}
         </div>
       </div>
       <div class={styles.actions}>
+        {isStopped && (
+          <Button variant="secondary" onClick={handleStart} loading={starting}>
+            <Play size={14} /> Start
+          </Button>
+        )}
+        {isRunning && (
+          <Button variant="secondary" onClick={handleRestart} loading={restarting}>
+            <RotateCw size={14} /> Restart
+          </Button>
+        )}
+        {isRunning && (
+          <Button variant="secondary" onClick={handleStop} loading={stopping}>
+            <Square size={14} /> Stop
+          </Button>
+        )}
         <a href={`/apps/${app.id}/settings`} class={styles.settingsLink}>
           {/* a11y [4.1.2]: button label provided by visible text content */}
           <Button variant="secondary">

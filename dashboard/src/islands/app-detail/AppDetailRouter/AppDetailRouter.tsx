@@ -1,6 +1,6 @@
-import { useEffect, useState, useRef } from 'preact/hooks';
+import { useEffect, useState, useRef, useCallback } from 'preact/hooks';
 import { api } from '@lib/api';
-import type { App } from '@lib/types';
+import type { App, DeployStatus } from '@lib/types';
 import type { ComponentType } from 'preact';
 import AppHeader from '@islands/app-detail/AppHeader/AppHeader';
 import AppTabs from '@islands/app-detail/AppTabs/AppTabs';
@@ -18,6 +18,7 @@ const TAB_LOADERS: Record<string, () => Promise<{ default: ComponentType<any> }>
   deploys: () => import('@islands/app-detail/DeploysTab/DeploysTab'),
   logs: () => import('@islands/logs/LogViewer/LogViewer'),
   env: () => import('@islands/env-vars/EnvVarEditor/EnvVarEditor'),
+  databases: () => import('@islands/app-detail/DatabaseTab/DatabaseTab'),
   domains: () => import('@islands/app-detail/DomainsTab/DomainsTab'),
   settings: () => import('@islands/app-detail/SettingsTab/SettingsTab'),
 };
@@ -25,6 +26,7 @@ const TAB_LOADERS: Record<string, () => Promise<{ default: ComponentType<any> }>
 export default function AppDetailRouter() {
   const initial = parseRoute();
   const [app, setApp] = useState<App | null>(null);
+  const [appStatus, setAppStatus] = useState<DeployStatus | 'online'>('stopped');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState(initial.tab);
@@ -36,12 +38,21 @@ export default function AppDetailRouter() {
 
   const appId = initial.appId;
 
+  const refreshStatus = useCallback(() => {
+    if (!appId) return;
+    api.listDeploys(appId).then(({ data }) => {
+      const latest = data[0];
+      setAppStatus(latest?.status === 'running' ? 'running' : latest?.status || 'stopped');
+    }).catch(() => {});
+  }, [appId]);
+
   useEffect(() => {
     if (!appId) return;
     api.getApp(appId)
       .then(({ data }) => { setApp(data); setLoading(false); })
       .catch((err) => { setError(err.message); setLoading(false); });
-  }, [appId]);
+    refreshStatus();
+  }, [appId, refreshStatus]);
 
   useEffect(() => {
     if (componentCache.current[activeTab]) {
@@ -83,7 +94,7 @@ export default function AppDetailRouter() {
 
   return (
     <div>
-      <AppHeader app={app} />
+      <AppHeader app={app} status={appStatus} onStatusChange={refreshStatus} />
       <AppTabs appId={app.id} activeTab={activeTab} onTabChange={setActiveTab} />
       <div class={styles.tabContent}>
         {TabComponent ? (
