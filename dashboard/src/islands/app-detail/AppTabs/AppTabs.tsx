@@ -12,6 +12,7 @@ const TABS = [
   { key: 'deploys', label: 'Deploys' },
   { key: 'logs', label: 'Logs' },
   { key: 'env', label: 'Env Vars' },
+  { key: 'databases', label: 'Databases' },
   { key: 'domains', label: 'Domains' },
   { key: 'settings', label: 'Settings' },
 ];
@@ -21,6 +22,7 @@ const TAB_PRELOADERS: Record<string, () => void> = {
   deploys: () => { import('@islands/app-detail/DeploysTab/DeploysTab'); },
   logs: () => { import('@islands/logs/LogViewer/LogViewer'); },
   env: () => { import('@islands/env-vars/EnvVarEditor/EnvVarEditor'); },
+  databases: () => { import('@islands/app-detail/DatabaseTab/DatabaseTab'); },
   domains: () => { import('@islands/app-detail/DomainsTab/DomainsTab'); },
   settings: () => { import('@islands/app-detail/SettingsTab/SettingsTab'); },
 };
