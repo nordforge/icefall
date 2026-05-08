@@ -39,6 +39,9 @@ bollard = "0.18"
 # HTTP client (for Caddy admin API)
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 
+# Email
+lettre = { version = "0.11", default-features = false, features = ["tokio1-rustls-tls", "smtp-transport", "builder"] }
+
 # Encryption
 aes-gcm = "0.10"
 rand = "0.8"
