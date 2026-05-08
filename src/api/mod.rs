@@ -17,6 +17,7 @@ use crate::db::Database;
 use crate::docker::DockerClient;
 use crate::events::EventBus;
 use crate::monitoring::backup_scheduler::BackupStore;
+use crate::monitoring::instance_backup::InstanceBackupHandle;
 use crate::monitoring::log_store::LogStore;
 use crate::monitoring::metrics_collector::MetricsStore;
 
@@ -33,6 +34,7 @@ pub struct AppState {
     pub metrics_store: Arc<MetricsStore>,
     pub log_store: Arc<LogStore>,
     pub backup_store: Arc<BackupStore>,
+    pub instance_backup_handle: Arc<InstanceBackupHandle>,
 }
 
 pub struct BuildLockMap {

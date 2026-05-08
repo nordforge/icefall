@@ -21,6 +21,9 @@ use crate::docker::DockerClient;
 use crate::events::EventBus;
 use crate::monitoring::backup_scheduler::{spawn_backup_scheduler, BackupStore};
 use crate::monitoring::health_runner::spawn_health_runner;
+use crate::monitoring::instance_backup::{
+    spawn_instance_backup_scheduler, InstanceBackupHandle,
+};
 use crate::monitoring::log_store::{spawn_log_capture, LogStore};
 use crate::monitoring::metrics_collector::{
     spawn_metrics_collector as spawn_container_metrics, MetricsStore,
@@ -119,6 +122,8 @@ impl DaemonRunner {
         let metrics_store = Arc::new(MetricsStore::new());
         let log_store = Arc::new(LogStore::new(&config.data_dir));
         let backup_store = Arc::new(BackupStore::new(&config.data_dir));
+        let instance_backup_handle =
+            Arc::new(InstanceBackupHandle::new(db.clone()));
 
         // Start background tasks
         spawn_server_metrics(server_metrics.clone(), server_metrics_history.clone(), db.clone());
@@ -131,6 +136,7 @@ impl DaemonRunner {
         );
         spawn_log_capture(docker.clone(), db.clone(), log_store.clone());
         spawn_backup_scheduler(docker.clone(), db.clone(), backup_store.clone());
+        spawn_instance_backup_scheduler(db.clone(), instance_backup_handle.clone());
 
         // Build app state and router
         let state = AppState {
@@ -145,6 +151,7 @@ impl DaemonRunner {
             metrics_store,
             log_store,
             backup_store,
+            instance_backup_handle,
         };
 
         let app = api::build_router(state);

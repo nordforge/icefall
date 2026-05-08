@@ -8,6 +8,7 @@ pub mod domains;
 pub mod env_vars;
 pub mod events;
 pub mod health;
+pub mod instance_backup;
 pub mod logs;
 pub mod mcp;
 pub mod metrics;
@@ -44,5 +45,6 @@ pub fn api_routes() -> Router<AppState> {
         .merge(notifications::routes())
         .merge(onboarding::routes())
         .merge(mcp::routes())
+        .merge(instance_backup::routes())
         .merge(openapi::routes())
 }
