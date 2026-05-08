@@ -1,6 +1,6 @@
 # Icefall — Project Board
 
-> Last updated: 2026-05-07
+> Last updated: 2026-05-08
 
 ---
 
@@ -146,17 +146,52 @@
 | [IF-058](tickets/phase-13-onboarding/IF-058-onboarding-completion.md) | Completion & handoff | 2026-05-07 | Success screen with checkmark, "Go to Dashboard" button |
 | [REVIEW](tickets/phase-13-onboarding/REVIEW-phase-13.md) | Phase 13 review | 2026-05-07 | 90 tests, clippy clean, 6 dashboard pages |
 
+### Phase 14 — Dashboard Surface (v1.0 Tier 1)
+| Ticket | Title | Completed | Notes |
+|--------|-------|-----------|-------|
+| [IF-059](tickets/phase-14-dashboard-surface/IF-059-start-stop-restart-controls.md) | Start / Stop / Restart controls | 2026-05-08 | 3 API endpoints (apps + dbs), AppHeader buttons, SettingsTab danger zone controls |
+| [IF-060](tickets/phase-14-dashboard-surface/IF-060-health-check-ui.md) | Health check UI | 2026-05-08 | Health panel in OverviewTab: status badge, uptime %, event history, 3-col grid |
+| [IF-061](tickets/phase-14-dashboard-surface/IF-061-resource-limits-ui.md) | Resource limits UI | 2026-05-08 | Memory (MB) + CPU shares fields in SettingsTab, warning banner when unset |
+| [IF-062](tickets/phase-14-dashboard-surface/IF-062-auto-deploy-webhooks-ui.md) | Auto-deploy toggle & webhook URL | 2026-05-08 | Webhook URL + secret display with copy buttons, GitHub/GitLab setup hints |
+| [IF-063](tickets/phase-14-dashboard-surface/IF-063-preview-environment-ui.md) | Preview environment UI | 2026-05-08 | Enable toggle, branch glob pattern input in SettingsTab |
+| [IF-064](tickets/phase-14-dashboard-surface/IF-064-persistent-storage-ui.md) | Persistent storage / volumes UI | 2026-05-08 | Volume mount CRUD (source/target/read-only), migration, SettingsTab section |
+
+### Phase 15 — Critical Gaps (v1.0 Tier 2 + 3)
+| Ticket | Title | Completed | Notes |
+|--------|-------|-----------|-------|
+| [IF-065](tickets/phase-15-critical-gaps/IF-065-deploy-docker-images.md) | Deploy pre-built Docker images | 2026-05-08 | New app type, Git/Image wizard choice, deploy pipeline bypass, AppHeader/OverviewTab updates |
+| [IF-066](tickets/phase-15-critical-gaps/IF-066-container-rollback.md) | Container rollback | 2026-05-08 | Rollback button per deploy in DeploysTab, new API endpoint, reuses existing image |
+| [IF-067](tickets/phase-15-critical-gaps/IF-067-smtp-notifications.md) | Finish SMTP notifications | 2026-05-08 | lettre crate with tokio1-rustls-tls, STARTTLS/TLS/plain modes, HTML email |
+| [IF-068](tickets/phase-15-critical-gaps/IF-068-slack-discord-notifications.md) | Finish Slack + Discord notifications | 2026-05-08 | Slack Block Kit + Discord embed payloads, event-based color mapping |
+| [IF-069](tickets/phase-15-critical-gaps/IF-069-path-based-routing.md) | Path-based routing | 2026-05-08 | Path field on domains, Caddy route/handle_path matcher, DomainsTab UI |
+| [IF-070](tickets/phase-15-critical-gaps/IF-070-instance-backup-s3.md) | Scheduled instance backup to S3 | 2026-05-08 | Background scheduler, tar.gz archive, S3 upload, settings UI with history |
+| [IF-071](tickets/phase-15-critical-gaps/IF-071-notification-subscriptions-ui.md) | Per-event notification subscriptions | 2026-05-08 | Checkbox matrix (events x channels) in Settings page |
+| [IF-072](tickets/phase-15-critical-gaps/IF-072-tags.md) | App tags | 2026-05-08 | Tags column, tag input in SettingsTab, filter chips on AppGrid, tag display on AppCard |
+
+### Phase 16 — v1.1 Fast Follow
+| Ticket | Title | Completed | Notes |
+|--------|-------|-----------|-------|
+| [IF-073](tickets/phase-16-v1.1-fast-follow/IF-073-docker-compose-support.md) | Docker Compose support | — | Multi-container stacks, isolated networks, raw mode |
+| [IF-074](tickets/phase-16-v1.1-fast-follow/IF-074-projects.md) | Projects (resource grouping) | — | Project CRUD, app/db assignment, sidebar grouping |
+| [IF-075](tickets/phase-16-v1.1-fast-follow/IF-075-two-factor-authentication.md) | Two-Factor Authentication (2FA) | — | TOTP setup, backup codes, login flow, admin reset |
+| [IF-076](tickets/phase-16-v1.1-fast-follow/IF-076-oauth-sso.md) | OAuth SSO (GitHub + Google) | — | PKCE flow, account linking, provider config |
+| [IF-077](tickets/phase-16-v1.1-fast-follow/IF-077-container-terminal.md) | Container terminal (browser shell) | — | xterm.js + WebSocket + Docker exec, role-based access |
+| [IF-078](tickets/phase-16-v1.1-fast-follow/IF-078-command-palette.md) | Command palette | — | Cmd+K global search + quick actions |
+| [IF-079](tickets/phase-16-v1.1-fast-follow/IF-079-volume-management.md) | Volume management & browsing | — | File browser, size limits, volume backups, shared volumes |
+| [IF-080](tickets/phase-16-v1.1-fast-follow/IF-080-s3-object-storage-mounts.md) | S3 / object storage mounts | — | FUSE-based S3 mount as filesystem path via s3fs/rclone |
+| [IF-081](tickets/phase-16-v1.1-fast-follow/IF-081-expanded-database-support.md) | Expanded database support | — | MariaDB, ClickHouse, KeyDB, DragonFly, CockroachDB, SQLite, Valkey, Cassandra + backups for all |
+
 ---
 
 ## Summary
 
 | Metric | Count |
 |--------|-------|
-| Total tickets | 65 |
-| Done | 65 |
-| Backlog | 0 |
+| Total tickets | 88 |
+| Done | 79 |
+| Backlog | 9 |
 | Superseded | 1 |
-| Phases complete | 13 / 13 |
+| Phases complete | 15 / 16 |
 
 ### Progress
 | Phase | Status | Tickets |
@@ -174,20 +209,22 @@
 | 11 — MCP & Notifications | **Done** | 4/4 |
 | 12 — Landing & Docs | **Done** | 5/5 |
 | 13 — Onboarding | **Done** | 10/10 |
+| 14 — Dashboard Surface | **Done** | 6/6 |
+| 15 — Critical Gaps | **Done** | 8/8 |
+| 16 — v1.1 Fast Follow | Backlog | 0/9 |
 
 ### Size breakdown
 | Size | Count | Estimated effort |
 |------|-------|-----------------|
-| S | 9 | 1-2 days each |
-| M | 39 | 3-5 days each |
-| L | 9 | 1-2 weeks each |
+| S | 16 | 1-2 days each |
+| M | 49 | 3-5 days each |
+| L | 11 | 1-2 weeks each |
 
 ### Critical path (must complete in order)
 ```
-IF-001 → IF-002 → IF-006 → IF-032 (auth)
-IF-001 → IF-004 (docker) → IF-010 (build) → IF-011 (deploy) → IF-012 (webhooks)
-IF-001 → IF-008 (detect) → IF-009 (dockerfile) → IF-010 (build)
-IF-001 → IF-003 (config) → IF-005 (caddy) → IF-023 (domains)
-IF-006 → IF-016 (dashboard) → IF-017 (home) → IF-019 (app detail)
-IF-050 (onboarding state) → IF-051 (UI shell) → IF-052…IF-057 (steps) → IF-058 (completion)
+Phases 1-15 (done)
+IF-064 (volumes) → IF-073 (Docker Compose)
+IF-065 (Docker image deploy) → IF-073 (Docker Compose)
+IF-072 (tags) + IF-074 (projects) → IF-078 (command palette)
+IF-075 (2FA) → IF-076 (OAuth)
 ```

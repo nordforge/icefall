@@ -1,0 +1,247 @@
+.loadingText {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-5);
+}
+
+.description {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
+
+.linkCard {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-5);
+  margin-bottom: var(--space-5);
+}
+
+.linkTitle {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  margin-bottom: var(--space-3);
+}
+
+.linkGrid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.linkItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-alt);
+}
+
+.linkItemInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.linkItemName {
+  font-weight: var(--weight-medium);
+  font-size: var(--text-sm);
+  display: block;
+}
+
+.linkItemType {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.linkActions {
+  margin-top: var(--space-3);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.emptyState {
+  text-align: center;
+  padding: var(--space-10) var(--space-4);
+}
+
+.emptyIcon {
+  color: var(--color-text-muted);
+  opacity: 0.3;
+  margin-bottom: var(--space-3);
+}
+
+.emptyTitle {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+  margin-bottom: var(--space-1);
+}
+
+.emptyHint {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.dbGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--space-4);
+}
+
+.dbCard {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+}
+
+.dbCardMain {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  min-width: 0;
+}
+
+.dbCardMain:hover {
+  background: var(--color-surface-alt);
+}
+
+.dbCardName {
+  font-weight: var(--weight-semibold);
+  font-size: var(--text-sm);
+}
+
+.dbCardType {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.dbCardStatus {
+  margin-left: auto;
+}
+
+.dbCardActions {
+  padding: var(--space-2);
+  border-left: 1px solid var(--color-border);
+}
+
+.iconButton {
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: var(--space-2);
+  min-width: 1.5rem;
+  min-height: 1.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.iconButton:hover {
+  color: var(--color-text);
+}
+
+.dbIconSmall {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  color: var(--color-primary-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.625rem;
+  flex-shrink: 0;
+}
+
+.dbIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  color: var(--color-primary-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: var(--text-xs);
+}
+
+/* Detail view */
+.backButton {
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  cursor: pointer;
+  font-size: var(--text-sm);
+  font-family: inherit;
+  margin-bottom: var(--space-4);
+}
+
+.detailHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+}
+
+.detailTitle {
+  font-size: var(--text-xl);
+  font-weight: var(--weight-semibold);
+}
+
+.detailSubtitle {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
+
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-5);
+  margin-bottom: var(--space-4);
+}
+
+.cardTitle {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  margin-bottom: var(--space-3);
+}
+
+.connectionRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.connRevealed, .connHidden {
+  flex: 1;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  background: var(--color-surface-alt);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.connHidden {
+  color: var(--color-text-muted);
+}

@@ -59,9 +59,10 @@ export default function DatabasesPage() {
 
   useEffect(() => {
     fetch('/api/v1/databases', { credentials: 'same-origin' }).then(r => r.json()).then(d => {
-      const data = d.data || [];
-      setDbs(data);
-      $databases.set(data);
+      const all = d.data || [];
+      const unlinked = all.filter((db: ManagedDb) => !db.app_id);
+      setDbs(unlinked);
+      $databases.set(unlinked);
       $databasesLoaded.set(true);
       setLoading(false);
     }).catch(() => setLoading(false));
