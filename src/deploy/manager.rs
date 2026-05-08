@@ -74,6 +74,7 @@ impl DeployManager {
             name: container_name,
             image: image_ref.to_string(),
             env: env_vars,
+            cmd: None,
             ports: vec![PortMapping {
                 container_port: detected_port,
                 host_port: None,

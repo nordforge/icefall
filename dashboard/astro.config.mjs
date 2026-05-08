@@ -1,11 +1,13 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
 import preact from '@astrojs/preact';
+import node from '@astrojs/node';
 import path from 'path';
 
 export default defineConfig({
   integrations: [preact()],
   output: 'static',
+  adapter: node({ mode: 'standalone' }),
   server: { port: 4321 },
   vite: {
     resolve: {
@@ -26,7 +28,7 @@ export default defineConfig({
     server: {
       proxy: {
         '/api': {
-          target: 'http://localhost:3000',
+          target: 'http://localhost:3001',
           changeOrigin: true,
         },
       },

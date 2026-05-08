@@ -2,6 +2,7 @@ pub mod apps;
 pub mod auth;
 pub mod backups;
 pub mod databases;
+pub mod db_browser;
 pub mod deploys;
 pub mod domains;
 pub mod env_vars;
@@ -28,6 +29,7 @@ pub fn api_routes() -> Router<AppState> {
         .merge(auth::routes())
         .merge(backups::routes())
         .merge(databases::routes())
+        .merge(db_browser::routes())
         .merge(deploys::routes())
         .merge(domains::routes())
         .merge(env_vars::routes())

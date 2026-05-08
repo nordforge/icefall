@@ -31,7 +31,8 @@
   font-size: var(--text-sm);
 }
 
-.grid {
+/* Metric cards (CPU/Memory/Disk) */
+.metricsGrid {
   display: grid;
   grid-template-columns: 1fr;
   gap: var(--space-4);
@@ -39,12 +40,12 @@
 }
 
 @media (min-width: 640px) {
-  .grid {
+  .metricsGrid {
     grid-template-columns: repeat(3, 1fr);
   }
 }
 
-.card {
+.metricCard {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
@@ -54,29 +55,132 @@
   gap: var(--space-3);
 }
 
-.cardIcon {
+.metricIcon {
   color: var(--color-text-muted);
   flex-shrink: 0;
-  margin-top: 2px;
+  margin-top: 1px;
 }
 
-.detailGrid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: var(--space-4);
+.metricContent {
+  flex: 1;
+  min-width: 0;
 }
 
-.detailCard {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: var(--space-5);
+/* Section header with toggle */
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-4);
 }
 
 .sectionTitle {
   font-size: var(--text-base);
   font-weight: var(--weight-semibold);
-  margin-bottom: var(--space-4);
+}
+
+.viewToggle {
+  display: flex;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.toggleButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  background: var(--color-surface);
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.toggleButton:first-child {
+  border-right: 1px solid var(--color-border);
+}
+
+.toggleButton:hover {
+  color: var(--color-text);
+}
+
+.toggleActive {
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
+}
+
+/* Info cards grid */
+.infoGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-3);
+}
+
+@media (min-width: 480px) {
+  .infoGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 768px) {
+  .infoGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.infoCard {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.infoCardIcon {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-alt);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.infoCardContent {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.infoCardLabel {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.infoCardValue {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+
+.infoCardValueMono {
+  composes: infoCardValue;
+  font-family: var(--font-mono);
+}
+
+/* Table view */
+.detailCard {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-5);
 }
 
 .detailList {

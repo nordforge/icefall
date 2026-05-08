@@ -2,9 +2,7 @@
 import DashboardLayout from '../../layouts/DashboardLayout.astro';
 import AppDetailRouter from '@islands/app-detail/AppDetailRouter/AppDetailRouter';
 
-export function getStaticPaths() {
-  return [{ params: { path: undefined } }];
-}
+export const prerender = false;
 ---
 
 <DashboardLayout title="App">

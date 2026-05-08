@@ -108,12 +108,12 @@ export const api = {
   getServerIp: () => request<{ ip: string }>('/server/ip'),
 
   listDbTables: (dbId: string) =>
-    request<{ data: string[] }>(`/databases/${dbId}/tables`),
+    request<{ data: string[]; types?: Record<string, string> }>(`/databases/${dbId}/tables`),
 
-  queryDb: (dbId: string, sql: string) =>
-    request<{ columns: string[]; rows: string[][]; row_count: number }>(
+  queryDb: (dbId: string, query: string) =>
+    request<{ columns?: string[]; rows?: string[][]; documents?: any[]; row_count: number }>(
       `/databases/${dbId}/query`,
-      { method: 'POST', body: JSON.stringify({ sql }) },
+      { method: 'POST', body: JSON.stringify({ query }) },
     ),
 };
 

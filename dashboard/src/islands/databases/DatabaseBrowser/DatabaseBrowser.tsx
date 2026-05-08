@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'preact/hooks';
 import { api } from '@lib/api';
 import Button from '@islands/shared/Button/Button';
-import { Table, Play, ArrowUpDown, ChevronLeft, ChevronRight, Terminal } from 'lucide-preact';
+import { Table, Play, ArrowUpDown, ChevronLeft, ChevronRight, Terminal, ChevronsUpDown, ChevronsDownUp } from 'lucide-preact';
 import styles from './database-browser.module.css';
 import formStyles from '@styles/form.module.css';
 
@@ -10,9 +10,14 @@ type Props = {
   dbType: string;
 }
 
-type QueryResult = {
+type TableResult = {
   columns: string[];
   rows: string[][];
+  row_count: number;
+}
+
+type DocumentResult = {
+  documents: any[];
   row_count: number;
 }
 
@@ -21,13 +26,29 @@ type SortState = {
   direction: 'asc' | 'desc';
 }
 
-const SUPPORTED_TYPES = ['postgres', 'mysql'];
 const PAGE_SIZE = 25;
 
+const LABELS: Record<string, { items: string; placeholder: string }> = {
+  postgres: { items: 'Tables', placeholder: 'SELECT * FROM users WHERE active = true LIMIT 50' },
+  mysql: { items: 'Tables', placeholder: 'SELECT * FROM users WHERE active = true LIMIT 50' },
+  mongo: { items: 'Collections', placeholder: 'db.users.find({ active: true }).limit(50)' },
+  redis: { items: 'Keys', placeholder: 'GET mykey' },
+};
+
+const REDIS_COMMANDS: Record<string, (key: string) => string> = {
+  string: (k) => `GET ${k}`,
+  hash: (k) => `HGETALL ${k}`,
+  list: (k) => `LRANGE ${k} 0 99`,
+  set: (k) => `SMEMBERS ${k}`,
+  zset: (k) => `ZRANGE ${k} 0 99 WITHSCORES`,
+};
+
 export default function DatabaseBrowser({ dbId, dbType }: Props) {
-  const [tables, setTables] = useState<string[]>([]);
-  const [selectedTable, setSelectedTable] = useState('');
-  const [result, setResult] = useState<QueryResult | null>(null);
+  const [items, setItems] = useState<string[]>([]);
+  const [itemTypes, setItemTypes] = useState<Record<string, string>>({});
+  const [selectedItem, setSelectedItem] = useState('');
+  const [tableResult, setTableResult] = useState<TableResult | null>(null);
+  const [docResult, setDocResult] = useState<DocumentResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [customQuery, setCustomQuery] = useState('');
@@ -35,45 +56,105 @@ export default function DatabaseBrowser({ dbId, dbType }: Props) {
   const [sort, setSort] = useState<SortState | null>(null);
   const [filterColumn, setFilterColumn] = useState('');
   const [filterValue, setFilterValue] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [page, setPage] = useState(0);
+  const [expandedDocs, setExpandedDocs] = useState<Set<number>>(new Set());
 
-  const isSupported = SUPPORTED_TYPES.includes(dbType);
+  const isMongo = dbType === 'mongo';
+  const labels = LABELS[dbType] || LABELS.postgres;
 
   useEffect(() => {
-    if (!isSupported) return;
-    api.listDbTables(dbId).then(({ data }) => setTables(data)).catch(() => {});
+    api.listDbTables(dbId).then((res) => {
+      setItems(res.data);
+      if (res.types) setItemTypes(res.types);
+    }).catch(() => {});
   }, [dbId]);
 
-  async function browseTable(table: string) {
-    setSelectedTable(table);
+  function defaultQuery(item: string): string {
+    switch (dbType) {
+      case 'mongo': return `db.getCollection("${item}").find({}).limit(100)`;
+      case 'redis': {
+        const type = itemTypes[item] || 'string';
+        return (REDIS_COMMANDS[type] || REDIS_COMMANDS.string)(item);
+      }
+      default: return `SELECT * FROM "${item}" LIMIT 100`;
+    }
+  }
+
+  async function browseItem(item: string) {
+    setSelectedItem(item);
     setSort(null);
     setFilterColumn('');
     setFilterValue('');
+    setSearchQuery('');
     setPage(0);
-    await runQuery(`SELECT * FROM "${table}" LIMIT 100`);
+    setExpandedDocs(new Set());
+    await runQuery(defaultQuery(item));
   }
 
-  async function runQuery(sql: string) {
+  async function runQuery(q: string) {
     setLoading(true);
     setError('');
+    setTableResult(null);
+    setDocResult(null);
     try {
-      const data = await api.queryDb(dbId, sql);
-      setResult(data);
+      const data = await api.queryDb(dbId, q);
+      if (data.documents) {
+        setDocResult({ documents: data.documents, row_count: data.row_count });
+      } else {
+        setTableResult({ columns: data.columns || [], rows: data.rows || [], row_count: data.row_count });
+      }
     } catch (e: any) {
       setError(e.message || 'Query failed');
-      setResult(null);
     }
     setLoading(false);
   }
 
   async function runCustom() {
     if (!customQuery.trim()) return;
-    setSelectedTable('');
+    setSelectedItem('');
     setSort(null);
     setPage(0);
+    setExpandedDocs(new Set());
     await runQuery(customQuery);
   }
 
+  function toggleDoc(idx: number) {
+    setExpandedDocs(prev => {
+      const next = new Set(prev);
+      if (next.has(idx)) next.delete(idx); else next.add(idx);
+      return next;
+    });
+  }
+
+  function expandAll() {
+    const filtered = getFilteredDocs();
+    setExpandedDocs(new Set(filtered.map((_, i) => i)));
+  }
+
+  function collapseAll() {
+    setExpandedDocs(new Set());
+  }
+
+  function getFilteredDocs(): any[] {
+    if (!docResult) return [];
+    if (!searchQuery) return docResult.documents;
+    const lower = searchQuery.toLowerCase();
+    return docResult.documents.filter(doc => JSON.stringify(doc).toLowerCase().includes(lower));
+  }
+
+  function docPreview(doc: any): string {
+    const id = doc._id?.$oid || doc._id || doc.id || '';
+    const keys = Object.keys(doc).filter(k => k !== '_id').slice(0, 3);
+    const parts = keys.map(k => {
+      const v = doc[k];
+      const display = typeof v === 'string' ? `"${v}"` : JSON.stringify(v);
+      return `${k}: ${display.length > 30 ? display.slice(0, 30) + '...' : display}`;
+    });
+    return id ? `{ _id: "${id}", ${parts.join(', ')} }` : `{ ${parts.join(', ')} }`;
+  }
+
+  // Table view helpers
   function handleSort(colIdx: number) {
     const newDir = sort?.column === colIdx && sort.direction === 'asc' ? 'desc' : 'asc';
     setSort({ column: colIdx, direction: newDir });
@@ -81,17 +162,15 @@ export default function DatabaseBrowser({ dbId, dbType }: Props) {
   }
 
   function getSortedRows(): string[][] {
-    if (!result) return [];
-    let rows = [...result.rows];
-
+    if (!tableResult) return [];
+    let rows = [...tableResult.rows];
     if (filterColumn && filterValue) {
-      const colIdx = result.columns.indexOf(filterColumn);
+      const colIdx = tableResult.columns.indexOf(filterColumn);
       if (colIdx >= 0) {
         const lower = filterValue.toLowerCase();
         rows = rows.filter(r => r[colIdx]?.toLowerCase().includes(lower));
       }
     }
-
     if (sort) {
       rows.sort((a, b) => {
         const aVal = a[sort.column] || '';
@@ -102,23 +181,15 @@ export default function DatabaseBrowser({ dbId, dbType }: Props) {
         return sort.direction === 'asc' ? cmp : -cmp;
       });
     }
-
     return rows;
   }
 
-  if (!isSupported) {
-    return (
-      <div class={styles.unsupported}>
-        <Terminal size={24} aria-hidden="true" />
-        <p>Table browsing is available for PostgreSQL and MySQL databases.</p>
-        <p class={styles.unsupportedHint}>Use a {dbType} client to connect directly with the connection string above.</p>
-      </div>
-    );
-  }
-
+  const filteredDocs = getFilteredDocs();
   const sortedRows = getSortedRows();
-  const totalPages = Math.ceil(sortedRows.length / PAGE_SIZE);
+  const totalItems = isMongo ? filteredDocs.length : sortedRows.length;
+  const totalPages = Math.ceil(totalItems / PAGE_SIZE);
   const pagedRows = sortedRows.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+  const pagedDocs = filteredDocs.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
   return (
     <div class={styles.browser}>
@@ -131,49 +202,122 @@ export default function DatabaseBrowser({ dbId, dbType }: Props) {
 
       {showCustom && (
         <div class={styles.queryCard}>
-          <label htmlFor="custom-sql" class={formStyles.label}>SQL Query (read-only)</label>
+          <label htmlFor="custom-query" class={formStyles.label}>
+            {dbType === 'redis' ? 'Redis command (read-only)' : dbType === 'mongo' ? 'MongoDB query (read-only)' : 'SQL query (read-only)'}
+          </label>
           <textarea
-            id="custom-sql"
+            id="custom-query"
             class={formStyles.textarea}
             value={customQuery}
             onInput={e => setCustomQuery((e.target as HTMLTextAreaElement).value)}
-            placeholder={`SELECT * FROM users WHERE active = true LIMIT 50`}
+            placeholder={labels.placeholder}
             rows={3}
           />
           <div class={styles.queryActions}>
             <Button variant="primary" size="sm" onClick={runCustom} loading={loading} disabled={!customQuery.trim()}>
-              <Play size={12} aria-hidden="true" /> Run Query
+              <Play size={12} aria-hidden="true" /> Run
             </Button>
           </div>
         </div>
       )}
 
-      {tables.length > 0 && (
+      {items.length > 0 && (
         <div class={styles.tableList}>
-          <span class={styles.tableListLabel}>Tables</span>
+          <span class={styles.tableListLabel}>{labels.items}</span>
           <div class={styles.tablePills}>
-            {tables.map(t => (
+            {items.map(t => (
               <button
                 key={t}
                 type="button"
-                onClick={() => browseTable(t)}
-                class={`${styles.tablePill} ${selectedTable === t ? styles.tablePillActive : ''}`}
-                aria-pressed={selectedTable === t}
+                onClick={() => browseItem(t)}
+                class={`${styles.tablePill} ${selectedItem === t ? styles.tablePillActive : ''}`}
+                aria-pressed={selectedItem === t}
               >
-                <Table size={12} aria-hidden="true" /> {t}
+                <Table size={12} aria-hidden="true" />
+                {t}
+                {dbType === 'redis' && itemTypes[t] && (
+                  <span class={`${styles.typeBadge} ${styles[`type_${itemTypes[t]}`] || ''}`}>
+                    {itemTypes[t]}
+                  </span>
+                )}
               </button>
             ))}
           </div>
         </div>
       )}
 
-      {error && (
-        <div class={styles.error} role="alert">{error}</div>
+      {items.length === 0 && !loading && (
+        <p class={styles.emptyText}>
+          {dbType === 'redis' ? 'No keys found.' : dbType === 'mongo' ? 'No collections found.' : 'No tables found.'}
+        </p>
       )}
 
-      {result && result.columns.length > 0 && (
+      {error && <div class={styles.error} role="alert">{error}</div>}
+
+      {/* MongoDB document view */}
+      {docResult && docResult.documents.length > 0 && (
         <>
-          {result.columns.length > 1 && (
+          <div class={styles.docToolbar}>
+            <div class={styles.docToolbarLeft}>
+              <input
+                class={styles.docSearch}
+                type="text"
+                value={searchQuery}
+                onInput={e => { setSearchQuery((e.target as HTMLInputElement).value); setPage(0); setExpandedDocs(new Set()); }}
+                placeholder="Search documents..."
+                aria-label="Search documents"
+              />
+              <span class={styles.rowCount} role="status" aria-live="polite">
+                {filteredDocs.length} document{filteredDocs.length !== 1 ? 's' : ''}
+              </span>
+            </div>
+            <div class={styles.docToolbarRight}>
+              <Button variant="ghost" size="sm" onClick={expandAll}>
+                <ChevronsUpDown size={14} aria-hidden="true" /> Expand all
+              </Button>
+              <Button variant="ghost" size="sm" onClick={collapseAll}>
+                <ChevronsDownUp size={14} aria-hidden="true" /> Collapse all
+              </Button>
+            </div>
+          </div>
+
+          <div class={styles.docList} role="list" aria-label="Documents">
+            {pagedDocs.map((doc, i) => {
+              const globalIdx = page * PAGE_SIZE + i;
+              const isExpanded = expandedDocs.has(globalIdx);
+              return (
+                <div key={globalIdx} class={styles.docItem} role="listitem">
+                  <button
+                    type="button"
+                    class={styles.docToggle}
+                    onClick={() => toggleDoc(globalIdx)}
+                    aria-expanded={isExpanded}
+                  >
+                    <span class={styles.docIndex}>{globalIdx + 1}</span>
+                    <code class={styles.docSummary}>{docPreview(doc)}</code>
+                  </button>
+                  {isExpanded && (
+                    <pre class={styles.docBody}><JsonHighlight value={doc} /></pre>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {totalPages > 1 && (
+            <Pagination page={page} totalPages={totalPages} setPage={setPage} />
+          )}
+        </>
+      )}
+
+      {docResult && docResult.documents.length === 0 && (
+        <p class={styles.emptyText}>No documents found.</p>
+      )}
+
+      {/* Table view for SQL and Redis */}
+      {tableResult && tableResult.columns && tableResult.columns.length > 0 && (
+        <>
+          {tableResult.columns.length > 1 && (
             <div class={styles.filterRow}>
               <select
                 class={styles.filterSelect}
@@ -182,7 +326,7 @@ export default function DatabaseBrowser({ dbId, dbType }: Props) {
                 aria-label="Filter by column"
               >
                 <option value="">Filter by column...</option>
-                {result.columns.map(c => <option key={c} value={c}>{c}</option>)}
+                {tableResult.columns.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
               {filterColumn && (
                 <input
@@ -194,9 +338,7 @@ export default function DatabaseBrowser({ dbId, dbType }: Props) {
                   aria-label={`Filter value for ${filterColumn}`}
                 />
               )}
-              <span class={styles.rowCount}>
-                {sortedRows.length} row{sortedRows.length !== 1 ? 's' : ''}
-              </span>
+              <span class={styles.rowCount}>{sortedRows.length} row{sortedRows.length !== 1 ? 's' : ''}</span>
             </div>
           )}
 
@@ -204,7 +346,7 @@ export default function DatabaseBrowser({ dbId, dbType }: Props) {
             <table class={styles.dataTable}>
               <thead>
                 <tr>
-                  {result.columns.map((col, i) => (
+                  {tableResult.columns.map((col, i) => (
                     <th key={col} class={styles.th}>
                       <button type="button" class={styles.sortButton} onClick={() => handleSort(i)} aria-label={`Sort by ${col}`}>
                         {col}
@@ -219,35 +361,87 @@ export default function DatabaseBrowser({ dbId, dbType }: Props) {
                   <tr key={ri} class={styles.dataRow}>
                     {row.map((cell, ci) => (
                       <td key={ci} class={styles.td} title={cell}>
-                        {cell === '' || cell === null ? <span class={styles.nullCell}>NULL</span> : cell}
+                        {!cell || cell === 'null' ? <span class={styles.nullCell}>NULL</span> : cell}
                       </td>
                     ))}
                   </tr>
                 ))}
                 {pagedRows.length === 0 && (
-                  <tr><td class={styles.emptyCell} colSpan={result.columns.length}>No rows match the filter.</td></tr>
+                  <tr><td class={styles.emptyCell} colSpan={tableResult.columns.length}>No rows match the filter.</td></tr>
                 )}
               </tbody>
             </table>
           </div>
 
           {totalPages > 1 && (
-            <div class={styles.pagination}>
-              <Button variant="ghost" size="sm" disabled={page === 0} onClick={() => setPage(p => p - 1)}>
-                <ChevronLeft size={14} aria-hidden="true" /> Previous
-              </Button>
-              <span class={styles.pageInfo}>Page {page + 1} of {totalPages}</span>
-              <Button variant="ghost" size="sm" disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}>
-                Next <ChevronRight size={14} aria-hidden="true" />
-              </Button>
-            </div>
+            <Pagination page={page} totalPages={totalPages} setPage={setPage} />
           )}
         </>
       )}
 
-      {loading && !result && (
-        <p class={styles.loadingText}>Querying database...</p>
-      )}
+      {loading && !tableResult && !docResult && <p class={styles.loadingText}>Querying database...</p>}
     </div>
   );
+}
+
+function Pagination({ page, totalPages, setPage }: { page: number; totalPages: number; setPage: (fn: (p: number) => number) => void }) {
+  return (
+    <div class={styles.pagination}>
+      <Button variant="ghost" size="sm" disabled={page === 0} onClick={() => setPage(p => p - 1)}>
+        <ChevronLeft size={14} aria-hidden="true" /> Previous
+      </Button>
+      <span class={styles.pageInfo}>Page {page + 1} of {totalPages}</span>
+      <Button variant="ghost" size="sm" disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}>
+        Next <ChevronRight size={14} aria-hidden="true" />
+      </Button>
+    </div>
+  );
+}
+
+function JsonHighlight({ value, indent = 0 }: { value: any; indent?: number }) {
+  const pad = '  '.repeat(indent);
+  const padInner = '  '.repeat(indent + 1);
+
+  if (value === null) return <span class={styles.jsonNull}>null</span>;
+  if (typeof value === 'boolean') return <span class={styles.jsonBool}>{value.toString()}</span>;
+  if (typeof value === 'number') return <span class={styles.jsonNumber}>{value}</span>;
+  if (typeof value === 'string') return <span class={styles.jsonString}>"{value}"</span>;
+
+  if (Array.isArray(value)) {
+    if (value.length === 0) return <span>{'[]'}</span>;
+    return (
+      <span>
+        {'[\n'}
+        {value.map((item, i) => (
+          <span key={i}>
+            {padInner}<JsonHighlight value={item} indent={indent + 1} />
+            {i < value.length - 1 ? ',\n' : '\n'}
+          </span>
+        ))}
+        {pad}{']'}
+      </span>
+    );
+  }
+
+  if (typeof value === 'object') {
+    if (value.$oid) return <span class={styles.jsonString}>ObjectId("{value.$oid}")</span>;
+    if (value.$date) return <span class={styles.jsonString}>ISODate("{value.$date}")</span>;
+
+    const keys = Object.keys(value);
+    if (keys.length === 0) return <span>{'{}'}</span>;
+    return (
+      <span>
+        {'{\n'}
+        {keys.map((key, i) => (
+          <span key={key}>
+            {padInner}<span class={styles.jsonKey}>"{key}"</span>: <JsonHighlight value={value[key]} indent={indent + 1} />
+            {i < keys.length - 1 ? ',\n' : '\n'}
+          </span>
+        ))}
+        {pad}{'}'}
+      </span>
+    );
+  }
+
+  return <span>{String(value)}</span>;
 }

@@ -14,6 +14,7 @@ pub struct ContainerConfig {
     pub name: String,
     pub image: String,
     pub env: Vec<String>,
+    pub cmd: Option<Vec<String>>,
     pub ports: Vec<PortMapping>,
     pub volumes: Vec<VolumeMount>,
     pub memory_bytes: Option<i64>,
@@ -103,6 +104,7 @@ impl DockerClient {
         let container_config = Config {
             image: Some(config.image.clone()),
             env: Some(config.env.clone()),
+            cmd: config.cmd.clone(),
             exposed_ports: Some(exposed_ports),
             host_config: Some(host_config),
             labels: Some(config.labels.clone()),
