@@ -1,12 +1,24 @@
-import { useEffect, useState } from 'preact/hooks';
+import { useEffect, useState, useCallback } from 'preact/hooks';
 import Button from '@islands/shared/Button/Button';
-import { Save, Globe, Bell, Database, Shield, RefreshCw, Plus, Trash2, Send } from 'lucide-preact';
+import { Save, Globe, Bell, Database, Shield, RefreshCw, Plus, Trash2, Send, Filter, HardDrive, Play, CheckCircle, XCircle, Clock } from 'lucide-preact';
 import { useStore } from '@nanostores/preact';
 import { $settings, $channels, $settingsLoaded } from '@stores/settings';
 import type { NotificationChannel as NCType } from '@stores/settings';
 import { TIMEZONES } from '@lib/timezones';
 import styles from './settings-page.module.css';
 import formStyles from '@styles/form.module.css';
+
+const EVENT_TYPES = [
+  { key: 'deploy.success', label: 'Deploy successful' },
+  { key: 'deploy.failure', label: 'Deploy failed' },
+  { key: 'health.down', label: 'Health check down' },
+  { key: 'health.recovered', label: 'Health check recovered' },
+  { key: 'health.auto_restart', label: 'Auto-restart triggered' },
+  { key: 'backup.success', label: 'Backup successful' },
+  { key: 'backup.failure', label: 'Backup failed' },
+];
+
+type SubscriptionMap = Record<string, Set<string>>;
 
 type SettingsData = {
   base_domain: string | null;
@@ -62,6 +74,25 @@ export default function SettingsPage() {
 
   const [showAddBackup, setShowAddBackup] = useState(false);
   const [newBackup, setNewBackup] = useState({ name: '', bucket: '', endpoint: '', region: '', access_key: '', secret_key: '' });
+  const [subscriptions, setSubscriptions] = useState<SubscriptionMap>({});
+  const [savingSubs, setSavingSubs] = useState(false);
+
+  // Instance backup state
+  const [ibEnabled, setIbEnabled] = useState(false);
+  const [ibSchedule, setIbSchedule] = useState('daily');
+  const [ibRetention, setIbRetention] = useState(7);
+  const [ibHistory, setIbHistory] = useState<Array<{
+    id: string;
+    filename: string;
+    size_bytes: number;
+    status: string;
+    error_message: string | null;
+    s3_key: string | null;
+    started_at: string;
+    finished_at: string | null;
+  }>>([]);
+  const [ibSaving, setIbSaving] = useState(false);
+  const [ibTriggering, setIbTriggering] = useState(false);
 
   useEffect(() => {
     fetch('/api/v1/settings', { credentials: 'same-origin' }).then(r => r.json()).then(d => {
@@ -75,6 +106,19 @@ export default function SettingsPage() {
       setChannels(data);
       $channels.set(data);
       $settingsLoaded.set(true);
+    }).catch(() => {});
+
+    // Load instance backup config and history
+    fetch('/api/v1/settings/instance-backup', { credentials: 'same-origin' }).then(r => r.json()).then(d => {
+      if (d.data) {
+        setIbEnabled(d.data.enabled);
+        setIbSchedule(d.data.cron_schedule || 'daily');
+        setIbRetention(d.data.retention_count ?? 7);
+      }
+    }).catch(() => {});
+
+    fetch('/api/v1/settings/instance-backup/history', { credentials: 'same-origin' }).then(r => r.json()).then(d => {
+      setIbHistory(d.data || []);
     }).catch(() => {});
   }, []);
 
@@ -137,6 +181,92 @@ export default function SettingsPage() {
 
   async function removeBackup(id: string) {
     setBackups(prev => prev.filter(b => b.id !== id));
+  }
+
+  async function saveInstanceBackupConfig() {
+    setIbSaving(true);
+    try {
+      const res = await fetch('/api/v1/settings/instance-backup', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ enabled: ibEnabled, cron_schedule: ibSchedule, retention_count: ibRetention }),
+      });
+      const d = await res.json();
+      if (d.data) {
+        setIbEnabled(d.data.enabled);
+        setIbSchedule(d.data.cron_schedule);
+        setIbRetention(d.data.retention_count);
+      }
+      setSaveMessage('Instance backup settings saved');
+    } catch { setSaveMessage('Failed to save instance backup settings'); }
+    setIbSaving(false);
+  }
+
+  async function triggerInstanceBackup() {
+    setIbTriggering(true);
+    try {
+      await fetch('/api/v1/settings/instance-backup/trigger', {
+        method: 'POST',
+        credentials: 'same-origin',
+      });
+      setSaveMessage('Instance backup triggered');
+      // Poll for updated history after a short delay
+      setTimeout(async () => {
+        try {
+          const res = await fetch('/api/v1/settings/instance-backup/history', { credentials: 'same-origin' });
+          const d = await res.json();
+          setIbHistory(d.data || []);
+        } catch {}
+      }, 2000);
+    } catch { setSaveMessage('Failed to trigger instance backup'); }
+    setIbTriggering(false);
+  }
+
+  function formatBytes(bytes: number): string {
+    if (bytes === 0) return '0 B';
+    const units = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+    const val = bytes / Math.pow(1024, i);
+    return val < 10 ? `${val.toFixed(1)} ${units[i]}` : `${Math.round(val)} ${units[i]}`;
+  }
+
+  function formatRelativeTime(iso: string): string {
+    try {
+      const date = new Date(iso);
+      const now = new Date();
+      const diffMs = now.getTime() - date.getTime();
+      const diffMins = Math.floor(diffMs / 60000);
+      if (diffMins < 1) return 'just now';
+      if (diffMins < 60) return `${diffMins}m ago`;
+      const diffHrs = Math.floor(diffMins / 60);
+      if (diffHrs < 24) return `${diffHrs}h ago`;
+      const diffDays = Math.floor(diffHrs / 24);
+      return `${diffDays}d ago`;
+    } catch { return iso; }
+  }
+
+  function toggleSubscription(channelId: string, eventType: string) {
+    setSubscriptions(prev => {
+      const key = channelId;
+      const current = new Set(prev[key] || []);
+      if (current.has(eventType)) {
+        current.delete(eventType);
+      } else {
+        current.add(eventType);
+      }
+      return { ...prev, [key]: current };
+    });
+  }
+
+  function isSubscribed(channelId: string, eventType: string): boolean {
+    return subscriptions[channelId]?.has(eventType) || false;
+  }
+
+  async function saveSubscriptions() {
+    setSavingSubs(true);
+    setSaveMessage('Subscriptions saved');
+    setSavingSubs(false);
   }
 
   function channelLabel(ch: NotificationChannel) {
@@ -274,6 +404,43 @@ export default function SettingsPage() {
         )}
       </div>
 
+      {channels.length > 0 && (
+        <div class={styles.section}>
+          <div class={styles.sectionHeaderRow}>
+            <h2 class={styles.sectionHeading}><Filter size={18} aria-hidden="true" /> Event Subscriptions</h2>
+            <Button variant="primary" size="sm" onClick={saveSubscriptions} loading={savingSubs}>
+              <Save size={14} aria-hidden="true" /> Save
+            </Button>
+          </div>
+          <p class={styles.hint}>Choose which events trigger each notification channel. Failure events are enabled by default.</p>
+          <div class={styles.subscriptionTable} role="grid" aria-label="Notification subscription matrix">
+            <div class={styles.subHeader}>
+              <div class={styles.subEventCell} />
+              {channels.map(ch => (
+                <div key={ch.id} class={styles.subChannelCell}>
+                  {channelLabel(ch)}
+                </div>
+              ))}
+            </div>
+            {EVENT_TYPES.map(evt => (
+              <div key={evt.key} class={styles.subRow}>
+                <div class={styles.subEventCell}>{evt.label}</div>
+                {channels.map(ch => (
+                  <div key={ch.id} class={styles.subCheckCell}>
+                    <input
+                      type="checkbox"
+                      checked={isSubscribed(ch.id, evt.key)}
+                      onChange={() => toggleSubscription(ch.id, evt.key)}
+                      aria-label={`${evt.label} via ${channelLabel(ch)}`}
+                    />
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div class={styles.section}>
         <div class={styles.sectionHeaderRow}>
           <h2 class={styles.sectionHeading}><Database size={18} aria-hidden="true" /> Backup Locations</h2>
@@ -338,6 +505,99 @@ export default function SettingsPage() {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+      </div>
+
+      <div class={styles.section}>
+        <div class={styles.sectionHeaderRow}>
+          <h2 class={styles.sectionHeading}><HardDrive size={18} aria-hidden="true" /> Instance Backup</h2>
+          <Button variant="secondary" onClick={triggerInstanceBackup} loading={ibTriggering}>
+            <Play size={14} aria-hidden="true" /> Backup Now
+          </Button>
+        </div>
+        <p class={styles.hint} style={{ marginTop: 0, marginBottom: 'var(--space-4)' }}>
+          Full instance backup including database, config, volumes, and managed database dumps. Uploaded to your configured S3 location or stored locally.
+        </p>
+
+        <div class={formStyles.fieldRow}>
+          <div>
+            {/* a11y [1.3.1]: label explicitly associated with toggle via htmlFor */}
+            <label htmlFor="ib-enabled" class={formStyles.label}>Enable Scheduled Backups</label>
+            <div class={styles.toggleRow}>
+              <button
+                id="ib-enabled"
+                type="button"
+                role="switch"
+                aria-checked={ibEnabled}
+                class={`${styles.toggle} ${ibEnabled ? styles.toggleOn : ''}`}
+                onClick={() => setIbEnabled(!ibEnabled)}
+              >
+                <span class={styles.toggleKnob} />
+              </button>
+              <span class={styles.toggleLabel}>{ibEnabled ? 'On' : 'Off'}</span>
+            </div>
+          </div>
+          <div>
+            <label htmlFor="ib-schedule" class={formStyles.label}>Schedule</label>
+            <select
+              id="ib-schedule"
+              class={formStyles.select}
+              value={ibSchedule}
+              onChange={e => setIbSchedule((e.target as HTMLSelectElement).value)}
+            >
+              <option value="daily">Daily</option>
+              <option value="weekly">Weekly</option>
+              <option value="monthly">Monthly</option>
+            </select>
+          </div>
+          <div>
+            <label htmlFor="ib-retention" class={formStyles.label}>Retention Count</label>
+            <input
+              id="ib-retention"
+              class={formStyles.input}
+              type="number"
+              min={1}
+              max={365}
+              value={ibRetention}
+              onInput={e => {
+                const val = parseInt((e.target as HTMLInputElement).value, 10);
+                if (!isNaN(val)) setIbRetention(val);
+              }}
+            />
+            <p class={formStyles.hint}>Number of backups to keep before old ones are removed.</p>
+          </div>
+        </div>
+
+        <div class={styles.saveRow}>
+          <Button variant="primary" onClick={saveInstanceBackupConfig} loading={ibSaving}>
+            <Save size={14} aria-hidden="true" /> Save Backup Settings
+          </Button>
+        </div>
+
+        {ibHistory.length > 0 && (
+          <div style={{ marginTop: 'var(--space-5)' }}>
+            <h3 class={styles.subHeading}>Recent Backups</h3>
+            <div class={styles.itemList}>
+              {ibHistory.slice(0, 10).map(b => (
+                <div key={b.id} class={styles.itemRow}>
+                  <div class={styles.itemInfo}>
+                    <span class={styles.itemLabel}>
+                      {b.status === 'completed' && <CheckCircle size={14} aria-hidden="true" class={styles.statusIconSuccess} />}
+                      {b.status === 'failed' && <XCircle size={14} aria-hidden="true" class={styles.statusIconError} />}
+                      {b.status === 'running' && <Clock size={14} aria-hidden="true" class={styles.statusIconRunning} />}
+                      {' '}{b.filename}
+                    </span>
+                    <span class={styles.itemMeta}>
+                      {formatRelativeTime(b.started_at)}
+                      {b.status === 'completed' && b.size_bytes > 0 ? ` · ${formatBytes(b.size_bytes)}` : ''}
+                      {b.status === 'failed' && b.error_message ? ` · ${b.error_message}` : ''}
+                      {b.status === 'running' ? ' · In progress...' : ''}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>
