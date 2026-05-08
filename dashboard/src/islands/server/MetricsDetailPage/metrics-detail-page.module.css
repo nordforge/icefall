@@ -1,0 +1,109 @@
+.breadcrumb {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-2);
+}
+
+.breadcrumb a {
+  color: var(--color-primary);
+}
+
+.pageHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-6);
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.pageTitle {
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-semibold);
+}
+
+.rangeToggle {
+  display: flex;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.rangeButton {
+  padding: var(--space-1) var(--space-3);
+  background: var(--color-surface);
+  border: none;
+  border-right: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.rangeButton:last-child {
+  border-right: none;
+}
+
+.rangeButton:hover {
+  color: var(--color-text);
+}
+
+.rangeActive {
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
+}
+
+.loadingText {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  text-align: center;
+  padding: var(--space-8);
+}
+
+.chartsGrid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.chartCard {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-5);
+}
+
+.chartHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-4);
+}
+
+.chartLabel {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: var(--weight-semibold);
+  font-size: var(--text-base);
+  color: var(--color-text);
+}
+
+.chartValue {
+  font-family: var(--font-mono);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-secondary);
+}
+
+.chartBody {
+  min-height: 200px;
+}
+
+.dataInfo {
+  margin-top: var(--space-4);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  text-align: center;
+}

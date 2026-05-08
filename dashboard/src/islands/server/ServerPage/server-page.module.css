@@ -10,6 +10,16 @@
   font-weight: var(--weight-semibold);
 }
 
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.detailsLink {
+  text-decoration: none;
+}
+
 .rangeToggle {
   display: flex;
   border: 1px solid var(--color-border);
@@ -108,6 +118,7 @@
 .chartWrap {
   border-top: 1px solid var(--color-border);
   padding-top: var(--space-3);
+  min-height: 140px;
 }
 
 /* Section header with toggle */

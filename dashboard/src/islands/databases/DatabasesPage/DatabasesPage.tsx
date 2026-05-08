@@ -115,10 +115,13 @@ export default function DatabasesPage() {
     } catch { return ''; }
   }
 
-  if (loading) return (
+  if (loading && dbs.length === 0) return (
     <div>
       <div class={styles.pageHeader}>
         <h1 class={styles.pageTitle}>Databases</h1>
+        <Button variant="primary" disabled>
+          <Plus size={14} aria-hidden="true" /> Add Database
+        </Button>
       </div>
       <p class={styles.loadingText}>Loading databases...</p>
     </div>

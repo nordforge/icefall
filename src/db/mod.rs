@@ -82,6 +82,11 @@ pub trait Database: Send + Sync + 'static {
     async fn get_user_by_email(&self, email: &str) -> Result<Option<User>, DbError>;
     async fn list_users(&self) -> Result<Vec<User>, DbError>;
 
+    // Server Metrics
+    async fn insert_server_metric(&self, snapshot: &crate::api::routes::server::ServerMetricsSnapshot) -> Result<(), DbError>;
+    async fn query_server_metrics(&self, from: &str, to: &str, limit: usize) -> Result<Vec<crate::api::routes::server::ServerMetricsSnapshot>, DbError>;
+    async fn prune_server_metrics(&self, older_than: &str) -> Result<u64, DbError>;
+
     // Health Checks
     async fn create_health_check(&self, hc: &NewHealthCheck) -> Result<HealthCheck, DbError>;
     async fn get_health_checks(&self, app_id: &str) -> Result<Vec<HealthCheck>, DbError>;

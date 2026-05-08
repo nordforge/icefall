@@ -62,71 +62,71 @@ export default function ServerPage() {
           setHistory(historyRes.data); $serverMetricsHistory.set(historyRes.data);
         }
       } catch {}
-    }, 10_000);
+    }, 5_000);
 
     return () => { active = false; clearInterval(interval); };
   }, [historyLimit]);
 
-  if (loading) return (
-    <div>
-      <div class={styles.pageHeader}><h1 class={styles.pageTitle}>Server</h1></div>
-      <p class={styles.loadingText}>Loading server info...</p>
-    </div>
-  );
-
-  if (!status) return (
-    <div>
-      <div class={styles.pageHeader}><h1 class={styles.pageTitle}>Server</h1></div>
-      <div class={styles.emptyState}>
-        <p class={styles.emptyTitle}>Unable to reach server</p>
-        <p class={styles.emptyHint}>Make sure the Icefall daemon is running.</p>
-      </div>
-    </div>
-  );
-
-  const cpuHistory = history.map(s => ({ timestamp: s.timestamp, value: s.cpu_percent }));
-  const memHistory = history.map(s => ({
+  const cpuHistory = status ? history.map(s => ({ timestamp: s.timestamp, value: s.cpu_percent })) : [];
+  const memHistory = status ? history.map(s => ({
     timestamp: s.timestamp,
     value: s.memory_total_bytes > 0 ? (s.memory_used_bytes / s.memory_total_bytes) * 100 : 0,
-  }));
-  const diskHistory = history.map(s => ({
+  })) : [];
+  const diskHistory = status ? history.map(s => ({
     timestamp: s.timestamp,
     value: s.disk_total_bytes > 0 ? (s.disk_used_bytes / s.disk_total_bytes) * 100 : 0,
-  }));
+  })) : [];
 
-  const infoItems: InfoItem[] = [
+  const infoItems: InfoItem[] = status ? [
     { icon: Hash, label: 'Version', value: status.version },
     { icon: Server, label: 'Status', value: status.status },
     ...(serverIp ? [{ icon: Globe, label: 'Server IP', value: serverIp, mono: true }] : []),
     { icon: MemoryStick, label: 'Total Memory', value: formatBytes(status.memory_total_bytes) },
     { icon: HardDrive, label: 'Total Disk', value: formatBytes(status.disk_total_bytes) },
     { icon: Cpu, label: 'CPU Usage', value: formatPercent(status.cpu_percent) },
-  ];
+  ] : [];
 
   return (
     <div>
       <div class={styles.pageHeader}>
         <h1 class={styles.pageTitle}>Server</h1>
-        <div class={styles.rangeToggle}>
-          <button
-            type="button"
-            class={`${styles.rangeButton} ${range === '10m' ? styles.rangeActive : ''}`}
-            onClick={() => setRange('10m')}
-            aria-pressed={range === '10m'}
-          >
-            <Clock size={12} aria-hidden="true" /> 10 min
-          </button>
-          <button
-            type="button"
-            class={`${styles.rangeButton} ${range === '1h' ? styles.rangeActive : ''}`}
-            onClick={() => setRange('1h')}
-            aria-pressed={range === '1h'}
-          >
-            <Clock size={12} aria-hidden="true" /> 1 hour
-          </button>
+        <div class={styles.headerActions}>
+          <div class={styles.rangeToggle}>
+            <button
+              type="button"
+              class={`${styles.rangeButton} ${range === '10m' ? styles.rangeActive : ''}`}
+              onClick={() => setRange('10m')}
+              aria-pressed={range === '10m'}
+            >
+              <Clock size={12} aria-hidden="true" /> 10 min
+            </button>
+            <button
+              type="button"
+              class={`${styles.rangeButton} ${range === '1h' ? styles.rangeActive : ''}`}
+              onClick={() => setRange('1h')}
+              aria-pressed={range === '1h'}
+            >
+              <Clock size={12} aria-hidden="true" /> 1 hour
+            </button>
+          </div>
+          <a href="/server/metrics" class={styles.detailsLink}>
+            <Button variant="secondary" size="sm">Details</Button>
+          </a>
         </div>
       </div>
 
+      {loading && !status && (
+        <p class={styles.loadingText}>Loading server info...</p>
+      )}
+
+      {!loading && !status && (
+        <div class={styles.emptyState}>
+          <p class={styles.emptyTitle}>Unable to reach server</p>
+          <p class={styles.emptyHint}>Make sure the Icefall daemon is running.</p>
+        </div>
+      )}
+
+      {status && (
       <div class={styles.metricsGrid}>
         <div class={styles.metricCard}>
           <div class={styles.metricHeader}>
@@ -200,7 +200,9 @@ export default function ServerPage() {
           </div>
         </div>
       </div>
+      )}
 
+      {status && (<>
       <div class={styles.sectionHeader}>
         <h2 class={styles.sectionTitle}>System Info</h2>
         <div class={styles.viewToggle}>
@@ -251,6 +253,7 @@ export default function ServerPage() {
           </dl>
         </div>
       )}
+      </>)}
     </div>
   );
 }

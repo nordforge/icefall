@@ -42,7 +42,12 @@ export default function SettingsPage() {
   const [baseDomain, setBaseDomain] = useState(cachedSettings?.base_domain || '');
   const [platformName, setPlatformName] = useState('');
   const [recoveryEmail, setRecoveryEmail] = useState('');
-  const [timezone, setTimezone] = useState('UTC');
+  const [timezone, setTimezone] = useState(() => {
+    if (typeof globalThis !== 'undefined' && typeof Intl !== 'undefined') {
+      try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch {}
+    }
+    return 'UTC';
+  });
   const [channels, setChannels] = useState<NotificationChannel[]>(cachedChannels);
   const [backups, setBackups] = useState<BackupLocation[]>([]);
   const [saving, setSaving] = useState('');

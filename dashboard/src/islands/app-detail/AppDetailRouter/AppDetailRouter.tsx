@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'preact/hooks';
+import { useEffect, useState, useRef } from 'preact/hooks';
 import { api } from '@lib/api';
 import type { App } from '@lib/types';
 import type { ComponentType } from 'preact';
@@ -9,14 +9,8 @@ import styles from './app-detail-router.module.css';
 function parseRoute() {
   const path = window.location.pathname.replace('/apps/', '');
   const segments = path.split('/').filter(Boolean);
-
   if (segments.length === 0) return { appId: '', tab: 'overview', subId: '' };
-
-  const appId = segments[0];
-  const tab = segments[1] || 'overview';
-  const subId = segments[2] || '';
-
-  return { appId, tab, subId };
+  return { appId: segments[0], tab: segments[1] || 'overview', subId: segments[2] || '' };
 }
 
 const TAB_LOADERS: Record<string, () => Promise<{ default: ComponentType<any> }>> = {
@@ -29,68 +23,71 @@ const TAB_LOADERS: Record<string, () => Promise<{ default: ComponentType<any> }>
 };
 
 export default function AppDetailRouter() {
+  const initial = parseRoute();
   const [app, setApp] = useState<App | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [TabComponent, setTabComponent] = useState<ComponentType<any> | null>(null);
-  const [DeployDetailComponent, setDeployDetailComponent] = useState<ComponentType<any> | null>(null);
-  const { appId, tab, subId } = parseRoute();
+  const [activeTab, setActiveTab] = useState(initial.tab);
+  const [subId] = useState(initial.subId);
+
+  const componentCache = useRef<Record<string, ComponentType<any>>>({});
+  const [loadedTabs, setLoadedTabs] = useState<Record<string, ComponentType<any>>>({});
+  const [DeployDetail, setDeployDetail] = useState<ComponentType<any> | null>(null);
+
+  const appId = initial.appId;
 
   useEffect(() => {
     if (!appId) return;
-    api
-      .getApp(appId)
-      .then(({ data }) => {
-        setApp(data);
-        setLoading(false);
-      })
-      .catch((err) => {
-        setError(err.message);
-        setLoading(false);
-      });
+    api.getApp(appId)
+      .then(({ data }) => { setApp(data); setLoading(false); })
+      .catch((err) => { setError(err.message); setLoading(false); });
   }, [appId]);
 
   useEffect(() => {
-    if (tab === 'deploys' && subId) {
-      import('@islands/deploy/DeployDetail/DeployDetail').then((m) => setDeployDetailComponent(() => m.default));
+    if (componentCache.current[activeTab]) {
+      setLoadedTabs(prev => ({ ...prev, [activeTab]: componentCache.current[activeTab] }));
       return;
     }
 
-    const loader = TAB_LOADERS[tab];
+    const loader = TAB_LOADERS[activeTab];
     if (loader) {
-      loader().then((m) => setTabComponent(() => m.default));
+      loader().then((m) => {
+        componentCache.current[activeTab] = m.default;
+        setLoadedTabs(prev => ({ ...prev, [activeTab]: m.default }));
+      });
     }
-  }, [tab, subId]);
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (activeTab === 'deploys' && subId) {
+      import('@islands/deploy/DeployDetail/DeployDetail').then((m) => {
+        setDeployDetail(() => m.default);
+      });
+    }
+  }, [activeTab, subId]);
 
   if (loading) {
-    return (
-      <div class={styles.loading}>
-        Loading...
-      </div>
-    );
+    return <div class={styles.loading}>Loading...</div>;
   }
 
   if (error || !app) {
-    return (
-      <div class={styles.error} role="alert">
-        {error || 'App not found'}
-      </div>
-    );
+    return <div class={styles.error} role="alert">{error || 'App not found'}</div>;
   }
 
-  if (tab === 'deploys' && subId && DeployDetailComponent) {
-    return <DeployDetailComponent appId={app.id} deployId={subId} appName={app.name} />;
+  if (activeTab === 'deploys' && subId && DeployDetail) {
+    return <DeployDetail appId={app.id} deployId={subId} appName={app.name} />;
   }
 
-  const tabProps = tab === 'overview' || tab === 'settings' ? { app } : { appId: app.id };
+  const TabComponent = loadedTabs[activeTab] || null;
+  const tabProps = activeTab === 'overview' || activeTab === 'settings' ? { app } : { appId: app.id };
 
   return (
     <div>
       <AppHeader app={app} />
-      <AppTabs appId={app.id} activeTab={tab} />
+      <AppTabs appId={app.id} activeTab={activeTab} onTabChange={setActiveTab} />
       <div class={styles.tabContent}>
         {TabComponent ? (
-          <TabComponent {...tabProps} />
+          <TabComponent key={activeTab} {...tabProps} />
         ) : (
           <div class={styles.tabLoading}>Loading...</div>
         )}

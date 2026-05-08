@@ -6,11 +6,16 @@ use axum::routing::get;
 use axum::{Json, Router};
 use serde::Deserialize;
 use tokio::sync::RwLock;
+use tracing::warn;
 
 use crate::api::error::ApiError;
 use crate::api::AppState;
+use crate::db::Database;
 
-const SERVER_HISTORY_CAPACITY: usize = 360;
+const SERVER_HISTORY_CAPACITY: usize = 120;
+const COLLECT_INTERVAL_SECS: u64 = 2;
+const SQLITE_WRITE_TICKS: u64 = 15; // every 30s (15 * 2s)
+const PRUNE_TICKS: u64 = 1800; // every hour (1800 * 2s)
 
 #[derive(Clone, serde::Serialize, Default)]
 pub struct ServerMetrics {
@@ -42,19 +47,21 @@ impl ServerMetricsHistory {
         }
     }
 
-    pub async fn record(&self, snapshot: &ServerMetrics) {
-        let mut buf = self.buffer.write().await;
-        buf.push_back(ServerMetricsSnapshot {
+    pub async fn record(&self, snapshot: &ServerMetrics) -> ServerMetricsSnapshot {
+        let snap = ServerMetricsSnapshot {
             timestamp: crate::db::models::now_iso8601(),
             cpu_percent: snapshot.cpu_percent,
             memory_used_bytes: snapshot.memory_used_bytes,
             memory_total_bytes: snapshot.memory_total_bytes,
             disk_used_bytes: snapshot.disk_used_bytes,
             disk_total_bytes: snapshot.disk_total_bytes,
-        });
+        };
+        let mut buf = self.buffer.write().await;
+        buf.push_back(snap.clone());
         if buf.len() > SERVER_HISTORY_CAPACITY {
             buf.pop_front();
         }
+        snap
     }
 
     pub async fn get_history(&self, limit: Option<usize>) -> Vec<ServerMetricsSnapshot> {
@@ -69,13 +76,15 @@ impl ServerMetricsHistory {
 pub fn spawn_metrics_collector(
     metrics: Arc<RwLock<ServerMetrics>>,
     history: Arc<ServerMetricsHistory>,
+    db: Arc<dyn Database>,
 ) {
     tokio::spawn(async move {
         let mut sys = sysinfo::System::new();
+        let mut tick: u64 = 0;
         loop {
             sys.refresh_cpu_all();
             sys.refresh_memory();
-            tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+            tokio::time::sleep(std::time::Duration::from_secs(COLLECT_INTERVAL_SECS)).await;
             sys.refresh_cpu_all();
 
             let disks = sysinfo::Disks::new_with_refreshed_list();
@@ -95,8 +104,26 @@ pub fn spawn_metrics_collector(
                 disk_total_bytes: disk_total,
             };
 
-            history.record(&snapshot).await;
+            let snap = history.record(&snapshot).await;
             *metrics.write().await = snapshot;
+
+            tick += 1;
+
+            if tick % SQLITE_WRITE_TICKS == 0 {
+                if let Err(e) = db.insert_server_metric(&snap).await {
+                    warn!("Failed to persist server metric: {e}");
+                }
+            }
+
+            if tick % PRUNE_TICKS == 0 {
+                let cutoff = chrono::Utc::now()
+                    .checked_sub_signed(chrono::Duration::days(7))
+                    .unwrap_or_else(chrono::Utc::now)
+                    .to_rfc3339();
+                if let Err(e) = db.prune_server_metrics(&cutoff).await {
+                    warn!("Failed to prune server metrics: {e}");
+                }
+            }
         }
     });
 }
@@ -105,6 +132,7 @@ pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/server/status", get(server_status))
         .route("/server/metrics/history", get(server_metrics_history))
+        .route("/server/metrics/range", get(server_metrics_range))
 }
 
 async fn server_status(
@@ -131,7 +159,23 @@ async fn server_metrics_history(
     State(state): State<AppState>,
     Query(params): Query<HistoryParams>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
-    let limit = params.limit.map(|l| l.min(360));
+    let limit = params.limit.map(|l| l.min(120));
     let data = state.server_metrics_history.get_history(limit).await;
     Ok(Json(serde_json::json!({ "data": data })))
+}
+
+#[derive(Deserialize)]
+struct RangeParams {
+    from: String,
+    to: String,
+    limit: Option<usize>,
+}
+
+async fn server_metrics_range(
+    State(state): State<AppState>,
+    Query(params): Query<RangeParams>,
+) -> Result<Json<serde_json::Value>, ApiError> {
+    let limit = params.limit.unwrap_or(500).min(2000);
+    let data = state.db.query_server_metrics(&params.from, &params.to, limit).await?;
+    Ok(Json(serde_json::json!({ "data": data, "total": data.len() })))
 }

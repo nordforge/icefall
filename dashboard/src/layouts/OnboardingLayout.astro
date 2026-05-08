@@ -17,6 +17,14 @@ const { title, step } = Astro.props;
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title} — Icefall Setup</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=JetBrains+Mono:wght@100..800&display=swap" />
+    <style is:inline>
+      html { box-sizing: border-box; }
+      *, *::before, *::after { box-sizing: inherit; margin: 0; padding: 0; }
+      body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+    </style>
     <script is:inline>
       (function() {
         var stored = localStorage.getItem('icefall-theme');

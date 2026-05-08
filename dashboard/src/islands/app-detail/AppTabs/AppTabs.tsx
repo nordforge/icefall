@@ -4,15 +4,16 @@ import styles from './app-tabs.module.css';
 type Props = {
   appId: string;
   activeTab: string;
+  onTabChange: (tab: string) => void;
 }
 
 const TABS = [
-  { key: 'overview', label: 'Overview', path: '' },
-  { key: 'deploys', label: 'Deploys', path: '/deploys' },
-  { key: 'logs', label: 'Logs', path: '/logs' },
-  { key: 'env', label: 'Env Vars', path: '/env' },
-  { key: 'domains', label: 'Domains', path: '/domains' },
-  { key: 'settings', label: 'Settings', path: '/settings' },
+  { key: 'overview', label: 'Overview' },
+  { key: 'deploys', label: 'Deploys' },
+  { key: 'logs', label: 'Logs' },
+  { key: 'env', label: 'Env Vars' },
+  { key: 'domains', label: 'Domains' },
+  { key: 'settings', label: 'Settings' },
 ];
 
 const TAB_PRELOADERS: Record<string, () => void> = {
@@ -32,28 +33,25 @@ function preloadTab(key: string) {
   TAB_PRELOADERS[key]?.();
 }
 
-export default function AppTabs({ appId, activeTab }: Props) {
+export default function AppTabs({ appId, activeTab, onTabChange }: Props) {
   const handlePreload = useCallback((key: string) => () => preloadTab(key), []);
 
-  {/* a11y [WCAG 4.1.2]: these are navigation links, not JS tabs — use aria-current instead of tab roles */}
   return (
-    <nav
-      aria-label="App sections"
-      class={styles.nav}
-    >
+    <nav aria-label="App sections" class={styles.nav}>
       {TABS.map((tab) => {
         const isActive = tab.key === activeTab;
         return (
-          <a
+          <button
             key={tab.key}
-            href={`/apps/${appId}${tab.path}`}
-            aria-current={isActive ? 'page' : undefined}
+            type="button"
+            onClick={() => onTabChange(tab.key)}
             onMouseEnter={handlePreload(tab.key)}
             onFocus={handlePreload(tab.key)}
+            aria-selected={isActive}
             class={isActive ? styles.tabActive : styles.tab}
           >
             {tab.label}
-          </a>
+          </button>
         );
       })}
     </nav>

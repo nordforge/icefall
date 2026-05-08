@@ -12,7 +12,7 @@
 
 .loadingText {
   color: var(--color-text-muted);
-  padding: var(--space-4);
+  padding: var(--space-4) 0;
 }
 
 /* Detail view */

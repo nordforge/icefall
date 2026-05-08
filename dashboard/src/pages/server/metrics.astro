@@ -1,0 +1,8 @@
+---
+import DashboardLayout from '@/layouts/DashboardLayout.astro';
+import MetricsDetailPage from '@islands/server/MetricsDetailPage/MetricsDetailPage';
+---
+
+<DashboardLayout title="Server Metrics">
+  <MetricsDetailPage client:load />
+</DashboardLayout>

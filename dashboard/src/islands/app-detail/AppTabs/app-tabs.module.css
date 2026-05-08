@@ -2,19 +2,21 @@
   display: flex;
   gap: var(--space-1);
   border-bottom: 1px solid var(--color-border);
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
+  overflow: visible;
 }
 
 .tab {
   padding: var(--space-2) var(--space-4);
   font-size: var(--text-sm);
-  text-decoration: none;
+  font-family: inherit;
+  background: none;
+  border: none;
   margin-bottom: -1px;
   border-bottom: 2px solid transparent;
   color: var(--color-text-secondary);
   font-weight: var(--weight-normal);
   white-space: nowrap;
+  cursor: pointer;
   transition:
     color var(--duration-fast) var(--ease-out),
     border-color var(--duration-fast) var(--ease-out);

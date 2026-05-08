@@ -113,6 +113,11 @@ export const api = {
       `/server/metrics/history${limit ? `?limit=${limit}` : ''}`
     ),
 
+  getServerMetricsRange: (from: string, to: string, limit?: number) =>
+    request<{ data: ServerMetricsSnapshot[]; total: number }>(
+      `/server/metrics/range?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}${limit ? `&limit=${limit}` : ''}`
+    ),
+
   listDbTables: (dbId: string) =>
     request<{ data: string[]; types?: Record<string, string> }>(`/databases/${dbId}/tables`),
 

@@ -539,6 +539,72 @@ impl Database for SqliteDatabase {
         Ok(users)
     }
 
+    // --- Server Metrics ---
+
+    async fn insert_server_metric(
+        &self,
+        snapshot: &crate::api::routes::server::ServerMetricsSnapshot,
+    ) -> Result<(), DbError> {
+        let id = new_id();
+        sqlx::query(
+            "INSERT INTO server_metrics (id, timestamp, cpu_percent, memory_used_bytes, memory_total_bytes, disk_used_bytes, disk_total_bytes)
+             VALUES (?, ?, ?, ?, ?, ?, ?)",
+        )
+        .bind(&id)
+        .bind(&snapshot.timestamp)
+        .bind(snapshot.cpu_percent as f64)
+        .bind(snapshot.memory_used_bytes as i64)
+        .bind(snapshot.memory_total_bytes as i64)
+        .bind(snapshot.disk_used_bytes as i64)
+        .bind(snapshot.disk_total_bytes as i64)
+        .execute(&self.pool)
+        .await?;
+        Ok(())
+    }
+
+    async fn query_server_metrics(
+        &self,
+        from: &str,
+        to: &str,
+        limit: usize,
+    ) -> Result<Vec<crate::api::routes::server::ServerMetricsSnapshot>, DbError> {
+        let rows = sqlx::query(
+            "SELECT timestamp, cpu_percent, memory_used_bytes, memory_total_bytes, disk_used_bytes, disk_total_bytes
+             FROM server_metrics
+             WHERE timestamp >= ? AND timestamp <= ?
+             ORDER BY timestamp ASC
+             LIMIT ?",
+        )
+        .bind(from)
+        .bind(to)
+        .bind(limit as i64)
+        .fetch_all(&self.pool)
+        .await?;
+
+        Ok(rows
+            .iter()
+            .map(|row| {
+                use sqlx::Row;
+                crate::api::routes::server::ServerMetricsSnapshot {
+                    timestamp: row.get("timestamp"),
+                    cpu_percent: row.get::<f64, _>("cpu_percent") as f32,
+                    memory_used_bytes: row.get::<i64, _>("memory_used_bytes") as u64,
+                    memory_total_bytes: row.get::<i64, _>("memory_total_bytes") as u64,
+                    disk_used_bytes: row.get::<i64, _>("disk_used_bytes") as u64,
+                    disk_total_bytes: row.get::<i64, _>("disk_total_bytes") as u64,
+                }
+            })
+            .collect())
+    }
+
+    async fn prune_server_metrics(&self, older_than: &str) -> Result<u64, DbError> {
+        let result = sqlx::query("DELETE FROM server_metrics WHERE timestamp < ?")
+            .bind(older_than)
+            .execute(&self.pool)
+            .await?;
+        Ok(result.rows_affected())
+    }
+
     // --- Health Checks ---
 
     async fn create_health_check(&self, hc: &NewHealthCheck) -> Result<HealthCheck, DbError> {

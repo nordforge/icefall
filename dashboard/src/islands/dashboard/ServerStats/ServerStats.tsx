@@ -29,7 +29,7 @@ export default function ServerStats() {
     }
 
     fetchAll();
-    const interval = setInterval(fetchAll, 30_000);
+    const interval = setInterval(fetchAll, 5_000);
     return () => {
       active = false;
       clearInterval(interval);
@@ -92,6 +92,7 @@ export default function ServerStats() {
           </div>
         )}
       </div>
+      <a href="/server/metrics" class={styles.detailLink}>View details &rarr;</a>
     </div>
   );
 }

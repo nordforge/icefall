@@ -121,7 +121,7 @@ impl DaemonRunner {
         let backup_store = Arc::new(BackupStore::new(&config.data_dir));
 
         // Start background tasks
-        spawn_server_metrics(server_metrics.clone(), server_metrics_history.clone());
+        spawn_server_metrics(server_metrics.clone(), server_metrics_history.clone(), db.clone());
         spawn_health_runner(db.clone(), docker.clone(), event_bus.clone());
         spawn_container_metrics(
             docker.clone(),
