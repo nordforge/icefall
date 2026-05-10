@@ -86,8 +86,8 @@ async fn run_instance_backup(db: &Arc<dyn Database>) -> Result<String, String> {
 
 /// Perform the actual backup to a tar.gz and upload to S3.
 async fn do_backup(data_path: &Path, filename: &str, s3_key: &str) -> Result<i64, String> {
-    let temp_dir = tempfile::TempDir::new()
-        .map_err(|e| format!("failed to create temp dir: {e}"))?;
+    let temp_dir =
+        tempfile::TempDir::new().map_err(|e| format!("failed to create temp dir: {e}"))?;
     let staging = temp_dir.path();
 
     // Step 1: SQLite database (with WAL checkpoint)
@@ -195,9 +195,10 @@ async fn do_backup(data_path: &Path, filename: &str, s3_key: &str) -> Result<i64
         }
     } else {
         // Store locally in data_dir/instance-backups/
-        let local_dir = Path::new(&std::env::var("ICEFALL_DATA_DIR")
-            .unwrap_or_else(|_| "/var/lib/icefall".to_string()))
-            .join("instance-backups");
+        let local_dir = Path::new(
+            &std::env::var("ICEFALL_DATA_DIR").unwrap_or_else(|_| "/var/lib/icefall".to_string()),
+        )
+        .join("instance-backups");
         std::fs::create_dir_all(&local_dir).ok();
         let local_dest = local_dir.join(filename);
         std::fs::copy(&archive_path, &local_dest)
@@ -227,16 +228,15 @@ async fn cleanup_old_backups(db: &Arc<dyn Database>, retention_count: i64) {
         if let Some(ref s3_key) = record.s3_key {
             if let Ok(bucket) = std::env::var("ICEFALL_BACKUP_S3_BUCKET") {
                 let s3_url = format!("s3://{bucket}/{s3_key}");
-                let _ = Command::new("aws")
-                    .args(["s3", "rm", &s3_url])
-                    .output();
+                let _ = Command::new("aws").args(["s3", "rm", &s3_url]).output();
             }
         }
 
         // Try to remove local file
-        let local_dir = Path::new(&std::env::var("ICEFALL_DATA_DIR")
-            .unwrap_or_else(|_| "/var/lib/icefall".to_string()))
-            .join("instance-backups");
+        let local_dir = Path::new(
+            &std::env::var("ICEFALL_DATA_DIR").unwrap_or_else(|_| "/var/lib/icefall".to_string()),
+        )
+        .join("instance-backups");
         let local_file = local_dir.join(&record.filename);
         let _ = std::fs::remove_file(local_file);
 
@@ -374,10 +374,7 @@ fn schedule_to_interval_secs(schedule: &str) -> u64 {
 }
 
 /// Spawn the background task that checks the instance backup config and runs backups.
-pub fn spawn_instance_backup_scheduler(
-    db: Arc<dyn Database>,
-    handle: Arc<InstanceBackupHandle>,
-) {
+pub fn spawn_instance_backup_scheduler(db: Arc<dyn Database>, handle: Arc<InstanceBackupHandle>) {
     tokio::spawn(async move {
         // Track the last backup time so we know when to fire next
         let mut last_backup: Option<chrono::DateTime<chrono::Utc>> = None;
@@ -417,7 +414,10 @@ pub fn spawn_instance_backup_scheduler(
             };
 
             if should_run {
-                tracing::info!("Starting scheduled instance backup (schedule: {})", config.cron_schedule);
+                tracing::info!(
+                    "Starting scheduled instance backup (schedule: {})",
+                    config.cron_schedule
+                );
                 match handle.trigger().await {
                     Ok(_) => {
                         last_backup = Some(chrono::Utc::now());

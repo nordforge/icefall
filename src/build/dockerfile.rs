@@ -283,11 +283,7 @@ mod tests {
 
     fn make_detection(framework: Framework, pm: PackageManager) -> DetectionResult {
         let (build_command, output_dir, start_command, detected_port) =
-            crate::build::detect::tests_support::framework_defaults_pub(
-                &framework,
-                &pm,
-                None,
-            );
+            crate::build::detect::tests_support::framework_defaults_pub(&framework, &pm, None);
         DetectionResult {
             framework,
             package_manager: pm,

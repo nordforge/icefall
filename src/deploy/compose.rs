@@ -141,11 +141,7 @@ pub struct ComposeDeployer {
 }
 
 impl ComposeDeployer {
-    pub fn new(
-        docker: Arc<DockerClient>,
-        db: Arc<dyn Database>,
-        event_bus: Arc<EventBus>,
-    ) -> Self {
+    pub fn new(docker: Arc<DockerClient>, db: Arc<dyn Database>, event_bus: Arc<EventBus>) -> Self {
         Self {
             docker,
             db,
@@ -185,7 +181,11 @@ impl ComposeDeployer {
                             }
                         }
                         Some(c) => {
-                            if in_default { default_buf.push(c); } else { name.push(c); }
+                            if in_default {
+                                default_buf.push(c);
+                            } else {
+                                name.push(c);
+                            }
                         }
                     }
                 }
@@ -228,7 +228,11 @@ impl ComposeDeployer {
                             }
                         }
                         Some(c) => {
-                            if in_default { default_buf.push(c); } else { name.push(c); }
+                            if in_default {
+                                default_buf.push(c);
+                            } else {
+                                name.push(c);
+                            }
                         }
                     }
                 }
@@ -437,11 +441,7 @@ impl ComposeDeployer {
             // Connect to the compose network with the service name as a DNS alias
             // so other services can reach this one by name
             self.docker
-                .connect_container_to_network_with_alias(
-                    &network_name,
-                    &container_id,
-                    service_name,
-                )
+                .connect_container_to_network_with_alias(&network_name, &container_id, service_name)
                 .await
                 .map_err(|e| {
                     DeployError::ContainerCreate(format!(
@@ -628,9 +628,7 @@ fn resolve_service_volumes(service: &ComposeService, app_name: &str) -> Vec<Volu
 /// Extract command override from a compose service.
 fn resolve_service_command(service: &ComposeService) -> Option<Vec<String>> {
     match &service.command {
-        Some(ComposeCommand::Simple(s)) => {
-            Some(s.split_whitespace().map(String::from).collect())
-        }
+        Some(ComposeCommand::Simple(s)) => Some(s.split_whitespace().map(String::from).collect()),
         Some(ComposeCommand::Args(args)) => Some(args.clone()),
         None => None,
     }
@@ -689,10 +687,7 @@ services:
         let vars = ComposeDeployer::extract_variables(yaml);
         assert_eq!(vars.len(), 2);
         assert_eq!(vars[0], ("DB_PASSWORD".to_string(), None));
-        assert_eq!(
-            vars[1],
-            ("DB_NAME".to_string(), Some("mydb".to_string()))
-        );
+        assert_eq!(vars[1], ("DB_NAME".to_string(), Some("mydb".to_string())));
     }
 
     #[test]

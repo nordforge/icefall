@@ -12,19 +12,11 @@ pub fn routes() -> Router<AppState> {
             "/settings/instance-backup",
             get(get_config).put(update_config),
         )
-        .route(
-            "/settings/instance-backup/trigger",
-            post(trigger_backup),
-        )
-        .route(
-            "/settings/instance-backup/history",
-            get(list_history),
-        )
+        .route("/settings/instance-backup/trigger", post(trigger_backup))
+        .route("/settings/instance-backup/history", get(list_history))
 }
 
-async fn get_config(
-    State(state): State<AppState>,
-) -> Result<Json<serde_json::Value>, ApiError> {
+async fn get_config(State(state): State<AppState>) -> Result<Json<serde_json::Value>, ApiError> {
     let config = state.db.get_instance_backup_config().await?;
     match config {
         Some(c) => Ok(Json(serde_json::json!({ "data": c }))),
@@ -51,18 +43,18 @@ async fn update_config(
 ) -> Result<Json<serde_json::Value>, ApiError> {
     // Get current config to merge with
     let current = state.db.get_instance_backup_config().await?;
-    let enabled = body.enabled.unwrap_or_else(|| {
-        current.as_ref().map(|c| c.enabled).unwrap_or(false)
-    });
+    let enabled = body
+        .enabled
+        .unwrap_or_else(|| current.as_ref().map(|c| c.enabled).unwrap_or(false));
     let cron_schedule = body.cron_schedule.unwrap_or_else(|| {
         current
             .as_ref()
             .map(|c| c.cron_schedule.clone())
             .unwrap_or_else(|| "daily".to_string())
     });
-    let retention_count = body.retention_count.unwrap_or_else(|| {
-        current.as_ref().map(|c| c.retention_count).unwrap_or(7)
-    });
+    let retention_count = body
+        .retention_count
+        .unwrap_or_else(|| current.as_ref().map(|c| c.retention_count).unwrap_or(7));
 
     // Validate schedule
     if !["daily", "weekly", "monthly"].contains(&cron_schedule.as_str()) {
@@ -104,9 +96,7 @@ async fn trigger_backup(
     })))
 }
 
-async fn list_history(
-    State(state): State<AppState>,
-) -> Result<Json<serde_json::Value>, ApiError> {
+async fn list_history(State(state): State<AppState>) -> Result<Json<serde_json::Value>, ApiError> {
     let history = state.db.list_instance_backup_history(50).await?;
     Ok(Json(serde_json::json!({ "data": history })))
 }

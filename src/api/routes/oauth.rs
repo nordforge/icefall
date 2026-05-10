@@ -14,23 +14,14 @@ use crate::db::models::{NewUser, OAuthSettings};
 
 pub fn routes() -> Router<AppState> {
     Router::new()
+        .route("/auth/oauth/{provider}/authorize", get(oauth_authorize))
+        .route("/auth/oauth/{provider}/callback", get(oauth_callback))
+        .route("/auth/oauth/{provider}/unlink", delete(oauth_unlink))
+        .route("/auth/oauth/identities", get(list_oauth_identities))
         .route(
-            "/auth/oauth/{provider}/authorize",
-            get(oauth_authorize),
+            "/settings/oauth",
+            get(get_oauth_settings).put(update_oauth_settings),
         )
-        .route(
-            "/auth/oauth/{provider}/callback",
-            get(oauth_callback),
-        )
-        .route(
-            "/auth/oauth/{provider}/unlink",
-            delete(oauth_unlink),
-        )
-        .route(
-            "/auth/oauth/identities",
-            get(list_oauth_identities),
-        )
-        .route("/settings/oauth", get(get_oauth_settings).put(update_oauth_settings))
         .route("/settings/oauth/providers", get(get_enabled_providers))
 }
 
@@ -97,10 +88,7 @@ fn provider_config(provider: &str) -> Option<ProviderConfig> {
     }
 }
 
-fn get_client_credentials(
-    settings: &OAuthSettings,
-    provider: &str,
-) -> Option<(String, String)> {
+fn get_client_credentials(settings: &OAuthSettings, provider: &str) -> Option<(String, String)> {
     match provider {
         "github" if settings.github_enabled => {
             match (&settings.github_client_id, &settings.github_client_secret) {
@@ -133,10 +121,8 @@ async fn get_enabled_providers(
 
     let (github, google) = match settings {
         Some(ref s) => (
-            s.github_enabled
-                && s.github_client_id.as_ref().is_some_and(|id| !id.is_empty()),
-            s.google_enabled
-                && s.google_client_id.as_ref().is_some_and(|id| !id.is_empty()),
+            s.github_enabled && s.github_client_id.as_ref().is_some_and(|id| !id.is_empty()),
+            s.google_enabled && s.google_client_id.as_ref().is_some_and(|id| !id.is_empty()),
         ),
         None => (false, false),
     };
@@ -158,17 +144,17 @@ async fn oauth_authorize(
     let prov_config = provider_config(&provider)
         .ok_or_else(|| ApiError::BadRequest(format!("Unsupported OAuth provider: {provider}")))?;
 
-    let oauth_settings = state
-        .db
-        .get_oauth_settings()
-        .await?
-        .ok_or_else(|| {
-            ApiError::BadRequest("OAuth is not configured. Ask an admin to configure OAuth settings.".into())
-        })?;
+    let oauth_settings = state.db.get_oauth_settings().await?.ok_or_else(|| {
+        ApiError::BadRequest(
+            "OAuth is not configured. Ask an admin to configure OAuth settings.".into(),
+        )
+    })?;
 
     let (client_id, _client_secret) = get_client_credentials(&oauth_settings, &provider)
         .ok_or_else(|| {
-            ApiError::BadRequest(format!("OAuth provider '{provider}' is not enabled or configured"))
+            ApiError::BadRequest(format!(
+                "OAuth provider '{provider}' is not enabled or configured"
+            ))
         })?;
 
     use base64::Engine;
@@ -277,7 +263,9 @@ async fn oauth_callback(
         .ok_or_else(|| ApiError::BadRequest("OAuth is not configured".into()))?;
 
     let (client_id, client_secret) = get_client_credentials(&oauth_settings, &provider)
-        .ok_or_else(|| ApiError::BadRequest(format!("OAuth provider '{provider}' is not configured")))?;
+        .ok_or_else(|| {
+            ApiError::BadRequest(format!("OAuth provider '{provider}' is not configured"))
+        })?;
 
     let base = state
         .config
@@ -318,12 +306,10 @@ async fn oauth_callback(
         ApiError::Internal(Box::new(e))
     })?;
 
-    let access_token = token_data["access_token"]
-        .as_str()
-        .ok_or_else(|| {
-            tracing::error!("No access_token in OAuth response from {provider}");
-            ApiError::BadRequest("OAuth token exchange did not return an access token".into())
-        })?;
+    let access_token = token_data["access_token"].as_str().ok_or_else(|| {
+        tracing::error!("No access_token in OAuth response from {provider}");
+        ApiError::BadRequest("OAuth token exchange did not return an access token".into())
+    })?;
 
     // Fetch user profile from provider
     let (provider_user_id, provider_email, _provider_name) =
@@ -336,17 +322,15 @@ async fn oauth_callback(
         .await?
     {
         // Case 1: OAuth identity exists — log in as the linked user
-        Some(identity) => {
-            state
-                .db
-                .get_user_by_id(&identity.user_id)
-                .await?
-                .ok_or_else(|| {
-                    ApiError::Internal(Box::new(std::io::Error::other(
-                        "Linked user account not found",
-                    )))
-                })?
-        }
+        Some(identity) => state
+            .db
+            .get_user_by_id(&identity.user_id)
+            .await?
+            .ok_or_else(|| {
+                ApiError::Internal(Box::new(std::io::Error::other(
+                    "Linked user account not found",
+                )))
+            })?,
         // Case 2: No OAuth identity yet
         None => {
             // Check if there's an existing user with matching email
@@ -427,11 +411,7 @@ async fn oauth_callback(
     headers.insert("set-cookie", HeaderValue::from_str(&cookie).unwrap());
     headers.insert("location", HeaderValue::from_static("/"));
 
-    Ok((
-        axum::http::StatusCode::TEMPORARY_REDIRECT,
-        headers,
-    )
-        .into_response())
+    Ok((axum::http::StatusCode::TEMPORARY_REDIRECT, headers).into_response())
 }
 
 /// Fetch user profile from the OAuth provider using the access token.
@@ -540,10 +520,7 @@ async fn oauth_unlink(
         .await?
         .ok_or_else(|| ApiError::BadRequest("Not authenticated".into()))?;
 
-    let identities = state
-        .db
-        .list_oauth_identities_for_user(&user.id)
-        .await?;
+    let identities = state.db.list_oauth_identities_for_user(&user.id).await?;
 
     let identity = identities
         .iter()
@@ -559,8 +536,7 @@ async fn oauth_unlink(
 
     if other_providers == 0 {
         return Err(ApiError::BadRequest(
-            "Cannot unlink the only authentication method. Link another provider first."
-                .into(),
+            "Cannot unlink the only authentication method. Link another provider first.".into(),
         ));
     }
 
@@ -581,10 +557,7 @@ async fn list_oauth_identities(
         .await?
         .ok_or_else(|| ApiError::BadRequest("Not authenticated".into()))?;
 
-    let identities = state
-        .db
-        .list_oauth_identities_for_user(&user.id)
-        .await?;
+    let identities = state.db.list_oauth_identities_for_user(&user.id).await?;
 
     let data: Vec<serde_json::Value> = identities
         .into_iter()
@@ -678,14 +651,18 @@ async fn update_oauth_settings(
     }
 
     // Merge with existing settings
-    let existing = state.db.get_oauth_settings().await?.unwrap_or(OAuthSettings {
-        github_client_id: None,
-        github_client_secret: None,
-        github_enabled: false,
-        google_client_id: None,
-        google_client_secret: None,
-        google_enabled: false,
-    });
+    let existing = state
+        .db
+        .get_oauth_settings()
+        .await?
+        .unwrap_or(OAuthSettings {
+            github_client_id: None,
+            github_client_secret: None,
+            github_enabled: false,
+            google_client_id: None,
+            google_client_secret: None,
+            google_enabled: false,
+        });
 
     let updated = OAuthSettings {
         github_client_id: body.github_client_id.or(existing.github_client_id),

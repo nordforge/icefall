@@ -74,7 +74,10 @@ impl CliClient {
         if let Some(ref token) = self.token {
             req = req.header("Authorization", format!("Bearer {token}"));
         }
-        let resp = req.send().await.map_err(|e| format!("Connection failed: {e}"))?;
+        let resp = req
+            .send()
+            .await
+            .map_err(|e| format!("Connection failed: {e}"))?;
         if !resp.status().is_success() {
             let status = resp.status();
             let body = resp.text().await.unwrap_or_default();
@@ -83,13 +86,20 @@ impl CliClient {
         resp.json().await.map_err(|e| format!("Parse error: {e}"))
     }
 
-    pub async fn post<T: DeserializeOwned>(&self, path: &str, body: &serde_json::Value) -> Result<T, String> {
+    pub async fn post<T: DeserializeOwned>(
+        &self,
+        path: &str,
+        body: &serde_json::Value,
+    ) -> Result<T, String> {
         let url = format!("{}/api/v1{path}", self.base_url);
         let mut req = self.http.post(&url).json(body);
         if let Some(ref token) = self.token {
             req = req.header("Authorization", format!("Bearer {token}"));
         }
-        let resp = req.send().await.map_err(|e| format!("Connection failed: {e}"))?;
+        let resp = req
+            .send()
+            .await
+            .map_err(|e| format!("Connection failed: {e}"))?;
         if !resp.status().is_success() {
             let status = resp.status();
             let body = resp.text().await.unwrap_or_default();
@@ -104,7 +114,10 @@ impl CliClient {
         if let Some(ref token) = self.token {
             req = req.header("Authorization", format!("Bearer {token}"));
         }
-        let resp = req.send().await.map_err(|e| format!("Connection failed: {e}"))?;
+        let resp = req
+            .send()
+            .await
+            .map_err(|e| format!("Connection failed: {e}"))?;
         if !resp.status().is_success() {
             let status = resp.status();
             let body = resp.text().await.unwrap_or_default();

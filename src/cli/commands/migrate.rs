@@ -35,7 +35,10 @@ pub async fn export(output: &str, dry_run: bool) {
     println!("  Log files:           {}", format_bytes(logs_size));
     println!("  Backup archives:     {}", format_bytes(backups_size));
     println!("  Docker volumes:      {} volume(s)", volumes.len());
-    println!("  Managed databases:   {} container(s)", db_containers.len());
+    println!(
+        "  Managed databases:   {} container(s)",
+        db_containers.len()
+    );
     println!(
         "  Estimated total:     {} (before compression)",
         format_bytes(db_size + logs_size + backups_size)
@@ -187,7 +190,11 @@ pub async fn export(output: &str, dry_run: bool) {
     }
 
     println!();
-    println!("Export complete: {} ({})", if is_s3 { output } else { &local_output }, format_bytes(size));
+    println!(
+        "Export complete: {} ({})",
+        if is_s3 { output } else { &local_output },
+        format_bytes(size)
+    );
     if !is_s3 {
         println!("Checksum:        {checksum_path}");
     }
@@ -195,7 +202,10 @@ pub async fn export(output: &str, dry_run: bool) {
     println!("Included:");
     println!("  ✓ SQLite database (apps, users, sessions, env vars)");
     println!("  ✓ Configuration with encryption key");
-    println!("  ✓ Fresh database dumps ({} database(s))", db_containers.len());
+    println!(
+        "  ✓ Fresh database dumps ({} database(s))",
+        db_containers.len()
+    );
     println!("  ✓ Docker volume snapshots ({} volume(s))", volumes.len());
     println!("  ✓ Log files and backup archives");
     println!();
@@ -297,8 +307,14 @@ pub async fn import(from: &str, dry_run: bool) {
         println!("  Icefall version: {version}");
         println!("  Exported at:     {exported_at}");
         if let Some(contents) = manifest.get("contents") {
-            let dumps = contents.get("db_dumps").and_then(|v| v.as_u64()).unwrap_or(0);
-            let vols = contents.get("volumes").and_then(|v| v.as_u64()).unwrap_or(0);
+            let dumps = contents
+                .get("db_dumps")
+                .and_then(|v| v.as_u64())
+                .unwrap_or(0);
+            let vols = contents
+                .get("volumes")
+                .and_then(|v| v.as_u64())
+                .unwrap_or(0);
             println!("  Database dumps:  {dumps}");
             println!("  Docker volumes:  {vols}");
         }
@@ -395,7 +411,10 @@ pub async fn import(from: &str, dry_run: bool) {
                 let name = entry.file_name().to_string_lossy().to_string();
                 let container = name.split('.').next().unwrap_or(&name);
                 if name.ends_with(".sql.gz") {
-                    println!("  zcat {}/{name} | docker exec -i {container} psql -U icefall", dumps_dest.display());
+                    println!(
+                        "  zcat {}/{name} | docker exec -i {container} psql -U icefall",
+                        dumps_dest.display()
+                    );
                 } else if name.ends_with(".rdb") {
                     println!("  docker cp {}/{name} {container}:/data/dump.rdb && docker restart {container}", dumps_dest.display());
                 }
@@ -529,10 +548,7 @@ fn export_managed_database_dumps(dumps_dir: &Path) {
         let result = Command::new("sh").arg("-c").arg(&dump_cmd).output();
         match result {
             Ok(out) if out.status.success() => println!(" ✓"),
-            Ok(out) => println!(
-                " ✗ {}",
-                String::from_utf8_lossy(&out.stderr).trim()
-            ),
+            Ok(out) => println!(" ✗ {}", String::from_utf8_lossy(&out.stderr).trim()),
             Err(e) => println!(" ✗ {e}"),
         }
     }
@@ -573,10 +589,7 @@ fn export_docker_volumes(volumes_dir: &Path) {
                 let size = std::fs::metadata(&tar_path).map(|m| m.len()).unwrap_or(0);
                 println!(" ✓ ({})", format_bytes(size));
             }
-            Ok(out) => println!(
-                " ✗ {}",
-                String::from_utf8_lossy(&out.stderr).trim()
-            ),
+            Ok(out) => println!(" ✗ {}", String::from_utf8_lossy(&out.stderr).trim()),
             Err(e) => println!(" ✗ {e}"),
         }
     }
@@ -587,12 +600,7 @@ fn import_docker_volumes(volumes_dir: &Path) {
         .into_iter()
         .flatten()
         .flatten()
-        .filter(|e| {
-            e.path()
-                .extension()
-                .map(|ext| ext == "gz")
-                .unwrap_or(false)
-        })
+        .filter(|e| e.path().extension().map(|ext| ext == "gz").unwrap_or(false))
         .collect();
 
     if entries.is_empty() {
@@ -626,10 +634,7 @@ fn import_docker_volumes(volumes_dir: &Path) {
 
         match result {
             Ok(out) if out.status.success() => println!(" ✓"),
-            Ok(out) => println!(
-                " ✗ {}",
-                String::from_utf8_lossy(&out.stderr).trim()
-            ),
+            Ok(out) => println!(" ✗ {}", String::from_utf8_lossy(&out.stderr).trim()),
             Err(e) => println!(" ✗ {e}"),
         }
     }

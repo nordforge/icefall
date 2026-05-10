@@ -18,7 +18,9 @@ async fn get_metrics(
     let snapshot = state.metrics_store.get_current(&id).await;
     match snapshot {
         Some(s) => Ok(Json(serde_json::json!({ "data": s }))),
-        None => Ok(Json(serde_json::json!({ "data": null, "message": "No metrics available yet" }))),
+        None => Ok(Json(
+            serde_json::json!({ "data": null, "message": "No metrics available yet" }),
+        )),
     }
 }
 

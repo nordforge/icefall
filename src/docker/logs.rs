@@ -22,7 +22,9 @@ impl DockerClient {
             follow,
             stdout: true,
             stderr: true,
-            tail: tail.map(|t| t.to_string()).unwrap_or_else(|| "all".to_string()),
+            tail: tail
+                .map(|t| t.to_string())
+                .unwrap_or_else(|| "all".to_string()),
             ..Default::default()
         };
 
@@ -32,18 +34,22 @@ impl DockerClient {
                 result
                     .map(|output| {
                         let (stream, message) = match output {
-                            bollard::container::LogOutput::StdOut { message } => {
-                                ("stdout".to_string(), String::from_utf8_lossy(&message).to_string())
-                            }
-                            bollard::container::LogOutput::StdErr { message } => {
-                                ("stderr".to_string(), String::from_utf8_lossy(&message).to_string())
-                            }
-                            bollard::container::LogOutput::Console { message } => {
-                                ("console".to_string(), String::from_utf8_lossy(&message).to_string())
-                            }
-                            bollard::container::LogOutput::StdIn { message } => {
-                                ("stdin".to_string(), String::from_utf8_lossy(&message).to_string())
-                            }
+                            bollard::container::LogOutput::StdOut { message } => (
+                                "stdout".to_string(),
+                                String::from_utf8_lossy(&message).to_string(),
+                            ),
+                            bollard::container::LogOutput::StdErr { message } => (
+                                "stderr".to_string(),
+                                String::from_utf8_lossy(&message).to_string(),
+                            ),
+                            bollard::container::LogOutput::Console { message } => (
+                                "console".to_string(),
+                                String::from_utf8_lossy(&message).to_string(),
+                            ),
+                            bollard::container::LogOutput::StdIn { message } => (
+                                "stdin".to_string(),
+                                String::from_utf8_lossy(&message).to_string(),
+                            ),
                         };
                         LogLine { stream, message }
                     })

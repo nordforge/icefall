@@ -68,9 +68,9 @@ async fn setup_totp(
         6,
         1,
         30,
-        secret.to_bytes().map_err(|e| {
-            ApiError::Internal(Box::new(std::io::Error::other(e.to_string())))
-        })?,
+        secret
+            .to_bytes()
+            .map_err(|e| ApiError::Internal(Box::new(std::io::Error::other(e.to_string()))))?,
         Some(issuer.to_string()),
         user.email.clone(),
     )
@@ -114,10 +114,9 @@ async fn verify_totp(
         ));
     }
 
-    let secret_base32 = user
-        .totp_secret
-        .as_deref()
-        .ok_or_else(|| ApiError::BadRequest("No pending 2FA setup found. Call /auth/2fa/setup first.".into()))?;
+    let secret_base32 = user.totp_secret.as_deref().ok_or_else(|| {
+        ApiError::BadRequest("No pending 2FA setup found. Call /auth/2fa/setup first.".into())
+    })?;
 
     // Validate the code against the pending secret
     let totp = build_totp(secret_base32, &user.email)?;
@@ -156,7 +155,9 @@ async fn validate_totp(
         .ok_or_else(|| ApiError::BadRequest("Invalid user".into()))?;
 
     if !user.totp_enabled {
-        return Err(ApiError::BadRequest("2FA is not enabled for this user".into()));
+        return Err(ApiError::BadRequest(
+            "2FA is not enabled for this user".into(),
+        ));
     }
 
     let secret_base32 = user
@@ -180,7 +181,9 @@ async fn validate_totp(
         if try_use_backup_code(&state, &user, code).await? {
             return create_2fa_session(&state, &user).await;
         }
-        return Err(ApiError::BadRequest("Invalid or already used backup code".into()));
+        return Err(ApiError::BadRequest(
+            "Invalid or already used backup code".into(),
+        ));
     }
 
     Err(ApiError::BadRequest("Invalid 2FA code format".into()))
@@ -258,10 +261,13 @@ async fn disable_totp(
     }
 
     // Try backup code
-    if !authorized && code.len() == 8 && code.chars().all(|c| c.is_ascii_alphanumeric())
-        && try_use_backup_code(&state, &user, code).await? {
-            authorized = true;
-        }
+    if !authorized
+        && code.len() == 8
+        && code.chars().all(|c| c.is_ascii_alphanumeric())
+        && try_use_backup_code(&state, &user, code).await?
+    {
+        authorized = true;
+    }
 
     if !authorized {
         return Err(ApiError::BadRequest("Invalid code".into()));
@@ -278,9 +284,9 @@ async fn disable_totp(
 
 fn build_totp(secret_base32: &str, account: &str) -> Result<TOTP, ApiError> {
     let secret = Secret::Encoded(secret_base32.to_string());
-    let secret_bytes = secret.to_bytes().map_err(|e| {
-        ApiError::Internal(Box::new(std::io::Error::other(e.to_string())))
-    })?;
+    let secret_bytes = secret
+        .to_bytes()
+        .map_err(|e| ApiError::Internal(Box::new(std::io::Error::other(e.to_string()))))?;
 
     TOTP::new(
         Algorithm::SHA1,
@@ -351,8 +357,8 @@ fn generate_backup_codes() -> Result<(Vec<String>, String), ApiError> {
         }));
     }
 
-    let hashed_json = serde_json::to_string(&hashed_entries)
-        .map_err(|e| ApiError::Internal(Box::new(e)))?;
+    let hashed_json =
+        serde_json::to_string(&hashed_entries).map_err(|e| ApiError::Internal(Box::new(e)))?;
 
     Ok((plain_codes, hashed_json))
 }
@@ -370,8 +376,8 @@ async fn try_use_backup_code(
         None => return Ok(false),
     };
 
-    let mut entries: Vec<serde_json::Value> = serde_json::from_str(backup_json)
-        .map_err(|e| ApiError::Internal(Box::new(e)))?;
+    let mut entries: Vec<serde_json::Value> =
+        serde_json::from_str(backup_json).map_err(|e| ApiError::Internal(Box::new(e)))?;
 
     let code_upper = code.to_uppercase();
 
@@ -397,8 +403,8 @@ async fn try_use_backup_code(
         {
             // Mark as used
             entry["used"] = serde_json::Value::Bool(true);
-            let updated_json = serde_json::to_string(&entries)
-                .map_err(|e| ApiError::Internal(Box::new(e)))?;
+            let updated_json =
+                serde_json::to_string(&entries).map_err(|e| ApiError::Internal(Box::new(e)))?;
             state
                 .db
                 .update_user_backup_codes(&user.id, &updated_json)
@@ -415,7 +421,7 @@ async fn create_2fa_session(
     state: &AppState,
     user: &crate::db::models::User,
 ) -> Result<axum::response::Response, ApiError> {
-    use axum::http::{HeaderValue};
+    use axum::http::HeaderValue;
     use axum::response::IntoResponse;
 
     let expires_at = (chrono::Utc::now() + chrono::Duration::days(7))

@@ -9,8 +9,7 @@ use crate::db::models::NewHealthCheck;
 use crate::monitoring::health_runner::calculate_uptime;
 
 pub fn routes() -> Router<AppState> {
-    Router::new()
-        .route("/apps/{id}/health", get(get_health).put(update_health))
+    Router::new().route("/apps/{id}/health", get(get_health).put(update_health))
 }
 
 #[derive(Deserialize)]
@@ -32,10 +31,7 @@ async fn get_health(
 
     let mut results = Vec::new();
     for check in &checks {
-        let events = state
-            .db
-            .get_health_events(&check.id, params.limit)
-            .await?;
+        let events = state.db.get_health_events(&check.id, params.limit).await?;
         let uptime = calculate_uptime(&events);
         let current_status = events
             .first()
@@ -83,6 +79,8 @@ async fn update_health(
             .await?;
         Ok(Json(serde_json::json!({ "data": check })))
     } else {
-        Ok(Json(serde_json::json!({ "data": checks[0], "note": "update existing health checks not yet supported — delete and recreate" })))
+        Ok(Json(
+            serde_json::json!({ "data": checks[0], "note": "update existing health checks not yet supported — delete and recreate" }),
+        ))
     }
 }

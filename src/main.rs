@@ -25,7 +25,9 @@ async fn main() {
             icefall::cli::commands::logs::stream(&app, search.as_deref()).await;
         }
         Commands::Env { command } => match command {
-            EnvCommands::Set { app, pair } => icefall::cli::commands::env_vars::set(&app, &pair).await,
+            EnvCommands::Set { app, pair } => {
+                icefall::cli::commands::env_vars::set(&app, &pair).await
+            }
             EnvCommands::List { app } => icefall::cli::commands::env_vars::list(&app).await,
         },
         Commands::Domains { command } => match command {
@@ -35,7 +37,9 @@ async fn main() {
             DomainsCommands::List { app } => icefall::cli::commands::domains::list(&app).await,
         },
         Commands::Db { command } => match command {
-            DbCommands::Create { db_type } => icefall::cli::commands::databases::create(&db_type).await,
+            DbCommands::Create { db_type } => {
+                icefall::cli::commands::databases::create(&db_type).await
+            }
             DbCommands::List => icefall::cli::commands::databases::list().await,
             DbCommands::Backup { db } => icefall::cli::commands::databases::backup(&db).await,
         },

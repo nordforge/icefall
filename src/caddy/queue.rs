@@ -11,8 +11,13 @@ pub enum RouteOperation {
         path: Option<String>,
         upstream: String,
     },
-    Remove { domain: String },
-    Update { domain: String, upstream: String },
+    Remove {
+        domain: String,
+    },
+    Update {
+        domain: String,
+        upstream: String,
+    },
 }
 
 pub struct RouteQueue {

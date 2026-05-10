@@ -44,12 +44,7 @@ impl DockerClient {
             .map(|r| r.map_err(DockerError::Api))
     }
 
-    pub async fn tag_image(
-        &self,
-        source: &str,
-        repo: &str,
-        tag: &str,
-    ) -> Result<(), DockerError> {
+    pub async fn tag_image(&self, source: &str, repo: &str, tag: &str) -> Result<(), DockerError> {
         let options = TagImageOptions { repo, tag };
         self.inner().tag_image(source, Some(options)).await?;
         Ok(())

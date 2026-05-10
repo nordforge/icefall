@@ -8,11 +8,9 @@ use futures_util::StreamExt;
 use crate::build::detect::detect;
 use crate::build::dockerfile::{generate_dockerfile, generate_dockerignore};
 use crate::build::git::{clone_repo, GitCloneOptions};
-use crate::build::{
-    BuildConfig, BuildError, BuildResult, BuildStep, BuildStepStatus, Framework,
-};
+use crate::build::{BuildConfig, BuildError, BuildResult, BuildStep, BuildStepStatus, Framework};
 use crate::config::IcefallConfig;
-use crate::db::models::{App, now_iso8601};
+use crate::db::models::{now_iso8601, App};
 use crate::db::Database;
 use crate::docker::DockerClient;
 
@@ -52,9 +50,10 @@ impl BuildOrchestrator {
         let mut step = new_step("Cloning repository");
         let work_dir = self.config.data_dir.join("builds").join(deploy_id);
 
-        let git_repo = app.git_repo.as_deref().ok_or_else(|| {
-            BuildError::GitClone("app has no git_repo configured".to_string())
-        })?;
+        let git_repo = app
+            .git_repo
+            .as_deref()
+            .ok_or_else(|| BuildError::GitClone("app has no git_repo configured".to_string()))?;
 
         let clone_opts = GitCloneOptions {
             repo_url: git_repo.to_string(),
@@ -66,7 +65,11 @@ impl BuildOrchestrator {
 
         match clone_repo(&clone_opts, &work_dir).await {
             Ok(result) => {
-                let msg = format!("Cloned {} at {}", git_repo, &result.resolved_sha[..8.min(result.resolved_sha.len())]);
+                let msg = format!(
+                    "Cloned {} at {}",
+                    git_repo,
+                    &result.resolved_sha[..8.min(result.resolved_sha.len())]
+                );
                 step.output.push(msg.clone());
                 all_output.push(msg);
                 finish_step(&mut step, BuildStepStatus::Done);
@@ -117,7 +120,9 @@ impl BuildOrchestrator {
                 Ok(dockerfile_content) => {
                     let dockerignore = generate_dockerignore(&detection);
 
-                    if let Err(e) = tokio::fs::write(work_dir.join("Dockerfile"), &dockerfile_content).await {
+                    if let Err(e) =
+                        tokio::fs::write(work_dir.join("Dockerfile"), &dockerfile_content).await
+                    {
                         let msg = format!("Failed to write Dockerfile: {e}");
                         step.output.push(msg.clone());
                         all_output.push(msg);
@@ -209,7 +214,11 @@ impl BuildOrchestrator {
         let mut step = new_step("Tagging image");
         let latest_tag = format!("icefall/{}:latest", app.name);
 
-        if let Err(e) = self.docker.tag_image(&image_tag, &format!("icefall/{}", app.name), "latest").await {
+        if let Err(e) = self
+            .docker
+            .tag_image(&image_tag, &format!("icefall/{}", app.name), "latest")
+            .await
+        {
             let msg = format!("Tagging failed: {e}");
             step.output.push(msg.clone());
             all_output.push(msg);
@@ -330,7 +339,7 @@ impl BuildOrchestrator {
             return Ok(Vec::new());
         }
 
-        images.sort_by(|a, b| b.created.cmp(&a.created));
+        images.sort_by_key(|img| std::cmp::Reverse(img.created));
 
         let to_remove = &images[keep..];
         let mut removed = Vec::new();
@@ -477,10 +486,7 @@ mod tests {
     #[test]
     fn redacts_multiple_secrets() {
         let line = "API_KEY=abc123 SECRET=xyz789";
-        let result = redact_secrets(
-            line,
-            &["abc123".to_string(), "xyz789".to_string()],
-        );
+        let result = redact_secrets(line, &["abc123".to_string(), "xyz789".to_string()]);
         assert_eq!(result, "API_KEY=[REDACTED] SECRET=[REDACTED]");
     }
 

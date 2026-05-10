@@ -24,15 +24,9 @@ pub fn routes() -> Router<AppState> {
             "/apps/{id}/volumes/{mount_index}/download",
             get(download_file),
         )
-        .route(
-            "/apps/{id}/volumes/{mount_index}/upload",
-            post(upload_file),
-        )
+        .route("/apps/{id}/volumes/{mount_index}/upload", post(upload_file))
         .route("/apps/{id}/volumes/{mount_index}/size", get(volume_size))
-        .route(
-            "/apps/{id}/volumes/{mount_index}/delete",
-            post(delete_file),
-        )
+        .route("/apps/{id}/volumes/{mount_index}/delete", post(delete_file))
 }
 
 // ── Types ──────────────────────────────────────────────────────────────
@@ -103,9 +97,7 @@ fn safe_path(mount_target: &str, user_path: &str) -> Result<String, ApiError> {
     // Reject explicit traversal attempts
     for segment in user_path.split('/') {
         if segment == ".." {
-            return Err(ApiError::BadRequest(
-                "Path traversal is not allowed".into(),
-            ));
+            return Err(ApiError::BadRequest("Path traversal is not allowed".into()));
         }
     }
 
@@ -191,9 +183,7 @@ async fn resolve_volume(
         .iter()
         .find(|c| c.state == "running")
         .ok_or_else(|| {
-            ApiError::BadRequest(
-                "No running container for this app. Start the app first.".into(),
-            )
+            ApiError::BadRequest("No running container for this app. Start the app first.".into())
         })?;
 
     Ok((volume, container.name.clone()))
@@ -325,10 +315,7 @@ async fn download_file(
     }
 
     // Read the file via base64 encoding to safely transfer binary data
-    let cmd: Vec<String> = vec![
-        "base64".into(),
-        full_path.clone(),
-    ];
+    let cmd: Vec<String> = vec!["base64".into(), full_path.clone()];
 
     let output = state
         .docker
@@ -348,11 +335,7 @@ async fn download_file(
     })?;
 
     // Extract filename from path
-    let filename = query
-        .path
-        .rsplit('/')
-        .next()
-        .unwrap_or("download");
+    let filename = query.path.rsplit('/').next().unwrap_or("download");
 
     let response = Response::builder()
         .header(header::CONTENT_TYPE, "application/octet-stream")
