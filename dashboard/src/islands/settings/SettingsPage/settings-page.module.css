@@ -253,7 +253,7 @@
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: var(--color-text-on-primary, #fff);
+  background: var(--color-primary-text);
   transition: transform var(--duration-fast) var(--ease-out);
 }
 

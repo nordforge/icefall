@@ -147,7 +147,7 @@
 
 .connectButton {
   background: var(--color-primary);
-  color: var(--color-text-on-primary);
+  color: var(--color-primary-text);
   border: none;
   cursor: pointer;
   font-size: var(--text-sm);

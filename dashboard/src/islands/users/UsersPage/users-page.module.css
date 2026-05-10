@@ -242,7 +242,7 @@
   width: 1rem;
   height: 1rem;
   border-radius: 50%;
-  background: var(--color-text-on-primary, #fff);
+  background: var(--color-primary-text);
   transition: transform var(--duration-fast) var(--ease-out);
 }
 
