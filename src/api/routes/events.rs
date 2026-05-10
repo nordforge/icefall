@@ -56,37 +56,35 @@ fn make_sse_stream(
     let rx = state.event_bus.subscribe();
     let stream = BroadcastStream::new(rx);
 
-    let filtered = stream.filter_map(move |result| {
-        match result {
-            Ok(event) => {
-                if let Some(last_id) = last_event_id {
-                    if event.id <= last_id {
-                        return None;
-                    }
+    let filtered = stream.filter_map(move |result| match result {
+        Ok(event) => {
+            if let Some(last_id) = last_event_id {
+                if event.id <= last_id {
+                    return None;
                 }
-
-                if let Some(ref app_id) = filter_app_id {
-                    if event.app_id.as_deref() != Some(app_id) {
-                        return None;
-                    }
-                }
-
-                if let Some(ref deploy_id) = filter_deploy_id {
-                    if event.deploy_id.as_deref() != Some(deploy_id) {
-                        return None;
-                    }
-                }
-
-                let sse_event = Event::default()
-                    .event(event.event_type.as_str())
-                    .id(event.id.to_string())
-                    .json_data(&event.data)
-                    .unwrap_or_else(|_| Event::default().comment("serialization error"));
-
-                Some(Ok(sse_event))
             }
-            Err(_) => None,
+
+            if let Some(ref app_id) = filter_app_id {
+                if event.app_id.as_deref() != Some(app_id) {
+                    return None;
+                }
+            }
+
+            if let Some(ref deploy_id) = filter_deploy_id {
+                if event.deploy_id.as_deref() != Some(deploy_id) {
+                    return None;
+                }
+            }
+
+            let sse_event = Event::default()
+                .event(event.event_type.as_str())
+                .id(event.id.to_string())
+                .json_data(&event.data)
+                .unwrap_or_else(|_| Event::default().comment("serialization error"));
+
+            Some(Ok(sse_event))
         }
+        Err(_) => None,
     });
 
     Sse::new(filtered).keep_alive(KeepAlive::default())

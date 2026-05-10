@@ -102,9 +102,9 @@ impl NativeDeployer {
             .update_deploy_status(&deploy.id, "building", Some(&log_lines.join("\n")))
             .await?;
 
-        run_command(&install_cmd, &build_dir).await.map_err(|e| {
-            DeployError::NativeBuild(format!("dependency install failed: {e}"))
-        })?;
+        run_command(&install_cmd, &build_dir)
+            .await
+            .map_err(|e| DeployError::NativeBuild(format!("dependency install failed: {e}")))?;
         log_lines.push("Dependencies installed".to_string());
 
         // Step 4: Build
@@ -117,16 +117,13 @@ impl NativeDeployer {
             .update_deploy_status(&deploy.id, "building", Some(&log_lines.join("\n")))
             .await?;
 
-        run_command(build_command, &build_dir).await.map_err(|e| {
-            DeployError::NativeBuild(format!("build command failed: {e}"))
-        })?;
+        run_command(build_command, &build_dir)
+            .await
+            .map_err(|e| DeployError::NativeBuild(format!("build command failed: {e}")))?;
         log_lines.push("Build complete".to_string());
 
         // Step 5: Copy output to sites directory
-        let output_dir_name = detection
-            .output_dir
-            .as_deref()
-            .unwrap_or("dist");
+        let output_dir_name = detection.output_dir.as_deref().unwrap_or("dist");
         let source_output = build_dir.join(output_dir_name);
 
         if !source_output.exists() {
@@ -147,14 +144,31 @@ impl NativeDeployer {
             };
 
             return self
-                .finalize_deploy(deploy, app, env, &actual_dir, &build_dir, &mut log_lines, start)
+                .finalize_deploy(
+                    deploy,
+                    app,
+                    env,
+                    &actual_dir,
+                    &build_dir,
+                    &mut log_lines,
+                    start,
+                )
                 .await;
         }
 
-        self.finalize_deploy(deploy, app, env, &source_output, &build_dir, &mut log_lines, start)
-            .await
+        self.finalize_deploy(
+            deploy,
+            app,
+            env,
+            &source_output,
+            &build_dir,
+            &mut log_lines,
+            start,
+        )
+        .await
     }
 
+    #[allow(clippy::too_many_arguments)]
     async fn finalize_deploy(
         &self,
         deploy: &Deploy,
@@ -176,16 +190,13 @@ impl NativeDeployer {
             .await
             .map_err(|e| DeployError::NativeBuild(format!("failed to copy output: {e}")))?;
 
-        log_lines.push(format!(
-            "Copied output to {}",
-            deploy_site_dir.display()
-        ));
+        log_lines.push(format!("Copied output to {}", deploy_site_dir.display()));
 
         // Step 6: Atomic symlink switch
         let symlink_path = sites_dir.join("current");
-        atomic_symlink(&deploy_site_dir, &symlink_path).await.map_err(|e| {
-            DeployError::NativeBuild(format!("symlink switch failed: {e}"))
-        })?;
+        atomic_symlink(&deploy_site_dir, &symlink_path)
+            .await
+            .map_err(|e| DeployError::NativeBuild(format!("symlink switch failed: {e}")))?;
         log_lines.push("Symlink updated to new deploy".to_string());
 
         self.emit_status(app, deploy, "deploying");
@@ -240,8 +251,7 @@ impl NativeDeployer {
             if let (Some(ref branch), Some(ref base_domain)) =
                 (&env.branch, &self.config.base_domain)
             {
-                let sanitized =
-                    crate::deploy::preview::sanitize_branch_for_subdomain(branch);
+                let sanitized = crate::deploy::preview::sanitize_branch_for_subdomain(branch);
                 domains.push((format!("{sanitized}--{}.{base_domain}", app.name), None));
             }
         } else {
@@ -341,10 +351,7 @@ async fn atomic_symlink(target: &Path, link: &Path) -> Result<(), std::io::Error
 
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(std::io::Error::new(
-            std::io::ErrorKind::Other,
-            format!("ln -sfn failed: {stderr}"),
-        ));
+        return Err(std::io::Error::other(format!("ln -sfn failed: {stderr}")));
     }
 
     Ok(())

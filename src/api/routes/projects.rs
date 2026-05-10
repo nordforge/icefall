@@ -30,9 +30,7 @@ pub fn routes() -> Router<AppState> {
         )
 }
 
-async fn list_projects(
-    State(state): State<AppState>,
-) -> Result<Json<serde_json::Value>, ApiError> {
+async fn list_projects(State(state): State<AppState>) -> Result<Json<serde_json::Value>, ApiError> {
     let projects = state.db.list_projects().await?;
 
     // Include app/database counts for each project

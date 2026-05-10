@@ -94,8 +94,8 @@ impl LogStore {
     }
 
     pub fn cleanup_old(&self, max_age_days: u64) {
-        let cutoff = std::time::SystemTime::now()
-            - std::time::Duration::from_secs(max_age_days * 86400);
+        let cutoff =
+            std::time::SystemTime::now() - std::time::Duration::from_secs(max_age_days * 86400);
 
         if let Ok(entries) = std::fs::read_dir(&self.base_dir) {
             for entry in entries.flatten() {
@@ -125,9 +125,7 @@ fn parse_log_line(line: &str) -> Option<StoredLogLine> {
 
     if let Some((ts, rest)) = line.split_once(' ') {
         if ts.contains('T') {
-            let (stream, message) = rest
-                .split_once(' ')
-                .unwrap_or(("stdout", rest));
+            let (stream, message) = rest.split_once(' ').unwrap_or(("stdout", rest));
             return Some(StoredLogLine {
                 timestamp: ts.to_string(),
                 stream: stream.to_string(),

@@ -1,4 +1,3 @@
-
 use axum::extract::State;
 use axum::http::{HeaderMap, HeaderValue};
 use axum::response::IntoResponse;
@@ -36,9 +35,7 @@ struct ChangePasswordRequest {
     new_password: String,
 }
 
-async fn setup_status(
-    State(state): State<AppState>,
-) -> Result<Json<serde_json::Value>, ApiError> {
+async fn setup_status(State(state): State<AppState>) -> Result<Json<serde_json::Value>, ApiError> {
     let users = state.db.list_users().await?;
     Ok(Json(serde_json::json!({
         "needs_setup": users.is_empty(),
@@ -56,7 +53,9 @@ async fn setup_admin(
     }
 
     if body.password.len() < 12 {
-        return Err(ApiError::BadRequest("Password must be at least 12 characters".into()));
+        return Err(ApiError::BadRequest(
+            "Password must be at least 12 characters".into(),
+        ));
     }
 
     let password_hash = hash_password(&body.password)?;
@@ -77,7 +76,10 @@ async fn setup_admin(
             "session_id": session.id,
         }
     });
-    let cookie = format!("icefall_session={}; Path=/; HttpOnly; SameSite=Lax; Max-Age=604800", session.id);
+    let cookie = format!(
+        "icefall_session={}; Path=/; HttpOnly; SameSite=Lax; Max-Age=604800",
+        session.id
+    );
     let mut headers = HeaderMap::new();
     headers.insert("set-cookie", HeaderValue::from_str(&cookie).unwrap());
     Ok((headers, Json(body)).into_response())
@@ -114,7 +116,10 @@ async fn login(
             "session_id": session.id,
         }
     });
-    let cookie = format!("icefall_session={}; Path=/; HttpOnly; SameSite=Lax; Max-Age=604800", session.id);
+    let cookie = format!(
+        "icefall_session={}; Path=/; HttpOnly; SameSite=Lax; Max-Age=604800",
+        session.id
+    );
     let mut headers = HeaderMap::new();
     headers.insert("set-cookie", HeaderValue::from_str(&cookie).unwrap());
     Ok((headers, Json(body)).into_response())
@@ -144,7 +149,9 @@ async fn change_password(
     }
 
     if body.new_password.len() < 12 {
-        return Err(ApiError::BadRequest("New password must be at least 12 characters".into()));
+        return Err(ApiError::BadRequest(
+            "New password must be at least 12 characters".into(),
+        ));
     }
 
     let new_hash = hash_password(&body.new_password)?;
@@ -278,7 +285,12 @@ mod tests {
     #[test]
     fn extract_session_from_cookie() {
         let mut headers = HeaderMap::new();
-        headers.insert("cookie", "other=val; icefall_session=abc123; another=x".parse().unwrap());
+        headers.insert(
+            "cookie",
+            "other=val; icefall_session=abc123; another=x"
+                .parse()
+                .unwrap(),
+        );
         assert_eq!(extract_session_id(&headers), Some("abc123".to_string()));
     }
 

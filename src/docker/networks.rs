@@ -1,5 +1,5 @@
-use bollard::network::{ConnectNetworkOptions, CreateNetworkOptions};
 use bollard::models::EndpointSettings;
+use bollard::network::{ConnectNetworkOptions, CreateNetworkOptions};
 
 use crate::docker::{DockerClient, DockerError};
 

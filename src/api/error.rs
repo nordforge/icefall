@@ -4,10 +4,10 @@ use axum::Json;
 use thiserror::Error;
 
 use crate::build::BuildError;
+use crate::caddy::CaddyError;
 use crate::db::DbError;
 use crate::deploy::DeployError;
 use crate::docker::DockerError;
-use crate::caddy::CaddyError;
 
 #[derive(Debug, Error)]
 pub enum ApiError {

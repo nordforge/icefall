@@ -8,9 +8,7 @@ pub async fn run() {
     println!("Icefall — Initial Setup\n");
 
     let data_dir = prompt("Data directory", "/var/lib/icefall");
-    let listen_port: u16 = prompt("Listen port", "3000")
-        .parse()
-        .unwrap_or(3000);
+    let listen_port: u16 = prompt("Listen port", "3000").parse().unwrap_or(3000);
     let base_domain = prompt_optional("Base domain (e.g. apps.example.com)");
 
     let encryption_key = base64::Engine::encode(
@@ -40,19 +38,17 @@ pub async fn run() {
 
     let toml_str = toml::to_string_pretty(&config).expect("Failed to serialize config");
 
-    let config_dir = dirs::config_dir()
-        .unwrap_or_else(|| PathBuf::from("/etc/icefall"));
+    let config_dir = dirs::config_dir().unwrap_or_else(|| PathBuf::from("/etc/icefall"));
     let config_path = config_dir.join("icefall").join("config.toml");
 
     if let Some(parent) = config_path.parent() {
         std::fs::create_dir_all(parent).ok();
     }
 
-    std::fs::write(&config_path, &toml_str)
-        .unwrap_or_else(|e| {
-            eprintln!("Failed to write config to {}: {e}", config_path.display());
-            std::process::exit(1);
-        });
+    std::fs::write(&config_path, &toml_str).unwrap_or_else(|e| {
+        eprintln!("Failed to write config to {}: {e}", config_path.display());
+        std::process::exit(1);
+    });
 
     println!("\nConfiguration written to {}", config_path.display());
     println!("Run `icefall daemon start` to start the daemon.");

@@ -10,7 +10,11 @@ pub async fn stream(app: &str, search: Option<&str>) {
 
     match client.get::<serde_json::Value>(&query).await {
         Ok(resp) => {
-            let lines = resp.get("data").and_then(|v| v.as_array()).cloned().unwrap_or_default();
+            let lines = resp
+                .get("data")
+                .and_then(|v| v.as_array())
+                .cloned()
+                .unwrap_or_default();
             for line in &lines {
                 let ts = line.get("timestamp").and_then(|v| v.as_str()).unwrap_or("");
                 let stream = line.get("stream").and_then(|v| v.as_str()).unwrap_or("");
@@ -18,6 +22,9 @@ pub async fn stream(app: &str, search: Option<&str>) {
                 println!("{ts} [{stream}] {msg}");
             }
         }
-        Err(e) => { eprintln!("Error: {e}"); std::process::exit(1); }
+        Err(e) => {
+            eprintln!("Error: {e}");
+            std::process::exit(1);
+        }
     }
 }

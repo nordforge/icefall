@@ -18,14 +18,8 @@ pub fn routes() -> Router<AppState> {
             "/notifications/channels",
             get(list_channels).post(create_channel),
         )
-        .route(
-            "/notifications/channels/{id}",
-            delete(delete_channel),
-        )
-        .route(
-            "/notifications/channels/{id}/test",
-            post(test_channel),
-        )
+        .route("/notifications/channels/{id}", delete(delete_channel))
+        .route("/notifications/channels/{id}/test", post(test_channel))
         .route(
             "/apps/{app_id}/notifications",
             get(list_rules).post(create_rule),
@@ -93,7 +87,9 @@ async fn create_channel(
         })
         .await?;
 
-    Ok(Json(serde_json::json!({ "data": { "id": channel.id, "channel_type": channel.channel_type } })))
+    Ok(Json(
+        serde_json::json!({ "data": { "id": channel.id, "channel_type": channel.channel_type } }),
+    ))
 }
 
 async fn delete_channel(
@@ -136,8 +132,12 @@ async fn test_channel(
     )
     .await
     {
-        Ok(()) => Ok(Json(serde_json::json!({ "message": "test notification sent" }))),
-        Err(e) => Ok(Json(serde_json::json!({ "message": format!("test failed: {e}") }))),
+        Ok(()) => Ok(Json(
+            serde_json::json!({ "message": "test notification sent" }),
+        )),
+        Err(e) => Ok(Json(
+            serde_json::json!({ "message": format!("test failed: {e}") }),
+        )),
     }
 }
 
@@ -234,9 +234,7 @@ pub async fn dispatch_notification(
                 Err(format!("webhook returned {}", resp.status()))
             }
         }
-        "smtp" => {
-            dispatch_smtp(config, event, summary, details).await
-        }
+        "smtp" => dispatch_smtp(config, event, summary, details).await,
         "plunk" => {
             tracing::info!("Plunk notification: [{event}] {summary}");
             Ok(())
@@ -377,8 +375,8 @@ async fn dispatch_smtp(
     summary: &str,
     details: &serde_json::Value,
 ) -> Result<(), String> {
-    let smtp: SmtpConfig = serde_json::from_str(config)
-        .map_err(|e| format!("invalid SMTP config: {e}"))?;
+    let smtp: SmtpConfig =
+        serde_json::from_str(config).map_err(|e| format!("invalid SMTP config: {e}"))?;
 
     let tls_mode = smtp.tls.as_deref().unwrap_or("starttls");
 
@@ -432,13 +430,10 @@ async fn dispatch_smtp(
             .build(),
     };
 
-    mailer
-        .send(email)
-        .await
-        .map_err(|e| {
-            tracing::error!("SMTP send failed for [{event}]: {e}");
-            format!("SMTP send failed: {e}")
-        })?;
+    mailer.send(email).await.map_err(|e| {
+        tracing::error!("SMTP send failed for [{event}]: {e}");
+        format!("SMTP send failed: {e}")
+    })?;
 
     tracing::info!("SMTP notification sent: [{event}] {summary}");
     Ok(())

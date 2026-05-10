@@ -104,7 +104,12 @@ mod tests {
         let mut rx = bus.subscribe();
 
         bus.emit(EventType::BuildStepStart, None, None, serde_json::json!({}));
-        bus.emit(EventType::BuildStepComplete, None, None, serde_json::json!({}));
+        bus.emit(
+            EventType::BuildStepComplete,
+            None,
+            None,
+            serde_json::json!({}),
+        );
 
         let e1 = rx.recv().await.unwrap();
         let e2 = rx.recv().await.unwrap();
@@ -117,7 +122,12 @@ mod tests {
         let mut rx1 = bus.subscribe();
         let mut rx2 = bus.subscribe();
 
-        bus.emit(EventType::DeployStatus, None, None, serde_json::json!({"status": "running"}));
+        bus.emit(
+            EventType::DeployStatus,
+            None,
+            None,
+            serde_json::json!({"status": "running"}),
+        );
 
         let e1 = rx1.recv().await.unwrap();
         let e2 = rx2.recv().await.unwrap();
@@ -130,7 +140,12 @@ mod tests {
         let mut rx = bus.subscribe();
 
         for i in 0..10 {
-            bus.emit(EventType::BuildStepOutput, None, None, serde_json::json!({"line": i}));
+            bus.emit(
+                EventType::BuildStepOutput,
+                None,
+                None,
+                serde_json::json!({"line": i}),
+            );
         }
 
         match rx.recv().await {

@@ -192,8 +192,12 @@ async fn resolved_env_vars(
         }
     }
 
-    merged.entry("PORT".to_string()).or_insert_with(|| "3000".to_string());
-    merged.entry("HOST".to_string()).or_insert_with(|| "0.0.0.0".to_string());
+    merged
+        .entry("PORT".to_string())
+        .or_insert_with(|| "3000".to_string());
+    merged
+        .entry("HOST".to_string())
+        .or_insert_with(|| "0.0.0.0".to_string());
 
     let resolved: Vec<serde_json::Value> = merged
         .into_iter()
@@ -275,7 +279,10 @@ mod tests {
     fn parse_dotenv_basic() {
         let input = "FOO=bar\nBAZ=qux";
         let result = parse_dotenv(input);
-        assert_eq!(result, vec![("FOO".into(), "bar".into()), ("BAZ".into(), "qux".into())]);
+        assert_eq!(
+            result,
+            vec![("FOO".into(), "bar".into()), ("BAZ".into(), "qux".into())]
+        );
     }
 
     #[test]

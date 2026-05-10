@@ -41,151 +41,188 @@ struct DbTypeConfig {
 
 fn db_configs() -> HashMap<&'static str, DbTypeConfig> {
     let mut m = HashMap::new();
-    m.insert("postgres", DbTypeConfig {
-        image: "postgres:17",
-        port: 5432,
-        env_vars: |user, pass, _db| vec![
-            format!("POSTGRES_USER={user}"),
-            format!("POSTGRES_PASSWORD={pass}"),
-            format!("POSTGRES_DB={user}"),
-        ],
-        connection_string: |container, _port, user, pass| {
-            format!("postgresql://{user}:{pass}@{container}:5432/{user}")
+    m.insert(
+        "postgres",
+        DbTypeConfig {
+            image: "postgres:17",
+            port: 5432,
+            env_vars: |user, pass, _db| {
+                vec![
+                    format!("POSTGRES_USER={user}"),
+                    format!("POSTGRES_PASSWORD={pass}"),
+                    format!("POSTGRES_DB={user}"),
+                ]
+            },
+            connection_string: |container, _port, user, pass| {
+                format!("postgresql://{user}:{pass}@{container}:5432/{user}")
+            },
+            default_memory_mb: 1024,
+            env_var_name: "DATABASE_URL",
         },
-        default_memory_mb: 1024,
-        env_var_name: "DATABASE_URL",
-    });
-    m.insert("mysql", DbTypeConfig {
-        image: "mysql:8",
-        port: 3306,
-        env_vars: |user, pass, db| vec![
-            format!("MYSQL_USER={user}"),
-            format!("MYSQL_PASSWORD={pass}"),
-            format!("MYSQL_DATABASE={db}"),
-            format!("MYSQL_ROOT_PASSWORD={pass}"),
-        ],
-        connection_string: |container, _port, user, pass| {
-            format!("mysql://{user}:{pass}@{container}:3306/{user}")
+    );
+    m.insert(
+        "mysql",
+        DbTypeConfig {
+            image: "mysql:8",
+            port: 3306,
+            env_vars: |user, pass, db| {
+                vec![
+                    format!("MYSQL_USER={user}"),
+                    format!("MYSQL_PASSWORD={pass}"),
+                    format!("MYSQL_DATABASE={db}"),
+                    format!("MYSQL_ROOT_PASSWORD={pass}"),
+                ]
+            },
+            connection_string: |container, _port, user, pass| {
+                format!("mysql://{user}:{pass}@{container}:3306/{user}")
+            },
+            default_memory_mb: 1024,
+            env_var_name: "DATABASE_URL",
         },
-        default_memory_mb: 1024,
-        env_var_name: "DATABASE_URL",
-    });
-    m.insert("redis", DbTypeConfig {
-        image: "redis:7",
-        port: 6379,
-        env_vars: |_user, pass, _db| vec![
-            format!("REDIS_PASSWORD={pass}"),
-        ],
-        connection_string: |container, _port, _user, pass| {
-            format!("redis://:{pass}@{container}:6379")
+    );
+    m.insert(
+        "redis",
+        DbTypeConfig {
+            image: "redis:7",
+            port: 6379,
+            env_vars: |_user, pass, _db| vec![format!("REDIS_PASSWORD={pass}")],
+            connection_string: |container, _port, _user, pass| {
+                format!("redis://:{pass}@{container}:6379")
+            },
+            default_memory_mb: 256,
+            env_var_name: "REDIS_URL",
         },
-        default_memory_mb: 256,
-        env_var_name: "REDIS_URL",
-    });
-    m.insert("mongo", DbTypeConfig {
-        image: "mongo:7",
-        port: 27017,
-        env_vars: |user, pass, db| vec![
-            format!("MONGO_INITDB_ROOT_USERNAME={user}"),
-            format!("MONGO_INITDB_ROOT_PASSWORD={pass}"),
-            format!("MONGO_INITDB_DATABASE={db}"),
-        ],
-        connection_string: |container, _port, user, pass| {
-            format!("mongodb://{user}:{pass}@{container}:27017/{user}")
+    );
+    m.insert(
+        "mongo",
+        DbTypeConfig {
+            image: "mongo:7",
+            port: 27017,
+            env_vars: |user, pass, db| {
+                vec![
+                    format!("MONGO_INITDB_ROOT_USERNAME={user}"),
+                    format!("MONGO_INITDB_ROOT_PASSWORD={pass}"),
+                    format!("MONGO_INITDB_DATABASE={db}"),
+                ]
+            },
+            connection_string: |container, _port, user, pass| {
+                format!("mongodb://{user}:{pass}@{container}:27017/{user}")
+            },
+            default_memory_mb: 512,
+            env_var_name: "MONGODB_URL",
         },
-        default_memory_mb: 512,
-        env_var_name: "MONGODB_URL",
-    });
-    m.insert("mariadb", DbTypeConfig {
-        image: "mariadb:11",
-        port: 3306,
-        env_vars: |user, pass, db| vec![
-            format!("MARIADB_USER={user}"),
-            format!("MARIADB_PASSWORD={pass}"),
-            format!("MARIADB_DATABASE={db}"),
-            format!("MARIADB_ROOT_PASSWORD={pass}"),
-        ],
-        connection_string: |container, _port, user, pass| {
-            format!("mysql://{user}:{pass}@{container}:3306/{user}")
+    );
+    m.insert(
+        "mariadb",
+        DbTypeConfig {
+            image: "mariadb:11",
+            port: 3306,
+            env_vars: |user, pass, db| {
+                vec![
+                    format!("MARIADB_USER={user}"),
+                    format!("MARIADB_PASSWORD={pass}"),
+                    format!("MARIADB_DATABASE={db}"),
+                    format!("MARIADB_ROOT_PASSWORD={pass}"),
+                ]
+            },
+            connection_string: |container, _port, user, pass| {
+                format!("mysql://{user}:{pass}@{container}:3306/{user}")
+            },
+            default_memory_mb: 1024,
+            env_var_name: "DATABASE_URL",
         },
-        default_memory_mb: 1024,
-        env_var_name: "DATABASE_URL",
-    });
-    m.insert("clickhouse", DbTypeConfig {
-        image: "clickhouse/clickhouse-server:24",
-        port: 8123,
-        env_vars: |user, pass, db| vec![
-            format!("CLICKHOUSE_USER={user}"),
-            format!("CLICKHOUSE_PASSWORD={pass}"),
-            format!("CLICKHOUSE_DB={db}"),
-            "CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT=1".to_string(),
-        ],
-        connection_string: |container, _port, user, pass| {
-            format!("clickhouse://{user}:{pass}@{container}:8123/{user}")
+    );
+    m.insert(
+        "clickhouse",
+        DbTypeConfig {
+            image: "clickhouse/clickhouse-server:24",
+            port: 8123,
+            env_vars: |user, pass, db| {
+                vec![
+                    format!("CLICKHOUSE_USER={user}"),
+                    format!("CLICKHOUSE_PASSWORD={pass}"),
+                    format!("CLICKHOUSE_DB={db}"),
+                    "CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT=1".to_string(),
+                ]
+            },
+            connection_string: |container, _port, user, pass| {
+                format!("clickhouse://{user}:{pass}@{container}:8123/{user}")
+            },
+            default_memory_mb: 2048,
+            env_var_name: "CLICKHOUSE_URL",
         },
-        default_memory_mb: 2048,
-        env_var_name: "CLICKHOUSE_URL",
-    });
-    m.insert("keydb", DbTypeConfig {
-        image: "eqalpha/keydb:latest",
-        port: 6379,
-        env_vars: |_user, pass, _db| vec![
-            format!("REDIS_PASSWORD={pass}"),
-        ],
-        connection_string: |container, _port, _user, pass| {
-            format!("redis://:{pass}@{container}:6379")
+    );
+    m.insert(
+        "keydb",
+        DbTypeConfig {
+            image: "eqalpha/keydb:latest",
+            port: 6379,
+            env_vars: |_user, pass, _db| vec![format!("REDIS_PASSWORD={pass}")],
+            connection_string: |container, _port, _user, pass| {
+                format!("redis://:{pass}@{container}:6379")
+            },
+            default_memory_mb: 256,
+            env_var_name: "REDIS_URL",
         },
-        default_memory_mb: 256,
-        env_var_name: "REDIS_URL",
-    });
-    m.insert("dragonfly", DbTypeConfig {
-        image: "docker.dragonflydb.io/dragonflydb/dragonfly:latest",
-        port: 6379,
-        env_vars: |_user, pass, _db| vec![
-            format!("REDIS_PASSWORD={pass}"),
-        ],
-        connection_string: |container, _port, _user, pass| {
-            format!("redis://:{pass}@{container}:6379")
+    );
+    m.insert(
+        "dragonfly",
+        DbTypeConfig {
+            image: "docker.dragonflydb.io/dragonflydb/dragonfly:latest",
+            port: 6379,
+            env_vars: |_user, pass, _db| vec![format!("REDIS_PASSWORD={pass}")],
+            connection_string: |container, _port, _user, pass| {
+                format!("redis://:{pass}@{container}:6379")
+            },
+            default_memory_mb: 512,
+            env_var_name: "REDIS_URL",
         },
-        default_memory_mb: 512,
-        env_var_name: "REDIS_URL",
-    });
-    m.insert("valkey", DbTypeConfig {
-        image: "valkey/valkey:8",
-        port: 6379,
-        env_vars: |_user, pass, _db| vec![
-            format!("REDIS_PASSWORD={pass}"),
-        ],
-        connection_string: |container, _port, _user, pass| {
-            format!("redis://:{pass}@{container}:6379")
+    );
+    m.insert(
+        "valkey",
+        DbTypeConfig {
+            image: "valkey/valkey:8",
+            port: 6379,
+            env_vars: |_user, pass, _db| vec![format!("REDIS_PASSWORD={pass}")],
+            connection_string: |container, _port, _user, pass| {
+                format!("redis://:{pass}@{container}:6379")
+            },
+            default_memory_mb: 256,
+            env_var_name: "REDIS_URL",
         },
-        default_memory_mb: 256,
-        env_var_name: "REDIS_URL",
-    });
-    m.insert("cockroachdb", DbTypeConfig {
-        image: "cockroachdb/cockroach:latest",
-        port: 26257,
-        env_vars: |_user, _pass, _db| vec![],
-        connection_string: |container, _port, _user, _pass| {
-            format!("postgresql://root@{container}:26257/defaultdb?sslmode=disable")
+    );
+    m.insert(
+        "cockroachdb",
+        DbTypeConfig {
+            image: "cockroachdb/cockroach:latest",
+            port: 26257,
+            env_vars: |_user, _pass, _db| vec![],
+            connection_string: |container, _port, _user, _pass| {
+                format!("postgresql://root@{container}:26257/defaultdb?sslmode=disable")
+            },
+            default_memory_mb: 2048,
+            env_var_name: "DATABASE_URL",
         },
-        default_memory_mb: 2048,
-        env_var_name: "DATABASE_URL",
-    });
-    m.insert("cassandra", DbTypeConfig {
-        image: "cassandra:5",
-        port: 9042,
-        env_vars: |_user, _pass, db| vec![
-            format!("CASSANDRA_CLUSTER_NAME={db}"),
-            "CASSANDRA_DC=dc1".to_string(),
-            "CASSANDRA_RACK=rack1".to_string(),
-        ],
-        connection_string: |container, _port, _user, _pass| {
-            format!("cassandra://{container}:9042")
+    );
+    m.insert(
+        "cassandra",
+        DbTypeConfig {
+            image: "cassandra:5",
+            port: 9042,
+            env_vars: |_user, _pass, db| {
+                vec![
+                    format!("CASSANDRA_CLUSTER_NAME={db}"),
+                    "CASSANDRA_DC=dc1".to_string(),
+                    "CASSANDRA_RACK=rack1".to_string(),
+                ]
+            },
+            connection_string: |container, _port, _user, _pass| {
+                format!("cassandra://{container}:9042")
+            },
+            default_memory_mb: 2048,
+            env_var_name: "CASSANDRA_URL",
         },
-        default_memory_mb: 2048,
-        env_var_name: "CASSANDRA_URL",
-    });
+    );
     m
 }
 
@@ -195,7 +232,7 @@ fn generate_password() -> String {
     (0..32)
         .map(|_| {
             let idx = rng.gen_range(0..62);
-            
+
             match idx {
                 0..=9 => (b'0' + idx) as char,
                 10..=35 => (b'a' + idx - 10) as char,
@@ -230,14 +267,12 @@ async fn create_database(
     Json(body): Json<CreateDatabaseRequest>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     let configs = db_configs();
-    let type_config = configs
-        .get(body.db_type.as_str())
-        .ok_or_else(|| {
-            ApiError::BadRequest(format!(
-                "unsupported database type '{}'. Supported: postgres, mysql, redis, mongo",
-                body.db_type
-            ))
-        })?;
+    let type_config = configs.get(body.db_type.as_str()).ok_or_else(|| {
+        ApiError::BadRequest(format!(
+            "unsupported database type '{}'. Supported: postgres, mysql, redis, mongo",
+            body.db_type
+        ))
+    })?;
 
     if body.name.trim().is_empty() {
         return Err(ApiError::BadRequest("database name is required".into()));
@@ -321,12 +356,22 @@ async fn create_database(
         cpu_shares: None,
         restart_policy: Some("unless-stopped".to_string()),
         labels,
-        network: body.app_id.as_ref().map(|_| format!("icefall-{}", body.name)),
+        network: body
+            .app_id
+            .as_ref()
+            .map(|_| format!("icefall-{}", body.name)),
     };
 
     state
         .docker
-        .pull_image(type_config.image.split(':').next().unwrap_or(type_config.image), type_config.image.split(':').nth(1).unwrap_or("latest"))
+        .pull_image(
+            type_config
+                .image
+                .split(':')
+                .next()
+                .unwrap_or(type_config.image),
+            type_config.image.split(':').nth(1).unwrap_or("latest"),
+        )
         .await
         .map_err(|e| ApiError::Internal(Box::new(e)))?;
 
@@ -364,11 +409,7 @@ async fn create_database(
 
     state
         .db
-        .update_managed_db_credentials(
-            &managed_db.id,
-            &credentials.to_string(),
-            &container_id,
-        )
+        .update_managed_db_credentials(&managed_db.id, &credentials.to_string(), &container_id)
         .await?;
 
     if let Some(ref app_id) = body.app_id {
@@ -451,7 +492,9 @@ async fn link_to_app(
             .await?;
     }
 
-    Ok(Json(serde_json::json!({ "message": "linked", "env_var": type_config.env_var_name })))
+    Ok(Json(
+        serde_json::json!({ "message": "linked", "env_var": type_config.env_var_name }),
+    ))
 }
 
 async fn unlink_from_app(
@@ -462,10 +505,7 @@ async fn unlink_from_app(
     if let Some(env) = envs.first() {
         let vars = state.db.get_env_vars(&env.id).await?;
         for var in vars {
-            if var.key == "DATABASE_URL"
-                || var.key == "REDIS_URL"
-                || var.key == "MONGODB_URL"
-            {
+            if var.key == "DATABASE_URL" || var.key == "REDIS_URL" || var.key == "MONGODB_URL" {
                 state.db.delete_env_var(&var.id).await?;
             }
         }
@@ -497,7 +537,10 @@ async fn stop_database(
     Path(id): Path<String>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     let container_name = resolve_db_container(&state, &id).await?;
-    state.docker.stop_container(&container_name, Some(10)).await?;
+    state
+        .docker
+        .stop_container(&container_name, Some(10))
+        .await?;
     Ok(Json(serde_json::json!({ "message": "stopped" })))
 }
 
@@ -509,4 +552,3 @@ async fn restart_database(
     state.docker.restart_container(&container_name).await?;
     Ok(Json(serde_json::json!({ "message": "restarted" })))
 }
-

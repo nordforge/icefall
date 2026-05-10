@@ -180,7 +180,9 @@ async fn run_check(check: &HealthCheck, docker: &DockerClient, container_id: &st
 
 fn is_check_due(check: &HealthCheck, states: &HashMap<String, AppHealthState>) -> bool {
     match states.get(&check.id) {
-        Some(state) => state.last_checked.elapsed() >= Duration::from_secs(check.interval_secs as u64),
+        Some(state) => {
+            state.last_checked.elapsed() >= Duration::from_secs(check.interval_secs as u64)
+        }
         None => true,
     }
 }

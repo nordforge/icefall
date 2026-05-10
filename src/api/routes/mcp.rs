@@ -47,11 +47,17 @@ async fn call_tool(
 ) -> Result<Json<serde_json::Value>, ApiError> {
     let user = authenticate_from_headers(&state, &headers)
         .await?
-        .ok_or_else(|| ApiError::BadRequest("Authentication required. Pass API token as Bearer header.".into()))?;
+        .ok_or_else(|| {
+            ApiError::BadRequest("Authentication required. Pass API token as Bearer header.".into())
+        })?;
 
     let can_write = user.role == "admin" || user.role == "deployer";
     let write_tools = [
-        "deploy_app", "set_env_var", "create_database", "add_domain", "restart_app",
+        "deploy_app",
+        "set_env_var",
+        "create_database",
+        "add_domain",
+        "restart_app",
     ];
 
     if !can_write && write_tools.contains(&body.tool.as_str()) {
@@ -69,20 +75,32 @@ async fn call_tool(
         }
         "get_app" => {
             let id = str_param(p, "app_id")?;
-            let app = state.db.get_app(&id).await?
+            let app = state
+                .db
+                .get_app(&id)
+                .await?
                 .ok_or_else(|| ApiError::NotFound(format!("app {id}")))?;
             serde_json::json!({ "app": app })
         }
         "deploy_app" => {
             let id = str_param(p, "app_id")?;
-            let app = state.db.get_app(&id).await?
+            let app = state
+                .db
+                .get_app(&id)
+                .await?
                 .ok_or_else(|| ApiError::NotFound(format!("app {id}")))?;
             let envs = state.db.list_environments(&id).await?;
-            let env = envs.first()
+            let env = envs
+                .first()
                 .ok_or_else(|| ApiError::BadRequest("app has no environments".into()))?;
-            let deploy = state.db.create_deploy(&crate::db::models::NewDeploy {
-                app_id: id.clone(), environment_id: env.id.clone(), git_sha: None,
-            }).await?;
+            let deploy = state
+                .db
+                .create_deploy(&crate::db::models::NewDeploy {
+                    app_id: id.clone(),
+                    environment_id: env.id.clone(),
+                    git_sha: None,
+                })
+                .await?;
             serde_json::json!({ "deploy_id": deploy.id, "status": deploy.status, "message": format!("Deploy triggered for {}", app.name) })
         }
         "get_deploy_status" => {
@@ -103,30 +121,44 @@ async fn call_tool(
             let value = str_param(p, "value")?;
             let scope = p.get("scope").and_then(|v| v.as_str()).unwrap_or("shared");
             let envs = state.db.list_environments(&id).await?;
-            let env = envs.first()
+            let env = envs
+                .first()
                 .ok_or_else(|| ApiError::BadRequest("app has no environments".into()))?;
-            state.db.set_env_var(&crate::db::models::NewEnvVar {
-                environment_id: env.id.clone(), key: key.clone(), value, scope: scope.to_string(),
-            }).await?;
+            state
+                .db
+                .set_env_var(&crate::db::models::NewEnvVar {
+                    environment_id: env.id.clone(),
+                    key: key.clone(),
+                    value,
+                    scope: scope.to_string(),
+                })
+                .await?;
             serde_json::json!({ "message": format!("Set {key} for app {id}") })
         }
         "get_env_vars" => {
             let id = str_param(p, "app_id")?;
             let envs = state.db.list_environments(&id).await?;
-            let env = envs.first()
+            let env = envs
+                .first()
                 .ok_or_else(|| ApiError::BadRequest("app has no environments".into()))?;
             let vars = state.db.get_env_vars(&env.id).await?;
-            let masked: Vec<serde_json::Value> = vars.iter().map(|v| {
-                serde_json::json!({ "key": v.key, "scope": v.scope, "value": "••••••••" })
-            }).collect();
+            let masked: Vec<serde_json::Value> = vars
+                .iter()
+                .map(|v| serde_json::json!({ "key": v.key, "scope": v.scope, "value": "••••••••" }))
+                .collect();
             serde_json::json!({ "env_vars": masked })
         }
         "create_database" => {
             let name = str_param(p, "name")?;
             let db_type = str_param(p, "db_type")?;
-            let db = state.db.create_managed_db(&crate::db::models::NewManagedDatabase {
-                name: name.clone(), db_type: db_type.clone(), app_id: None,
-            }).await?;
+            let db = state
+                .db
+                .create_managed_db(&crate::db::models::NewManagedDatabase {
+                    name: name.clone(),
+                    db_type: db_type.clone(),
+                    app_id: None,
+                })
+                .await?;
             serde_json::json!({ "database_id": db.id, "name": db.name, "type": db.db_type, "message": format!("Created {db_type} database '{name}'") })
         }
         "list_databases" => {
@@ -139,7 +171,10 @@ async fn call_tool(
             let mut results = Vec::new();
             for check in &checks {
                 let events = state.db.get_health_events(&check.id, 10).await?;
-                let status = events.first().map(|e| e.status.as_str()).unwrap_or("unknown");
+                let status = events
+                    .first()
+                    .map(|e| e.status.as_str())
+                    .unwrap_or("unknown");
                 results.push(serde_json::json!({ "check_type": check.check_type, "status": status, "recent_events": events.len() }));
             }
             serde_json::json!({ "health_checks": results })
@@ -158,13 +193,23 @@ async fn call_tool(
         "add_domain" => {
             let id = str_param(p, "app_id")?;
             let domain = str_param(p, "domain")?;
-            let d = state.db.add_domain(&crate::db::models::NewDomain { app_id: id, domain: domain.clone(), path: None }).await?;
+            let d = state
+                .db
+                .add_domain(&crate::db::models::NewDomain {
+                    app_id: id,
+                    domain: domain.clone(),
+                    path: None,
+                })
+                .await?;
             serde_json::json!({ "domain_id": d.id, "domain": d.domain, "message": format!("Added domain {domain}") })
         }
         "restart_app" => {
             let id = str_param(p, "app_id")?;
             let label = format!("icefall.app={id}");
-            let containers = state.docker.list_containers(Some(&label)).await
+            let containers = state
+                .docker
+                .list_containers(Some(&label))
+                .await
                 .map_err(|e| ApiError::Internal(Box::new(e)))?;
             let mut restarted = 0;
             for c in containers.iter().filter(|c| c.state == "running") {

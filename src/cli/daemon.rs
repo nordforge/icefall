@@ -29,7 +29,10 @@ pub async fn stop() {
     let pid_str = match std::fs::read_to_string(pid_file) {
         Ok(s) => s,
         Err(_) => {
-            eprintln!("No PID file found at {}. Is the daemon running?", pid_file.display());
+            eprintln!(
+                "No PID file found at {}. Is the daemon running?",
+                pid_file.display()
+            );
             std::process::exit(1);
         }
     };
