@@ -10,6 +10,10 @@ export default defineConfig({
   output: 'static',
   adapter: node({ mode: 'standalone' }),
   server: { port: 4321 },
+  prefetch: {
+    prefetchAll: false,
+    defaultStrategy: 'hover',
+  },
   vite: {
     resolve: {
       alias: {

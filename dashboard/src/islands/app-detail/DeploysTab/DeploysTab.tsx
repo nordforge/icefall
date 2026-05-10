@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'preact/hooks';
 import { api } from '@lib/api';
+import { addToast } from '@stores/toast';
 import type { Deploy } from '@lib/types';
 import { formatRelativeTime, formatDuration, shortSha } from '@lib/format';
 import StatusDot from '@islands/shared/StatusDot/StatusDot';
@@ -18,11 +19,20 @@ export default function DeploysTab({ appId }: Props) {
 
   async function handleRollback(deployId: string) {
     setRollingBack(deployId);
+    // Optimistic: update the status of the rolled-back deploy to 'deploying'
+    const prevDeploys = deploys;
+    setDeploys(prev => prev.map(d =>
+      d.id === deployId ? { ...d, status: 'deploying' as const } : d
+    ));
     try {
       await api.rollbackDeploy(appId, deployId);
       const { data } = await api.listDeploys(appId);
       setDeploys(data);
-    } catch { /* handled by API error */ }
+    } catch (err: any) {
+      // Revert optimistic update
+      setDeploys(prevDeploys);
+      addToast('error', err.message || 'Rollback failed');
+    }
     setRollingBack('');
   }
 
