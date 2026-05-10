@@ -1,7 +1,71 @@
-import { useEffect, useRef, useState } from 'preact/hooks';
+import { useEffect, useRef, useState, useMemo, useCallback } from 'preact/hooks';
 import { createSSEClient } from '@lib/sse';
-import { Search, Download } from 'lucide-preact';
+import { Search, Download, Info, AlertTriangle, XCircle, Filter } from 'lucide-preact';
 import styles from './log-viewer.module.css';
+
+const LEVEL_OPTIONS = [
+  { value: 'all', label: 'All levels', icon: Filter },
+  { value: 'INFO', label: 'Info', icon: Info },
+  { value: 'WARN', label: 'Warning', icon: AlertTriangle },
+  { value: 'ERROR', label: 'Error', icon: XCircle },
+] as const;
+
+function LevelFilter({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const current = LEVEL_OPTIONS.find(o => o.value === value) || LEVEL_OPTIONS[0];
+
+  useEffect(() => {
+    if (!open) return;
+    function close(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    function closeKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setOpen(false);
+    }
+    document.addEventListener('mousedown', close);
+    document.addEventListener('keydown', closeKey);
+    return () => {
+      document.removeEventListener('mousedown', close);
+      document.removeEventListener('keydown', closeKey);
+    };
+  }, [open]);
+
+  return (
+    <div ref={ref} class={styles.levelDropdown}>
+      <button
+        type="button"
+        class={styles.levelTrigger}
+        onClick={() => setOpen(!open)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-label="Filter by log level"
+      >
+        <current.icon size={13} aria-hidden="true" />
+        {current.label}
+        <svg class={styles.levelChevron} width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6" /></svg>
+      </button>
+      {open && (
+        <ul role="listbox" class={styles.levelMenu} aria-label="Log level filter">
+          {LEVEL_OPTIONS.map(opt => (
+            <li key={opt.value}>
+              <button
+                type="button"
+                role="option"
+                aria-selected={value === opt.value}
+                class={`${styles.levelOption} ${value === opt.value ? styles.levelOptionActive : ''}`}
+                onClick={() => { onChange(opt.value); setOpen(false); }}
+              >
+                <opt.icon size={13} aria-hidden="true" class={styles[`levelIcon${opt.value}`] || ''} />
+                {opt.label}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
 
 type LogEntry = {
   timestamp: string;
@@ -10,6 +74,8 @@ type LogEntry = {
 }
 
 const MAX_LINES = 10_000;
+const ROW_HEIGHT = 22;
+const OVERSCAN = 10;
 
 type Props = {
   appId: string;
@@ -21,6 +87,8 @@ export default function LogViewer({ appId }: Props) {
   const [searchQuery, setSearchQuery] = useState('');
   const [autoScroll, setAutoScroll] = useState(true);
   const [levelFilter, setLevelFilter] = useState('all');
+  const [scrollTop, setScrollTop] = useState(0);
+  const [containerHeight, setContainerHeight] = useState(600);
   const containerRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number | null>(null);
 
@@ -51,18 +119,40 @@ export default function LogViewer({ appId }: Props) {
     };
   }, [appId]);
 
+  // Measure container height on mount and resize
+  useEffect(() => {
+    function measure() {
+      if (containerRef.current) {
+        setContainerHeight(containerRef.current.clientHeight);
+      }
+    }
+    measure();
+    const observer = new ResizeObserver(measure);
+    if (containerRef.current) observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  const filtered = useMemo(() => lines.filter((l) => {
+    if (levelFilter !== 'all' && l.level !== levelFilter) return false;
+    if (searchQuery && !l.message.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+    return true;
+  }), [lines, searchQuery, levelFilter]);
+
+  // Auto-scroll when new lines arrive
   useEffect(() => {
     if (autoScroll && containerRef.current) {
-      containerRef.current.scrollTop = containerRef.current.scrollHeight;
+      const totalHeight = filtered.length * ROW_HEIGHT;
+      containerRef.current.scrollTop = totalHeight;
     }
-  }, [lines.length, autoScroll]);
+  }, [filtered.length, autoScroll]);
 
-  function handleScroll() {
+  const handleScroll = useCallback(() => {
     if (!containerRef.current) return;
-    const { scrollTop, scrollHeight, clientHeight } = containerRef.current;
-    const atBottom = scrollHeight - scrollTop - clientHeight < 50;
+    const el = containerRef.current;
+    setScrollTop(el.scrollTop);
+    const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 50;
     if (!atBottom && autoScroll) setAutoScroll(false);
-  }
+  }, [autoScroll]);
 
   function handleDownload() {
     const text = lines.map((l) => `${l.timestamp} [${l.level}] ${l.message}`).join('\n');
@@ -75,13 +165,14 @@ export default function LogViewer({ appId }: Props) {
     URL.revokeObjectURL(url);
   }
 
-  const filtered = lines.filter((l) => {
-    if (levelFilter !== 'all' && l.level !== levelFilter) return false;
-    if (searchQuery && !l.message.toLowerCase().includes(searchQuery.toLowerCase())) return false;
-    return true;
-  });
-
   const searchCount = searchQuery ? filtered.length : null;
+
+  // Virtualization calculations
+  const totalHeight = filtered.length * ROW_HEIGHT;
+  const startIdx = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - OVERSCAN);
+  const endIdx = Math.min(filtered.length, Math.ceil((scrollTop + containerHeight) / ROW_HEIGHT) + OVERSCAN);
+  const visibleItems = filtered.slice(startIdx, endIdx);
+  const offsetY = startIdx * ROW_HEIGHT;
 
   const levelClass = (level: string) => {
     switch (level) {
@@ -102,7 +193,7 @@ export default function LogViewer({ appId }: Props) {
   return (
     <div class={styles.viewer}>
       <div class={styles.toolbar}>
-        <Search size={14} class={styles.searchIcon} />
+        <Search size={14} class={styles.searchIcon} aria-hidden="true" />
         <input
           id="log-search"
           type="text"
@@ -116,19 +207,7 @@ export default function LogViewer({ appId }: Props) {
         <span class={styles.searchCount} role="status" aria-live="polite">
           {searchCount !== null ? `${searchCount} results` : ''}
         </span>
-        <label for="log-level-filter" class="sr-only">Filter by log level</label>
-        <select
-          id="log-level-filter"
-          value={levelFilter}
-          onChange={(e) => setLevelFilter((e.target as HTMLSelectElement).value)}
-          class={styles.levelSelect}
-          aria-label="Filter by log level"
-        >
-          <option value="all">All levels</option>
-          <option value="INFO">INFO</option>
-          <option value="WARN">WARN</option>
-          <option value="ERROR">ERROR</option>
-        </select>
+        <LevelFilter value={levelFilter} onChange={setLevelFilter} />
       </div>
 
       {/* a11y [WCAG 4.1.3]: live log output announced to AT */}
@@ -136,6 +215,7 @@ export default function LogViewer({ appId }: Props) {
         ref={containerRef}
         onScroll={handleScroll}
         class={styles.logContainer}
+        style={{ overflow: 'auto' }}
         role="log"
         aria-live="polite"
         aria-label="Application logs"
@@ -145,25 +225,30 @@ export default function LogViewer({ appId }: Props) {
             {lines.length === 0 ? 'Waiting for log output...' : 'No matching logs.'}
           </div>
         ) : (
-          filtered.map((line, i) => (
-            <div
-              key={i}
-              class={lineBorderClass(line.level)}
-            >
-              <span class={styles.lineNumber}>
-                {i + 1}
-              </span>
-              <span class={styles.timestamp}>
-                {line.timestamp.replace('T', ' ').replace('Z', '').slice(0, 23)}
-              </span>
-              <span class={levelClass(line.level)}>
-                {line.level}
-              </span>
-              <span class={styles.message}>
-                {line.message}
-              </span>
+          <div style={{ height: `${totalHeight}px`, position: 'relative' }}>
+            <div style={{ transform: `translateY(${offsetY}px)` }}>
+              {visibleItems.map((line, i) => (
+                <div
+                  key={startIdx + i}
+                  class={lineBorderClass(line.level)}
+                  style={{ height: `${ROW_HEIGHT}px` }}
+                >
+                  <span class={styles.lineNumber}>
+                    {startIdx + i + 1}
+                  </span>
+                  <span class={styles.timestamp}>
+                    {line.timestamp.replace('T', ' ').replace('Z', '').slice(0, 23)}
+                  </span>
+                  <span class={levelClass(line.level)}>
+                    {line.level}
+                  </span>
+                  <span class={styles.message}>
+                    {line.message}
+                  </span>
+                </div>
+              ))}
             </div>
-          ))
+          </div>
         )}
       </div>
 

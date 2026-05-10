@@ -25,13 +25,17 @@
 }
 
 .feedbackSuccess {
-  composes: feedback;
+  font-size: var(--text-sm);
+  min-height: 1.25em;
+  margin-bottom: var(--space-2);
   color: var(--color-success);
   font-weight: var(--weight-medium);
 }
 
 .feedbackError {
-  composes: feedback;
+  font-size: var(--text-sm);
+  min-height: 1.25em;
+  margin-bottom: var(--space-2);
   color: var(--color-error);
 }
 
@@ -232,13 +236,13 @@
 }
 
 .tdMuted {
-  composes: td;
+  padding: var(--space-3) var(--space-4);
   color: var(--color-text-muted);
   font-size: var(--text-xs);
 }
 
 .tdMono {
-  composes: td;
+  padding: var(--space-3) var(--space-4);
   font-family: var(--font-mono);
   font-size: var(--text-xs);
 }
@@ -252,14 +256,15 @@
 
 /* --- Utility --- */
 
+/* a11y [WCAG 2.5.8]: minimum 28×28 target size */
 .iconButton {
   background: none;
   border: none;
   color: var(--color-text-muted);
   cursor: pointer;
   padding: var(--space-1);
-  min-width: 1.5rem;
-  min-height: 1.5rem;
+  min-width: 28px;
+  min-height: 28px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -315,7 +320,12 @@
 }
 
 .sectionHeadingDanger {
-  composes: sectionHeading;
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
   color: var(--color-error);
 }
 

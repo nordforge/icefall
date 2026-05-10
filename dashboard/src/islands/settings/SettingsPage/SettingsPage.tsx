@@ -1,11 +1,12 @@
-import { useEffect, useState, useCallback } from 'preact/hooks';
+import { useEffect, useState } from 'preact/hooks';
 import Button from '@islands/shared/Button/Button';
-import { Save, Globe, Bell, Database, Shield, RefreshCw, Plus, Trash2, Send, Filter, HardDrive, Play, CheckCircle, XCircle, Clock, Key, Copy } from 'lucide-preact';
+import { Save, Globe, Bell, Database, Shield, Plus, Trash2, Send, Filter, HardDrive, Play, CheckCircle, XCircle, Clock, Key, Copy } from 'lucide-preact';
 import { useStore } from '@nanostores/preact';
 import { $settings, $channels, $settingsLoaded } from '@stores/settings';
 import type { NotificationChannel as NCType } from '@stores/settings';
 import { TIMEZONES } from '@lib/timezones';
 import TwoFactorSection from '@islands/settings/TwoFactorSection/TwoFactorSection';
+import UpdateSettings from '@islands/update/UpdateSettings/UpdateSettings';
 import styles from './settings-page.module.css';
 import formStyles from '@styles/form.module.css';
 
@@ -66,8 +67,6 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState('');
   const [saveMessage, setSaveMessage] = useState('');
   const [testing, setTesting] = useState('');
-  const [checking, setChecking] = useState(false);
-  const [updateResult, setUpdateResult] = useState('');
 
   const [showAddChannel, setShowAddChannel] = useState(false);
   const [newChannelType, setNewChannelType] = useState('webhook');
@@ -496,6 +495,7 @@ export default function SettingsPage() {
                   <div key={ch.id} class={styles.subCheckCell}>
                     <input
                       type="checkbox"
+                      class={formStyles.checkbox}
                       checked={isSubscribed(ch.id, evt.key)}
                       onChange={() => toggleSubscription(ch.id, evt.key)}
                       aria-label={`${evt.label} via ${channelLabel(ch)}`}
@@ -830,38 +830,7 @@ export default function SettingsPage() {
         </p>
       </div>
 
-      <div class={styles.section}>
-        <h2 class={styles.sectionHeading}>
-          <RefreshCw size={18} aria-hidden="true" class={checking ? styles.spinIcon : ''} /> Updates
-        </h2>
-        <div class={styles.updateRow}>
-          <div>
-            <p class={styles.versionLabel}>Current Version</p>
-            <p class={styles.versionValue}>{settings?.version || 'loading...'}</p>
-          </div>
-          <Button variant="secondary" disabled={checking} onClick={() => {
-            setChecking(true);
-            setUpdateResult('');
-            setTimeout(() => {
-              setChecking(false);
-              setUpdateResult('You are on the latest version');
-            }, 2500);
-          }}>
-            <RefreshCw size={14} aria-hidden="true" class={checking ? styles.spinIcon : ''} /> Check for Updates
-          </Button>
-        </div>
-        {(checking || updateResult) && (
-          <div class={styles.updateStatus} role="status" aria-live="polite">
-            {checking ? (
-              <span class={styles.checkingText}>
-                Checking for updates<span class={styles.dots}><span>.</span><span>.</span><span>.</span></span>
-              </span>
-            ) : (
-              <span class={styles.updateResultText}>{updateResult}</span>
-            )}
-          </div>
-        )}
-      </div>
+      <UpdateSettings />
     </div>
   );
 }

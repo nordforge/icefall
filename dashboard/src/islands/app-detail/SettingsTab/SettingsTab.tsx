@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'preact/hooks';
+import { useEffect, useState, useRef } from 'preact/hooks';
 import type { App, Project, DeployMode } from '@lib/types';
 import { api } from '@lib/api';
 import Button from '@islands/shared/Button/Button';
@@ -116,9 +116,12 @@ export default function SettingsTab({ app }: Props) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<string>(app.project_id || '');
   const [browsingVolume, setBrowsingVolume] = useState<number | null>(null);
+  const copiedTimeoutRef = useRef<number>();
 
   useEffect(() => {
     api.listProjects().then(({ data }) => setProjects(data)).catch(() => {});
+
+    return () => clearTimeout(copiedTimeoutRef.current);
   }, []);
 
   const webhookBaseUrl = window.location.origin + '/api/v1/webhooks/' + app.id;
@@ -168,7 +171,8 @@ export default function SettingsTab({ app }: Props) {
   function copyToClipboard(text: string, label: string) {
     navigator.clipboard.writeText(text);
     setCopied(label);
-    setTimeout(() => setCopied(''), 2000);
+    clearTimeout(copiedTimeoutRef.current);
+    copiedTimeoutRef.current = window.setTimeout(() => setCopied(''), 2000);
   }
 
   function addTag(raw: string) {
@@ -497,6 +501,7 @@ export default function SettingsTab({ app }: Props) {
           <label class={styles.toggleLabel}>
             <input
               type="checkbox"
+              class={formStyles.checkbox}
               checked={form.preview_enabled}
               onChange={(e) => setForm({ ...form, preview_enabled: (e.target as HTMLInputElement).checked })}
             />
@@ -660,6 +665,7 @@ export default function SettingsTab({ app }: Props) {
                   <label class={styles.toggleLabel}>
                     <input
                       type="checkbox"
+                      class={formStyles.checkbox}
                       checked={vol.read_only}
                       onChange={(e) => updateVolume(index, 'read_only', (e.target as HTMLInputElement).checked)}
                     />

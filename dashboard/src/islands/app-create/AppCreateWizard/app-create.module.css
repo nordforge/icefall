@@ -29,12 +29,18 @@
 }
 
 .progressBarActive {
-  composes: progressBar;
+  height: 4px;
+  border-radius: var(--radius-full);
+  margin-bottom: var(--space-2);
+  transition: background var(--duration-normal) var(--ease-out);
   background: var(--color-primary);
 }
 
 .progressBarInactive {
-  composes: progressBar;
+  height: 4px;
+  border-radius: var(--radius-full);
+  margin-bottom: var(--space-2);
+  transition: background var(--duration-normal) var(--ease-out);
   background: var(--color-border);
 }
 
@@ -43,19 +49,19 @@
 }
 
 .progressLabelActive {
-  composes: progressLabel;
+  font-size: var(--text-xs);
   color: var(--color-primary);
   font-weight: var(--weight-medium);
 }
 
 .progressLabelInactive {
-  composes: progressLabel;
+  font-size: var(--text-xs);
   color: var(--color-text-muted);
   font-weight: var(--weight-normal);
 }
 
 .progressLabelCurrent {
-  composes: progressLabel;
+  font-size: var(--text-xs);
   color: var(--color-primary);
   font-weight: var(--weight-medium);
 }
@@ -105,6 +111,14 @@
   color: var(--color-error);
   font-size: var(--text-xs);
   margin-top: var(--space-2);
+}
+
+/* a11y [WCAG 3.3.1]: inline validation error */
+.fieldError {
+  color: var(--color-error);
+  font-size: var(--text-xs);
+  margin-top: var(--space-1);
+  margin-bottom: 0;
 }
 
 .servicePreview {

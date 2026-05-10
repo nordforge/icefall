@@ -18,6 +18,7 @@ import {
   Settings2,
   AlertTriangle,
 } from 'lucide-preact';
+import Skeleton from '@islands/shared/Skeleton/Skeleton';
 import styles from './profile-page.module.css';
 import formStyles from '@styles/form.module.css';
 
@@ -186,7 +187,14 @@ export default function ProfilePage() {
   }
 
   if (loading) {
-    return <p class={styles.loadingText}>Loading profile...</p>;
+    return (
+      <div class={styles.page}>
+        <Skeleton width="200px" height="2rem" />
+        <Skeleton width="100%" height="200px" variant="rect" />
+        <Skeleton width="100%" height="200px" variant="rect" />
+        <Skeleton width="100%" height="160px" variant="rect" />
+      </div>
+    );
   }
 
   return (
@@ -586,6 +594,7 @@ export default function ProfilePage() {
             <label class={formStyles.label}>
               <input
                 type="checkbox"
+                class={formStyles.checkbox}
                 checked={preferences.email_notifications !== false}
                 onChange={async (e) => {
                   const email_notifications = (e.target as HTMLInputElement).checked;

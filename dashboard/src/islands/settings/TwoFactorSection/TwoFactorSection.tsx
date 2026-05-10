@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'preact/hooks';
+import { useState, useEffect, useRef } from 'preact/hooks';
 import { api } from '@lib/api';
 import Button from '@islands/shared/Button/Button';
 import { Shield, Copy } from 'lucide-preact';
 import styles from './two-factor-section.module.css';
+import formStyles from '@styles/form.module.css';
 
 type SetupStep = 'idle' | 'qr' | 'backup' | 'done';
 type ManageAction = 'none' | 'disable' | 'regenerate';
@@ -10,6 +11,7 @@ type ManageAction = 'none' | 'disable' | 'regenerate';
 export default function TwoFactorSection() {
   const [totpEnabled, setTotpEnabled] = useState(false);
   const [loading, setLoading] = useState(true);
+  const successTimeoutRef = useRef<number>();
 
   // Setup flow state
   const [setupStep, setSetupStep] = useState<SetupStep>('idle');
@@ -35,6 +37,8 @@ export default function TwoFactorSection() {
       })
       .catch(() => {})
       .finally(() => setLoading(false));
+
+    return () => clearTimeout(successTimeoutRef.current);
   }, []);
 
   async function startSetup() {
@@ -76,7 +80,8 @@ export default function TwoFactorSection() {
     setSetupCode('');
     setBackupsSaved(false);
     setSuccess('Two-factor authentication is now active.');
-    setTimeout(() => setSuccess(''), 5000);
+    clearTimeout(successTimeoutRef.current);
+    successTimeoutRef.current = window.setTimeout(() => setSuccess(''), 5000);
   }
 
   async function handleDisable() {
@@ -92,7 +97,8 @@ export default function TwoFactorSection() {
       setManageAction('none');
       setManageCode('');
       setSuccess('Two-factor authentication has been disabled.');
-      setTimeout(() => setSuccess(''), 5000);
+      clearTimeout(successTimeoutRef.current);
+      successTimeoutRef.current = window.setTimeout(() => setSuccess(''), 5000);
     } catch (e: any) {
       setError(e.message || 'Invalid code');
     }
@@ -252,6 +258,7 @@ export default function TwoFactorSection() {
           <div class={styles.confirmRow}>
             <input
               type="checkbox"
+              class={formStyles.checkbox}
               id="backup-saved-check"
               checked={backupsSaved}
               onChange={() => setBackupsSaved(!backupsSaved)}

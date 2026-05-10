@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import { useStore } from '@nanostores/preact';
 import { $users, $tokens, $usersLoaded } from '@stores/users';
 import { api } from '@lib/api';
@@ -7,6 +7,7 @@ import { formatRelativeTime } from '@lib/format';
 import Button from '@islands/shared/Button/Button';
 import StatusDot from '@islands/shared/StatusDot/StatusDot';
 import { UserPlus, Key, Trash2, Copy, ShieldCheck, ShieldOff, RotateCcw, KeyRound } from 'lucide-preact';
+import { SkeletonTable } from '@islands/shared/Skeleton/Skeleton';
 import styles from './users-page.module.css';
 import formStyles from '@styles/form.module.css';
 
@@ -49,6 +50,49 @@ export default function UsersPage() {
     email: string;
   } | null>(null);
   const [resetting2fa, setResetting2fa] = useState(false);
+
+  const passwordModalRef = useRef<HTMLDivElement>(null);
+  const twoFaModalRef = useRef<HTMLDivElement>(null);
+
+  // a11y [WCAG 2.4.3]: focus trap for password reset modal
+  useEffect(() => {
+    if (!resetPasswordModal) return;
+    const dialog = passwordModalRef.current;
+    if (!dialog) return;
+    const focusable = dialog.querySelectorAll<HTMLElement>(
+      'a[href], button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])'
+    );
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    function handleTab(e: KeyboardEvent) {
+      if (e.key !== 'Tab') return;
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last?.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first?.focus(); }
+    }
+    dialog.addEventListener('keydown', handleTab);
+    first?.focus();
+    return () => dialog.removeEventListener('keydown', handleTab);
+  }, [resetPasswordModal]);
+
+  // a11y [WCAG 2.4.3]: focus trap for 2FA reset modal
+  useEffect(() => {
+    if (!reset2faConfirm) return;
+    const dialog = twoFaModalRef.current;
+    if (!dialog) return;
+    const focusable = dialog.querySelectorAll<HTMLElement>(
+      'a[href], button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])'
+    );
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    function handleTab(e: KeyboardEvent) {
+      if (e.key !== 'Tab') return;
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last?.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first?.focus(); }
+    }
+    dialog.addEventListener('keydown', handleTab);
+    first?.focus();
+    return () => dialog.removeEventListener('keydown', handleTab);
+  }, [reset2faConfirm]);
 
   useEffect(() => {
     Promise.all([
@@ -162,7 +206,7 @@ export default function UsersPage() {
       </div>
 
       {loading ? (
-        <p class={styles.loadingText}>Loading...</p>
+        <SkeletonTable rows={5} columns={6} />
       ) : (
         <>
           {/* Registration Settings */}
@@ -378,7 +422,7 @@ export default function UsersPage() {
 
           {/* Password Reset Modal */}
           {resetPasswordModal && (
-            <div class={styles.overlay} role="dialog" aria-modal="true" aria-label="Reset password">
+            <div ref={passwordModalRef} class={styles.overlay} role="dialog" aria-modal="true" aria-label="Reset password">
               <div class={styles.modal}>
                 <h3 class={styles.modalTitle}>Reset Password</h3>
                 {resetPasswordModal.tempPassword ? (
@@ -430,7 +474,7 @@ export default function UsersPage() {
 
           {/* 2FA Reset Confirm */}
           {reset2faConfirm && (
-            <div class={styles.overlay} role="dialog" aria-modal="true" aria-label="Reset two-factor authentication">
+            <div ref={twoFaModalRef} class={styles.overlay} role="dialog" aria-modal="true" aria-label="Reset two-factor authentication">
               <div class={styles.modal}>
                 <h3 class={styles.modalTitle}>Reset 2FA</h3>
                 <p class={styles.modalText}>

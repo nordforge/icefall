@@ -51,11 +51,15 @@ export default function DeploysTab({ appId }: Props) {
       <table class={styles.table}>
         <thead>
           <tr class={styles.theadRow}>
-            {['Deploy', 'Commit', 'Branch', 'Status', 'Duration', 'Time', ''].map((h) => (
+            {['Deploy', 'Commit', 'Branch', 'Status', 'Duration', 'Time'].map((h) => (
               <th key={h} class={styles.th}>
                 {h}
               </th>
             ))}
+            {/* a11y [WCAG 1.3.1]: visually hidden label for actions column */}
+            <th class={styles.th}>
+              <span class="sr-only">Actions</span>
+            </th>
           </tr>
         </thead>
         <tbody>

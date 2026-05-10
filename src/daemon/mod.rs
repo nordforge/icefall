@@ -117,6 +117,13 @@ impl DaemonRunner {
             Err(e) => warn!("Caddy unreachable (will retry): {e}"),
         }
 
+        // Run post-update health check (clears pending marker if successful)
+        match crate::update::apply::post_update_check(&config.data_dir, db.as_ref(), &docker).await
+        {
+            Ok(()) => info!("Post-update check passed (or no pending update)"),
+            Err(e) => warn!("Post-update check failed: {e}. Rollback may be triggered."),
+        }
+
         // Create event bus, build locks, and monitoring stores
         let event_bus = Arc::new(EventBus::new(1024));
         let build_locks = Arc::new(BuildLockMap::new());
@@ -143,6 +150,13 @@ impl DaemonRunner {
         spawn_log_capture(docker.clone(), db.clone(), log_store.clone());
         spawn_backup_scheduler(docker.clone(), db.clone(), backup_store.clone());
         spawn_instance_backup_scheduler(db.clone(), instance_backup_handle.clone());
+
+        // Spawn periodic update checker
+        crate::update::scheduler::spawn_update_checker(
+            db.clone(),
+            Arc::new(config.clone()),
+            event_bus.clone(),
+        );
 
         // Build app state and router
         let state = AppState {

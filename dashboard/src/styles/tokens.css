@@ -1,9 +1,16 @@
+/* Breakpoints (cannot be CSS custom properties — used in media queries)
+   --bp-sm: 641px   (mobile → tablet)
+   --bp-md: 769px   (tablet → desktop)
+   --bp-lg: 1025px  (desktop → wide)
+*/
+
 :root,
 :root[data-theme="light"] {
   /* Backgrounds */
   --color-bg: oklch(0.97 0.005 250);
   --color-surface: oklch(1.0 0 0);
   --color-surface-alt: oklch(0.96 0.005 250);
+  --color-surface-raised: oklch(0.98 0.005 250);
   --color-surface-invert: oklch(0.18 0.02 250);
 
   /* Borders */
@@ -87,6 +94,7 @@
   --color-bg: oklch(0.14 0.015 250);
   --color-surface: oklch(0.18 0.015 250);
   --color-surface-alt: oklch(0.20 0.015 250);
+  --color-surface-raised: oklch(0.22 0.015 250);
   --color-surface-invert: oklch(0.93 0.005 250);
 
   /* a11y [WCAG 1.4.11]: raised from 0.30 to 0.36 for 3:1 input boundary contrast on dark surface */

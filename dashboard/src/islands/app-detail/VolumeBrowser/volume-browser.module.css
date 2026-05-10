@@ -204,8 +204,12 @@
 }
 
 .fileRowClickable {
-  composes: fileRow;
   cursor: pointer;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.fileRowClickable:hover {
+  background: var(--color-surface-alt);
 }
 
 .fileRow td {
@@ -232,7 +236,12 @@
 }
 
 .dirName {
-  composes: fileName;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
   font-weight: var(--weight-medium);
 }
 
@@ -362,8 +371,18 @@
 }
 
 .uploadDropzoneActive {
-  composes: uploadDropzone;
-  border-color: var(--color-primary);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-8) var(--space-4);
+  border: 2px dashed var(--color-primary);
+  border-radius: var(--radius-md);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  transition: border-color var(--duration-fast) var(--ease-out);
   background: var(--color-primary-subtle);
 }
 
@@ -402,7 +421,7 @@
   font-size: var(--text-sm);
 }
 
-:global(.dark) .deleteConfirm {
+:global([data-theme="dark"]) .deleteConfirm {
   background: oklch(0.22 0.04 25);
   border-color: oklch(0.35 0.06 25);
 }
