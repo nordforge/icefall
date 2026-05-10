@@ -1,8 +1,8 @@
 use crate::config::IcefallConfig;
 
 pub fn generate_service_unit(_config: &IcefallConfig) -> String {
-    let config_path = std::env::var("ICEFALL_CONFIG")
-        .unwrap_or_else(|_| "/etc/icefall/config.toml".to_string());
+    let config_path =
+        std::env::var("ICEFALL_CONFIG").unwrap_or_else(|_| "/etc/icefall/config.toml".to_string());
 
     format!(
         r#"[Unit]

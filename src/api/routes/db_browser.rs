@@ -34,14 +34,32 @@ async fn get_db_info(state: &AppState, id: &str) -> Result<DbInfo, ApiError> {
         .ok_or_else(|| ApiError::NotFound(format!("database {id}")))?;
 
     let creds: serde_json::Value = serde_json::from_str(&db.credentials).unwrap_or_default();
-    let conn_str = creds.get("connection_string").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let conn_str = creds
+        .get("connection_string")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .to_string();
     if conn_str.is_empty() {
-        return Err(ApiError::BadRequest("No credentials stored for this database".into()));
+        return Err(ApiError::BadRequest(
+            "No credentials stored for this database".into(),
+        ));
     }
 
-    let container_name = creds.get("host").and_then(|v| v.as_str()).unwrap_or("").to_string();
-    let user = creds.get("user").and_then(|v| v.as_str()).unwrap_or("icefall").to_string();
-    let password = creds.get("password").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let container_name = creds
+        .get("host")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .to_string();
+    let user = creds
+        .get("user")
+        .and_then(|v| v.as_str())
+        .unwrap_or("icefall")
+        .to_string();
+    let password = creds
+        .get("password")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .to_string();
 
     Ok(DbInfo {
         container_name,
@@ -81,7 +99,8 @@ async fn list_tables(
         _ => return Err(ApiError::BadRequest("Unsupported database type".into())),
     };
 
-    let output = state.docker
+    let output = state
+        .docker
         .exec_in_container(&info.container_name, &cmd)
         .await
         .map_err(|e| ApiError::Internal(Box::new(e)))?;
@@ -93,14 +112,22 @@ async fn list_tables(
         let mut types = serde_json::Map::new();
         for key in &capped {
             let type_cmd = vec![
-                "redis-cli".to_string(), "-a".to_string(), info.password.clone(),
-                "--no-auth-warning".to_string(), "TYPE".to_string(), key.to_string(),
+                "redis-cli".to_string(),
+                "-a".to_string(),
+                info.password.clone(),
+                "--no-auth-warning".to_string(),
+                "TYPE".to_string(),
+                key.to_string(),
             ];
-            let type_out = state.docker
+            let type_out = state
+                .docker
                 .exec_in_container(&info.container_name, &type_cmd)
                 .await
                 .unwrap_or_default();
-            types.insert(key.to_string(), serde_json::Value::String(type_out.trim().to_string()));
+            types.insert(
+                key.to_string(),
+                serde_json::Value::String(type_out.trim().to_string()),
+            );
         }
         return Ok(Json(serde_json::json!({ "data": capped, "types": types })));
     }
@@ -125,60 +152,112 @@ async fn execute_query(
 }
 
 async fn execute_sql_query(
-    state: &AppState, info: &DbInfo, query: &str,
+    state: &AppState,
+    info: &DbInfo,
+    query: &str,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     let lower = query.to_lowercase();
     if !lower.starts_with("select") {
-        return Err(ApiError::BadRequest("Only SELECT queries are allowed".into()));
+        return Err(ApiError::BadRequest(
+            "Only SELECT queries are allowed".into(),
+        ));
     }
-    let limited = if lower.contains("limit") { query.to_string() } else { format!("{query} LIMIT 100") };
+    let limited = if lower.contains("limit") {
+        query.to_string()
+    } else {
+        format!("{query} LIMIT 100")
+    };
 
     let cmd: Vec<String> = match info.db_type.as_str() {
         "postgres" => vec![
-            "psql".into(), info.connection_string.replace(&info.container_name, "localhost"),
-            "--csv".into(), "-c".into(), limited,
+            "psql".into(),
+            info.connection_string
+                .replace(&info.container_name, "localhost"),
+            "--csv".into(),
+            "-c".into(),
+            limited,
         ],
         _ => vec![
-            "mysql".into(), format!("-u{}", info.user), format!("-p{}", info.password),
-            "-e".into(), limited, "--batch".into(),
+            "mysql".into(),
+            format!("-u{}", info.user),
+            format!("-p{}", info.password),
+            "-e".into(),
+            limited,
+            "--batch".into(),
         ],
     };
 
-    let output = state.docker
+    let output = state
+        .docker
         .exec_in_container(&info.container_name, &cmd)
         .await
         .map_err(|e| ApiError::Internal(Box::new(e)))?;
 
-    let sep = if info.db_type == "postgres" { ',' } else { '\t' };
+    let sep = if info.db_type == "postgres" {
+        ','
+    } else {
+        '\t'
+    };
     let mut lines = output.lines();
     let headers: Vec<String> = match lines.next() {
         Some(h) => h.split(sep).map(|s| s.trim().to_string()).collect(),
-        None => return Ok(Json(serde_json::json!({ "columns": [], "rows": [], "row_count": 0 }))),
+        None => {
+            return Ok(Json(
+                serde_json::json!({ "columns": [], "rows": [], "row_count": 0 }),
+            ))
+        }
     };
     let rows: Vec<Vec<String>> = lines
         .filter(|l| !l.is_empty())
         .map(|l| l.split(sep).map(|s| s.trim().to_string()).collect())
         .collect();
 
-    Ok(Json(serde_json::json!({ "columns": headers, "rows": rows, "row_count": rows.len() })))
+    Ok(Json(
+        serde_json::json!({ "columns": headers, "rows": rows, "row_count": rows.len() }),
+    ))
 }
 
 async fn execute_mongo_query(
-    state: &AppState, info: &DbInfo, query: &str,
+    state: &AppState,
+    info: &DbInfo,
+    query: &str,
 ) -> Result<Json<serde_json::Value>, ApiError> {
-    let blocked = ["insert", "update", "delete", "drop", "remove", "replace", "bulkwrite", "createindex", "createcollection"];
+    let blocked = [
+        "insert",
+        "update",
+        "delete",
+        "drop",
+        "remove",
+        "replace",
+        "bulkwrite",
+        "createindex",
+        "createcollection",
+    ];
     let lower = query.to_lowercase();
     if blocked.iter().any(|b| lower.contains(b)) {
-        return Err(ApiError::BadRequest("Only read operations are allowed".into()));
+        return Err(ApiError::BadRequest(
+            "Only read operations are allowed".into(),
+        ));
     }
 
-    let eval_expr = format!("JSON.stringify(({}).toArray ? ({}).toArray() : [{}])", query, query, query);
-    let conn = format!("mongodb://{}:{}@localhost:27017/{}?authSource=admin", info.user, info.password, info.user);
+    let eval_expr = format!(
+        "JSON.stringify(({}).toArray ? ({}).toArray() : [{}])",
+        query, query, query
+    );
+    let conn = format!(
+        "mongodb://{}:{}@localhost:27017/{}?authSource=admin",
+        info.user, info.password, info.user
+    );
     let cmd = vec![
-        "mongosh".to_string(), "--quiet".into(), conn, "--eval".into(), eval_expr,
+        "mongosh".to_string(),
+        "--quiet".into(),
+        conn,
+        "--eval".into(),
+        eval_expr,
     ];
 
-    let output = state.docker
+    let output = state
+        .docker
         .exec_in_container(&info.container_name, &cmd)
         .await
         .map_err(|e| ApiError::Internal(Box::new(e)))?;
@@ -187,20 +266,44 @@ async fn execute_mongo_query(
     let docs: Vec<serde_json::Value> = serde_json::from_str(trimmed)
         .unwrap_or_else(|_| vec![serde_json::json!({ "result": trimmed })]);
 
-    Ok(Json(serde_json::json!({ "documents": docs, "row_count": docs.len() })))
+    Ok(Json(
+        serde_json::json!({ "documents": docs, "row_count": docs.len() }),
+    ))
 }
 
 const REDIS_ALLOWED: &[&str] = &[
-    "get", "mget", "hgetall", "hget", "hkeys", "hvals", "hlen",
-    "lrange", "llen", "lindex",
-    "smembers", "scard", "sismember",
-    "zrange", "zcard", "zscore", "zrangebyscore",
-    "type", "ttl", "pttl", "strlen", "exists", "dbsize", "info",
-    "keys", "scan",
+    "get",
+    "mget",
+    "hgetall",
+    "hget",
+    "hkeys",
+    "hvals",
+    "hlen",
+    "lrange",
+    "llen",
+    "lindex",
+    "smembers",
+    "scard",
+    "sismember",
+    "zrange",
+    "zcard",
+    "zscore",
+    "zrangebyscore",
+    "type",
+    "ttl",
+    "pttl",
+    "strlen",
+    "exists",
+    "dbsize",
+    "info",
+    "keys",
+    "scan",
 ];
 
 async fn execute_redis_query(
-    state: &AppState, info: &DbInfo, query: &str,
+    state: &AppState,
+    info: &DbInfo,
+    query: &str,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     let parts: Vec<&str> = query.split_whitespace().collect();
     if parts.is_empty() {
@@ -208,15 +311,22 @@ async fn execute_redis_query(
     }
     let verb = parts[0].to_lowercase();
     if !REDIS_ALLOWED.contains(&verb.as_str()) {
-        return Err(ApiError::BadRequest(format!("Command '{}' is not allowed. Only read commands are permitted.", parts[0])));
+        return Err(ApiError::BadRequest(format!(
+            "Command '{}' is not allowed. Only read commands are permitted.",
+            parts[0]
+        )));
     }
 
     let mut cmd = vec![
-        "redis-cli".to_string(), "-a".into(), info.password.clone(), "--no-auth-warning".into(),
+        "redis-cli".to_string(),
+        "-a".into(),
+        info.password.clone(),
+        "--no-auth-warning".into(),
     ];
     cmd.extend(parts.iter().map(|s| s.to_string()));
 
-    let output = state.docker
+    let output = state
+        .docker
         .exec_in_container(&info.container_name, &cmd)
         .await
         .map_err(|e| ApiError::Internal(Box::new(e)))?;
@@ -225,9 +335,13 @@ async fn execute_redis_query(
     let lines: Vec<&str> = trimmed.lines().filter(|l| !l.is_empty()).collect();
 
     let (columns, rows): (Vec<String>, Vec<Vec<String>>) = match verb.as_str() {
-        "get" | "strlen" | "ttl" | "pttl" | "type" | "exists" | "dbsize" | "llen" | "scard" | "zcard" => {
+        "get" | "strlen" | "ttl" | "pttl" | "type" | "exists" | "dbsize" | "llen" | "scard"
+        | "zcard" => {
             let key = parts.get(1).unwrap_or(&"");
-            (vec!["key".into(), "value".into()], vec![vec![key.to_string(), trimmed.to_string()]])
+            (
+                vec!["key".into(), "value".into()],
+                vec![vec![key.to_string(), trimmed.to_string()]],
+            )
         }
         "hgetall" => {
             let mut pairs = Vec::new();
@@ -240,15 +354,23 @@ async fn execute_redis_query(
         }
         "hget" | "zscore" => {
             let field = parts.get(2).unwrap_or(&"");
-            (vec!["field".into(), "value".into()], vec![vec![field.to_string(), trimmed.to_string()]])
+            (
+                vec!["field".into(), "value".into()],
+                vec![vec![field.to_string(), trimmed.to_string()]],
+            )
         }
-        "hkeys" | "hvals" | "smembers" => {
-            (vec!["value".into()], lines.iter().map(|l| vec![l.to_string()]).collect())
-        }
-        "lrange" => {
-            (vec!["index".into(), "value".into()],
-             lines.iter().enumerate().map(|(i, l)| vec![i.to_string(), l.to_string()]).collect())
-        }
+        "hkeys" | "hvals" | "smembers" => (
+            vec!["value".into()],
+            lines.iter().map(|l| vec![l.to_string()]).collect(),
+        ),
+        "lrange" => (
+            vec!["index".into(), "value".into()],
+            lines
+                .iter()
+                .enumerate()
+                .map(|(i, l)| vec![i.to_string(), l.to_string()])
+                .collect(),
+        ),
         "zrange" => {
             if query.to_lowercase().contains("withscores") {
                 let mut pairs = Vec::new();
@@ -259,26 +381,35 @@ async fn execute_redis_query(
                 }
                 (vec!["member".into(), "score".into()], pairs)
             } else {
-                (vec!["member".into()], lines.iter().map(|l| vec![l.to_string()]).collect())
+                (
+                    vec!["member".into()],
+                    lines.iter().map(|l| vec![l.to_string()]).collect(),
+                )
             }
         }
-        "mget" | "keys" | "scan" => {
-            (vec!["value".into()], lines.iter().map(|l| vec![l.to_string()]).collect())
-        }
+        "mget" | "keys" | "scan" => (
+            vec!["value".into()],
+            lines.iter().map(|l| vec![l.to_string()]).collect(),
+        ),
         "info" => {
             let mut pairs = Vec::new();
             for line in &lines {
-                if line.starts_with('#') || line.is_empty() { continue; }
+                if line.starts_with('#') || line.is_empty() {
+                    continue;
+                }
                 if let Some((k, v)) = line.split_once(':') {
                     pairs.push(vec![k.to_string(), v.to_string()]);
                 }
             }
             (vec!["key".into(), "value".into()], pairs)
         }
-        _ => {
-            (vec!["output".into()], lines.iter().map(|l| vec![l.to_string()]).collect())
-        }
+        _ => (
+            vec!["output".into()],
+            lines.iter().map(|l| vec![l.to_string()]).collect(),
+        ),
     };
 
-    Ok(Json(serde_json::json!({ "columns": columns, "rows": rows, "row_count": rows.len() })))
+    Ok(Json(
+        serde_json::json!({ "columns": columns, "rows": rows, "row_count": rows.len() }),
+    ))
 }

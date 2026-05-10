@@ -8,7 +8,11 @@ pub async fn run() {
     let mut url = String::new();
     io::stdin().read_line(&mut url).ok();
     let url = url.trim();
-    let url = if url.is_empty() { "http://localhost:3000" } else { url };
+    let url = if url.is_empty() {
+        "http://localhost:3000"
+    } else {
+        url
+    };
 
     print!("API token: ");
     io::stdout().flush().ok();

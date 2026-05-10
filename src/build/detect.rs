@@ -112,10 +112,7 @@ fn detect_framework(dir: &Path) -> Framework {
         return Framework::ViteVue;
     }
 
-    let has_start = pkg
-        .get("scripts")
-        .and_then(|s| s.get("start"))
-        .is_some();
+    let has_start = pkg.get("scripts").and_then(|s| s.get("start")).is_some();
     let has_main = pkg.get("main").is_some();
 
     if has_start || has_main {

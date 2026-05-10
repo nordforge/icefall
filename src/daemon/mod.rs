@@ -10,7 +10,9 @@ use tracing::{error, info, warn};
 
 use tokio::sync::RwLock;
 
-use crate::api::routes::server::{spawn_metrics_collector as spawn_server_metrics, ServerMetrics, ServerMetricsHistory};
+use crate::api::routes::server::{
+    spawn_metrics_collector as spawn_server_metrics, ServerMetrics, ServerMetricsHistory,
+};
 use crate::api::{self, AppState, BuildLockMap};
 use crate::caddy::CaddyClient;
 use crate::config::IcefallConfig;
@@ -21,9 +23,7 @@ use crate::docker::DockerClient;
 use crate::events::EventBus;
 use crate::monitoring::backup_scheduler::{spawn_backup_scheduler, BackupStore};
 use crate::monitoring::health_runner::spawn_health_runner;
-use crate::monitoring::instance_backup::{
-    spawn_instance_backup_scheduler, InstanceBackupHandle,
-};
+use crate::monitoring::instance_backup::{spawn_instance_backup_scheduler, InstanceBackupHandle};
 use crate::monitoring::log_store::{spawn_log_capture, LogStore};
 use crate::monitoring::metrics_collector::{
     spawn_metrics_collector as spawn_container_metrics, MetricsStore,
@@ -67,7 +67,10 @@ impl DaemonRunner {
         }
         std::fs::write(&config.pid_file, pid.to_string())
             .map_err(|e| {
-                warn!("Could not write PID file to {}: {e}", config.pid_file.display());
+                warn!(
+                    "Could not write PID file to {}: {e}",
+                    config.pid_file.display()
+                );
                 e
             })
             .ok();
@@ -122,11 +125,14 @@ impl DaemonRunner {
         let metrics_store = Arc::new(MetricsStore::new());
         let log_store = Arc::new(LogStore::new(&config.data_dir));
         let backup_store = Arc::new(BackupStore::new(&config.data_dir));
-        let instance_backup_handle =
-            Arc::new(InstanceBackupHandle::new(db.clone()));
+        let instance_backup_handle = Arc::new(InstanceBackupHandle::new(db.clone()));
 
         // Start background tasks
-        spawn_server_metrics(server_metrics.clone(), server_metrics_history.clone(), db.clone());
+        spawn_server_metrics(
+            server_metrics.clone(),
+            server_metrics_history.clone(),
+            db.clone(),
+        );
         spawn_health_runner(db.clone(), docker.clone(), event_bus.clone());
         spawn_container_metrics(
             docker.clone(),

@@ -1,6 +1,6 @@
 use axum::extract::State;
 use axum::http::HeaderMap;
-use axum::routing::{get, post, put};
+use axum::routing::{get, post};
 use axum::{Json, Router};
 use serde::Deserialize;
 
@@ -20,9 +20,7 @@ pub fn routes() -> Router<AppState> {
         )
 }
 
-async fn get_settings(
-    State(state): State<AppState>,
-) -> Result<Json<serde_json::Value>, ApiError> {
+async fn get_settings(State(state): State<AppState>) -> Result<Json<serde_json::Value>, ApiError> {
     Ok(Json(serde_json::json!({
         "data": {
             "base_domain": state.config.base_domain,
@@ -148,12 +146,22 @@ async fn update_registration_settings(
     // Get current settings as base
     let current = state.db.get_registration_settings().await?;
 
-    let allow_registration = body.allow_registration.unwrap_or(current.allow_registration);
-    let allowed_domains = body.allowed_domains.as_deref().or(current.allowed_domains.as_deref());
-    let default_role = body.default_role.as_deref().unwrap_or(&current.default_role);
+    let allow_registration = body
+        .allow_registration
+        .unwrap_or(current.allow_registration);
+    let allowed_domains = body
+        .allowed_domains
+        .as_deref()
+        .or(current.allowed_domains.as_deref());
+    let default_role = body
+        .default_role
+        .as_deref()
+        .unwrap_or(&current.default_role);
 
     if !["admin", "deployer", "viewer"].contains(&default_role) {
-        return Err(ApiError::BadRequest("default_role must be admin, deployer, or viewer".into()));
+        return Err(ApiError::BadRequest(
+            "default_role must be admin, deployer, or viewer".into(),
+        ));
     }
 
     let updated = state

@@ -5,8 +5,25 @@ pub mod init;
 
 use clap::{Parser, Subcommand};
 
+const fn build_version() -> &'static str {
+    concat!(
+        env!("CARGO_PKG_VERSION"),
+        " (",
+        env!("ICEFALL_GIT_COMMIT"),
+        " ",
+        env!("ICEFALL_TARGET_TRIPLE"),
+        " ",
+        env!("ICEFALL_BUILD_DATE"),
+        ")"
+    )
+}
+
 #[derive(Parser)]
-#[command(name = "icefall", version, about = "A fast, simple, self-hosted deployment platform")]
+#[command(
+    name = "icefall",
+    version = build_version(),
+    about = "A fast, simple, self-hosted deployment platform"
+)]
 pub struct Cli {
     #[command(subcommand)]
     pub command: Commands,

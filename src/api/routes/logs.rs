@@ -44,15 +44,15 @@ async fn search_logs(
     })))
 }
 
-async fn download_logs(
-    State(state): State<AppState>,
-    Path(id): Path<String>,
-) -> impl IntoResponse {
+async fn download_logs(State(state): State<AppState>, Path(id): Path<String>) -> impl IntoResponse {
     let content = state.log_store.read_all(&id);
     let filename = format!("attachment; filename=\"{id}-logs.txt\"");
     (
         [
-            (header::CONTENT_TYPE, "text/plain; charset=utf-8".to_string()),
+            (
+                header::CONTENT_TYPE,
+                "text/plain; charset=utf-8".to_string(),
+            ),
             (header::CONTENT_DISPOSITION, filename),
         ],
         content,

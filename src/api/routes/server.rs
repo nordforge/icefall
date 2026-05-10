@@ -94,13 +94,12 @@ pub fn spawn_metrics_collector(
             sys.refresh_cpu_all();
 
             let disks = sysinfo::Disks::new_with_refreshed_list();
-            let (disk_used, disk_total) =
-                disks.iter().fold((0u64, 0u64), |(used, total), disk| {
-                    (
-                        used + (disk.total_space() - disk.available_space()),
-                        total + disk.total_space(),
-                    )
-                });
+            let (disk_used, disk_total) = disks.iter().fold((0u64, 0u64), |(used, total), disk| {
+                (
+                    used + (disk.total_space() - disk.available_space()),
+                    total + disk.total_space(),
+                )
+            });
 
             let snapshot = ServerMetrics {
                 cpu_percent: sys.global_cpu_usage(),
@@ -141,9 +140,7 @@ pub fn routes() -> Router<AppState> {
         .route("/server/metrics/range", get(server_metrics_range))
 }
 
-async fn server_status(
-    State(state): State<AppState>,
-) -> Result<Json<serde_json::Value>, ApiError> {
+async fn server_status(State(state): State<AppState>) -> Result<Json<serde_json::Value>, ApiError> {
     let metrics = state.server_metrics.read().await;
     Ok(Json(serde_json::json!({
         "status": "ok",
@@ -182,6 +179,11 @@ async fn server_metrics_range(
     Query(params): Query<RangeParams>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     let limit = params.limit.unwrap_or(500).min(2000);
-    let data = state.db.query_server_metrics(&params.from, &params.to, limit).await?;
-    Ok(Json(serde_json::json!({ "data": data, "total": data.len() })))
+    let data = state
+        .db
+        .query_server_metrics(&params.from, &params.to, limit)
+        .await?;
+    Ok(Json(
+        serde_json::json!({ "data": data, "total": data.len() }),
+    ))
 }

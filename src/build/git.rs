@@ -37,10 +37,7 @@ pub async fn clone_repo(
     if let Some(ref key_path) = opts.ssh_key_path {
         cmd.env(
             "GIT_SSH_COMMAND",
-            format!(
-                "ssh -i {} -o StrictHostKeyChecking=no",
-                key_path.display()
-            ),
+            format!("ssh -i {} -o StrictHostKeyChecking=no", key_path.display()),
         );
     }
 
@@ -126,7 +123,11 @@ mod tests {
 
         let work = TempDir::new().unwrap();
         tokio::process::Command::new("git")
-            .args(["clone", &path.to_string_lossy(), &work.path().to_string_lossy()])
+            .args([
+                "clone",
+                &path.to_string_lossy(),
+                &work.path().to_string_lossy(),
+            ])
             .output()
             .await
             .unwrap();

@@ -59,9 +59,7 @@ async fn terminal_ws(
     let container = containers
         .iter()
         .find(|c| c.state == "running")
-        .ok_or_else(|| {
-            ApiError::BadRequest("No running container found for this app".into())
-        })?;
+        .ok_or_else(|| ApiError::BadRequest("No running container found for this app".into()))?;
 
     let container_id = container.id.clone();
     let docker = state.docker.clone();
@@ -161,9 +159,7 @@ async fn handle_terminal_inner(
     let (mut docker_output, mut docker_input) = match start_result {
         StartExecResults::Attached { output, input } => (output, input),
         StartExecResults::Detached => {
-            let _ = ws_sink
-                .send(Message::Close(None))
-                .await;
+            let _ = ws_sink.send(Message::Close(None)).await;
             return Ok(());
         }
     };
@@ -193,6 +189,7 @@ async fn handle_terminal_inner(
             let msg = tokio::time::timeout(INACTIVITY_TIMEOUT, ws_stream.next()).await;
 
             match msg {
+                #[allow(clippy::collapsible_match)]
                 Ok(Some(Ok(message))) => match message {
                     Message::Text(text) => {
                         // Check for resize messages
@@ -212,11 +209,7 @@ async fn handle_terminal_inner(
                             }
                         }
                         // Regular text input
-                        if docker_input
-                            .write_all(text.as_bytes())
-                            .await
-                            .is_err()
-                        {
+                        if docker_input.write_all(text.as_bytes()).await.is_err() {
                             break;
                         }
                     }

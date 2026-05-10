@@ -86,13 +86,17 @@ async fn create_app(
     Json(body): Json<CreateAppRequest>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     if body.name.trim().is_empty() {
-        return Err(ApiError::BadRequest("App name must not be empty".to_string()));
+        return Err(ApiError::BadRequest(
+            "App name must not be empty".to_string(),
+        ));
     }
 
     // Validate compose YAML if provided
     if let Some(ref yaml) = body.compose_content {
         if crate::deploy::compose::ComposeDeployer::parse(yaml).is_err() {
-            return Err(ApiError::BadRequest("Invalid Docker Compose YAML".to_string()));
+            return Err(ApiError::BadRequest(
+                "Invalid Docker Compose YAML".to_string(),
+            ));
         }
     }
 
@@ -228,7 +232,9 @@ async fn start_app(
         }
     }
 
-    Ok(Json(serde_json::json!({ "message": "started", "containers": started })))
+    Ok(Json(
+        serde_json::json!({ "message": "started", "containers": started }),
+    ))
 }
 
 async fn stop_app(
@@ -252,7 +258,9 @@ async fn stop_app(
         }
     }
 
-    Ok(Json(serde_json::json!({ "message": "stopped", "containers": stopped })))
+    Ok(Json(
+        serde_json::json!({ "message": "stopped", "containers": stopped }),
+    ))
 }
 
 async fn restart_app(
@@ -276,5 +284,7 @@ async fn restart_app(
         }
     }
 
-    Ok(Json(serde_json::json!({ "message": "restarted", "containers": restarted })))
+    Ok(Json(
+        serde_json::json!({ "message": "restarted", "containers": restarted }),
+    ))
 }
