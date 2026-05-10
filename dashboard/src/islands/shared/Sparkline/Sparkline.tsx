@@ -1,4 +1,7 @@
+import { useRef } from 'preact/hooks';
 import styles from './sparkline.module.css';
+
+let sparklineCounter = 0;
 
 type Props = {
   data: number[];
@@ -37,7 +40,8 @@ export default function Sparkline({
 
   const linePoints = points.join(' ');
   const fillPoints = `0,${H} ${linePoints} ${W},${H}`;
-  const gradientId = `spark-${Math.random().toString(36).slice(2, 8)}`;
+  const idRef = useRef(`spark-${++sparklineCounter}`);
+  const gradientId = idRef.current;
 
   return (
     <svg

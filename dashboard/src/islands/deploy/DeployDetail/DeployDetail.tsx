@@ -111,10 +111,10 @@ export default function DeployDetail({ appId, deployId, appName }: Props) {
               </span>
             )}
             <span class={styles.metaItem}>
-              <GitBranch size={13} /> main
+              <GitBranch size={13} aria-hidden="true" /> main
             </span>
             <span class={styles.metaItem}>
-              <Clock size={13} /> {deploy.started_at ? formatRelativeTime(deploy.started_at) : '—'}
+              <Clock size={13} aria-hidden="true" /> {deploy.started_at ? formatRelativeTime(deploy.started_at) : '—'}
             </span>
           </div>
         </div>

@@ -402,7 +402,7 @@
   font-size: var(--text-sm);
 }
 
-:global(.dark) .deleteConfirm {
+:global([data-theme="dark"]) .deleteConfirm {
   background: oklch(0.22 0.04 25);
   border-color: oklch(0.35 0.06 25);
 }
