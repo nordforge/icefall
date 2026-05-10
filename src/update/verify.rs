@@ -107,7 +107,7 @@ fn try_verify_with_key(
 pub fn sha256_hex(data: &[u8]) -> String {
     let mut hasher = Sha256::new();
     hasher.update(data);
-    format!("{:x}", hasher.finalize())
+    hex::encode(hasher.finalize())
 }
 
 /// Verify that file contents match the expected SHA-256 hash.

@@ -35,7 +35,7 @@ pub fn valid_keys(now: &str) -> Vec<&'static TrustedKey> {
     TRUSTED_RELEASE_KEYS
         .iter()
         .filter(|k| k.not_before <= now)
-        .filter(|k| k.not_after.map_or(true, |expiry| now < expiry))
+        .filter(|k| k.not_after.is_none_or(|expiry| now < expiry))
         .collect()
 }
 

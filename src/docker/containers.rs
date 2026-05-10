@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 
-use bollard::container::{
-    Config, CreateContainerOptions, ListContainersOptions, RemoveContainerOptions,
-    StopContainerOptions,
-};
 use bollard::models::{
-    ContainerInspectResponse, ContainerSummary, DeviceMapping, HostConfig, PortBinding,
+    ContainerCreateBody, ContainerInspectResponse, ContainerSummary, DeviceMapping, HostConfig,
+    PortBinding,
+};
+use bollard::query_parameters::{
+    CreateContainerOptions, ListContainersOptions, RemoveContainerOptions, StopContainerOptions,
 };
 use serde::{Deserialize, Serialize};
 
@@ -53,11 +53,11 @@ pub struct ContainerInfo {
 impl DockerClient {
     pub async fn create_container(&self, config: &ContainerConfig) -> Result<String, DockerError> {
         let mut port_bindings: HashMap<String, Option<Vec<PortBinding>>> = HashMap::new();
-        let mut exposed_ports: HashMap<String, HashMap<(), ()>> = HashMap::new();
+        let mut exposed_ports: Vec<String> = Vec::new();
 
         for port in &config.ports {
             let key = format!("{}/{}", port.container_port, port.protocol);
-            exposed_ports.insert(key.clone(), HashMap::new());
+            exposed_ports.push(key.clone());
             port_bindings.insert(
                 key,
                 Some(vec![PortBinding {
@@ -102,7 +102,7 @@ impl DockerClient {
             ..Default::default()
         };
 
-        let container_config = Config {
+        let container_config = ContainerCreateBody {
             image: Some(config.image.clone()),
             env: Some(config.env.clone()),
             cmd: config.cmd.clone(),
@@ -113,8 +113,8 @@ impl DockerClient {
         };
 
         let options = CreateContainerOptions {
-            name: &config.name,
-            platform: None,
+            name: Some(config.name.clone()),
+            ..Default::default()
         };
 
         let response = self
@@ -176,7 +176,7 @@ impl DockerClient {
             ..Default::default()
         };
 
-        let container_config = Config {
+        let container_config = ContainerCreateBody {
             image: Some(config.image.clone()),
             env: Some(config.env.clone()),
             cmd: config.cmd.clone(),
@@ -186,8 +186,8 @@ impl DockerClient {
         };
 
         let options = CreateContainerOptions {
-            name: &config.name,
-            platform: None,
+            name: Some(config.name.clone()),
+            ..Default::default()
         };
 
         let response = self
@@ -199,19 +199,25 @@ impl DockerClient {
     }
 
     pub async fn start_container(&self, id: &str) -> Result<(), DockerError> {
-        self.inner().start_container::<String>(id, None).await?;
+        self.inner().start_container(id, None).await?;
         Ok(())
     }
 
     pub async fn stop_container(&self, id: &str, timeout: Option<i64>) -> Result<(), DockerError> {
-        let options = timeout.map(|t| StopContainerOptions { t });
+        let options = timeout.map(|t| StopContainerOptions {
+            t: Some(t as i32),
+            ..Default::default()
+        });
         self.inner().stop_container(id, options).await?;
         Ok(())
     }
 
     pub async fn restart_container(&self, id: &str) -> Result<(), DockerError> {
         self.inner()
-            .restart_container(id, None::<bollard::container::RestartContainerOptions>)
+            .restart_container(
+                id,
+                None::<bollard::query_parameters::RestartContainerOptions>,
+            )
             .await?;
         Ok(())
     }
@@ -229,10 +235,11 @@ impl DockerClient {
         &self,
         label_filter: Option<&str>,
     ) -> Result<Vec<ContainerInfo>, DockerError> {
-        let mut filters = HashMap::new();
-        if let Some(label) = label_filter {
-            filters.insert("label".to_string(), vec![label.to_string()]);
-        }
+        let filters = label_filter.map(|label| {
+            let mut f = HashMap::new();
+            f.insert("label".to_string(), vec![label.to_string()]);
+            f
+        });
 
         let options = ListContainersOptions {
             all: true,
@@ -254,7 +261,7 @@ impl DockerClient {
                     .to_string(),
                 image: c.image.unwrap_or_default(),
                 status: c.status.unwrap_or_default(),
-                state: c.state.unwrap_or_default(),
+                state: c.state.map(|s| s.to_string()).unwrap_or_default(),
                 labels: c.labels.unwrap_or_default(),
             })
             .collect();
@@ -275,6 +282,7 @@ impl DockerClient {
         container: &str,
         cmd: &[String],
     ) -> Result<String, DockerError> {
+        use bollard::container::LogOutput;
         use bollard::exec::{CreateExecOptions, StartExecResults};
         use futures_util::StreamExt;
 
@@ -298,7 +306,6 @@ impl DockerClient {
         } = self.inner().start_exec(&exec.id, None).await?
         {
             while let Some(Ok(msg)) = exec_output.next().await {
-                use bollard::container::LogOutput;
                 match msg {
                     LogOutput::StdOut { message } => {
                         output.push_str(&String::from_utf8_lossy(&message));

@@ -331,7 +331,7 @@ fn generate_backup_codes() -> Result<(Vec<String>, String), ApiError> {
     use argon2::{password_hash::SaltString, Argon2, PasswordHasher};
     use rand::Rng;
 
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     let charset: &[u8] = b"ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // No 0, O, 1, I for readability
 
     let mut plain_codes = Vec::with_capacity(10);
@@ -340,12 +340,12 @@ fn generate_backup_codes() -> Result<(Vec<String>, String), ApiError> {
     for _ in 0..10 {
         let code: String = (0..8)
             .map(|_| {
-                let idx = rng.gen_range(0..charset.len());
+                let idx = rng.random_range(0..charset.len());
                 charset[idx] as char
             })
             .collect();
 
-        let salt = SaltString::generate(&mut rng);
+        let salt = SaltString::generate(&mut argon2::password_hash::rand_core::OsRng);
         let hash = Argon2::default()
             .hash_password(code.as_bytes(), &salt)
             .map_err(|e| ApiError::Internal(Box::new(std::io::Error::other(e.to_string()))))?;

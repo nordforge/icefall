@@ -1,5 +1,7 @@
-use bollard::image::{BuildImageOptions, CreateImageOptions, ListImagesOptions, TagImageOptions};
 use bollard::models::{BuildInfo, ImageSummary};
+use bollard::query_parameters::{
+    BuildImageOptions, CreateImageOptions, ListImagesOptions, TagImageOptions,
+};
 use bytes::Bytes;
 use futures_util::{Stream, StreamExt};
 
@@ -8,8 +10,8 @@ use crate::docker::{DockerClient, DockerError};
 impl DockerClient {
     pub async fn pull_image(&self, name: &str, tag: &str) -> Result<(), DockerError> {
         let options = CreateImageOptions {
-            from_image: name,
-            tag,
+            from_image: Some(name.to_string()),
+            tag: Some(tag.to_string()),
             ..Default::default()
         };
 
@@ -23,7 +25,13 @@ impl DockerClient {
     }
 
     pub async fn remove_image(&self, name: &str) -> Result<(), DockerError> {
-        self.inner().remove_image(name, None, None).await?;
+        self.inner()
+            .remove_image(
+                name,
+                None::<bollard::query_parameters::RemoveImageOptions>,
+                None,
+            )
+            .await?;
         Ok(())
     }
 
@@ -33,19 +41,22 @@ impl DockerClient {
         tar: Bytes,
     ) -> impl Stream<Item = Result<BuildInfo, DockerError>> + '_ {
         let options = BuildImageOptions {
-            t: tag.to_string(),
+            t: Some(tag.to_string()),
             rm: true,
             forcerm: true,
             ..Default::default()
         };
 
         self.inner()
-            .build_image(options, None, Some(tar))
+            .build_image(options, None, Some(bollard::body_full(tar)))
             .map(|r| r.map_err(DockerError::Api))
     }
 
     pub async fn tag_image(&self, source: &str, repo: &str, tag: &str) -> Result<(), DockerError> {
-        let options = TagImageOptions { repo, tag };
+        let options = TagImageOptions {
+            repo: Some(repo.to_string()),
+            tag: Some(tag.to_string()),
+        };
         self.inner().tag_image(source, Some(options)).await?;
         Ok(())
     }
@@ -54,10 +65,11 @@ impl DockerClient {
         &self,
         reference: Option<&str>,
     ) -> Result<Vec<ImageSummary>, DockerError> {
-        let mut filters = std::collections::HashMap::new();
-        if let Some(r) = reference {
-            filters.insert("reference", vec![r]);
-        }
+        let filters = reference.map(|r| {
+            let mut f = std::collections::HashMap::new();
+            f.insert("reference".to_string(), vec![r.to_string()]);
+            f
+        });
         let options = ListImagesOptions {
             filters,
             ..Default::default()
