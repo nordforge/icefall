@@ -31,16 +31,28 @@ Add server selection to the app creation flow. When creating an app, an optional
 - [ ] Cannot assign an app to a server with role 'draining'
 - [ ] Server must have status 'online' at creation time
 
+### Server Recommendation Scoring
+- [ ] Compute a composite recommendation score for each online server based on:
+  - CPU usage (lower is better)
+  - RAM usage (lower is better)
+  - Disk usage (lower is better)
+  - App count (fewer is better)
+- [ ] Score returned in the server list response for each server
+- [ ] Server with the best score marked as `recommended: true` in the API response
+- [ ] Score is advisory only — user always makes the final selection (no auto-placement)
+
 ## Technical Notes
 
 - The `server_id` default logic: query the servers table for the record with role = 'control-plane'
 - Consider caching the control-plane server ID at startup (it never changes)
 - The app creation response should include the resolved server_id even when it was not explicitly provided
 - No changes to the deploy pipeline — the deploy manager reads server_id from the app record
+- Recommendation score: weighted composite of `(1 - cpu%) * w1 + (1 - ram%) * w2 + (1 - disk%) * w3 + (1 / (app_count + 1)) * w4` — weights TBD but start equal
+- Metrics for scoring come from IF-127 agent metrics collection
 
 ## Out of Scope
 
-- Automatic server selection based on resource availability (explicit selection only)
+- Automatic server selection / auto-placement (user always confirms)
 - Changing server_id after creation through the update endpoint (use migration in IF-134)
 - Server affinity rules or constraints
 

@@ -29,6 +29,11 @@ Restructure the project into a Cargo workspace with three members: `icefall` (th
 - [ ] `DeployStatus` enum (if not already shared)
 - [ ] Version constants and build metadata types
 
+### Build Logic in icefall-common
+- [ ] `build/detect.rs` — framework detection logic (reads project files, identifies framework type, version, build commands)
+- [ ] `build/dockerfile.rs` — Dockerfile generation from detected framework (templates per framework, multi-stage builds)
+- [ ] Both modules shared between control plane and agent so build behavior is identical regardless of where the build runs
+
 ### Dependency Setup
 - [ ] Both `icefall` and `icefall-agent` depend on `icefall-common`
 - [ ] Shared dependencies (serde, serde_json, chrono, etc.) specified in `[workspace.dependencies]` with versions pinned once

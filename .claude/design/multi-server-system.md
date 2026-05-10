@@ -1,9 +1,10 @@
 # Icefall Multi-Server System — Technical Design
 
-> Status: Draft
+> Status: Confirmed
 > Author: Nick Bevers
 > Date: 2026-05-10
 > Phase: 20
+> Decisions confirmed: 2026-05-10
 
 ---
 
@@ -14,7 +15,7 @@ Icefall adds multi-server support to allow deploying apps across multiple server
 ### Core Principles
 
 1. **Single-server users notice nothing** — multi-server is invisible until a second server is added
-2. **Workers are cattle** — stateless, replaceable, minimal footprint (~7MB binary, ~10MB RAM)
+2. **Workers are cattle** — stateless, replaceable, minimal footprint (~8MB binary, ~10MB RAM)
 3. **Workers phone home** — all connections are outbound from worker to control plane
 4. **One source of truth** — SQLite on the control plane stores all state
 5. **Simple setup** — one `curl | sh` command to add a server
@@ -72,8 +73,9 @@ Everything it does today, plus:
 - **Agent WebSocket endpoint** at `/api/v1/agent/ws`
 - **Agent registry** — in-memory map of connected workers
 - **Server-aware deploy manager** — routes deploys to the correct server
-- **Image transfer** — push built images to workers
+- **Wildcard proxy** — proxies `*.apps.icefall.dev` traffic to correct worker
 - **Aggregate metrics** — collect and display metrics from all servers
+- **Orchestrator-only mode** — optional toggle to prevent app deployments to the CP itself
 
 ### Worker Node (new `icefall-agent` binary)
 
@@ -92,7 +94,7 @@ Minimal responsibilities:
 
 ### Binary Design
 
-Single static musl binary, ~7MB stripped. Separate Cargo workspace member, NOT the full Icefall binary.
+Single static musl binary, ~8MB stripped. Separate Cargo workspace member, NOT the full Icefall binary. **Includes build logic** (framework detection + Dockerfile generation) via the shared `icefall-common` crate, so workers build apps locally without needing the control plane to generate Dockerfiles.
 
 **Key crates:**
 - `tokio` (subset features) — async runtime
@@ -103,13 +105,15 @@ Single static musl binary, ~7MB stripped. Separate Cargo workspace member, NOT t
 - `serde` + `serde_json` + `toml` — serialization
 - `ed25519-dalek` + `sha2` — binary verification
 
+**Shared via `icefall-common`:** framework detection (`build/detect`), Dockerfile generation (`build/dockerfile`), protocol types.
+
 **Not included:** axum, sqlx, lettre, clap, argon2, utoipa — no HTTP server, no database, no email, no auth hashing.
 
 ### Resource Footprint
 
 | Metric | Value |
 |--------|-------|
-| Binary size | ~7 MB (stripped, LTO, musl) |
+| Binary size | ~8 MB (stripped, LTO, musl, with build logic) |
 | RAM idle | ~10 MB |
 | RAM under load | ~30 MB |
 | CPU idle | < 0.1% |
@@ -205,9 +209,11 @@ enum AgentMessage {
 ### Connection Management
 
 - Agent reconnects with exponential backoff (1s → 300s max)
-- Heartbeat every 15s, timeout after 45s missed
+- Heartbeat every 15s
+- **Offline threshold: 12 missed heartbeats (3 minutes)** — avoids false alarms from brief network blips
 - Single multiplexed connection for all operations
 - `id` field correlates requests with responses
+- On reconnect: agent reports all container state changes that occurred during outage (Docker restart policy handles crashes autonomously; agent reconciles on reconnect)
 
 ---
 
@@ -292,24 +298,38 @@ The script:
 
 ### Server Selection
 
-**V1: Manual selection per app.** The app creation wizard gains a "Server" step when 2+ servers exist. User picks from a list showing each server's name, IP, and resource usage.
+**V1: Manual selection with visual capacity display.** The app creation wizard gains a "Server" step when 2+ servers exist. Each server card shows:
+- Name, IP, status
+- CPU, RAM, and disk usage bars
+- Current app count
+- **"Recommended" tag** on the server with the best composite score (CPU + RAM + Disk + app count)
 
-**Default:** Control plane server. Single-server users see no change.
+The user always makes the final choice — no auto-placement. Default is the control plane server.
 
-### Deploy Flow (Remote Worker)
+### Deploy Flow (Remote Worker — Build on Worker)
 
 ```
 Control Plane                          Agent
-     |-- image.pull (or image.load) --→|
+     |                                   |
+     |-- build command ----------------→|
+     |   (repo URL, branch, config)     |
+     |                                   |-- git clone
+     |                                   |-- detect framework (shared code)
+     |                                   |-- generate Dockerfile (shared code)
+     |                                   |-- docker build
+     |←-- build output (streamed) ------|
+     |←-- build complete ---------------|
+     |                                   |
+     |-- container.create + start -----→|
+     |←-- Response: container_id -------|
+     |-- health.check -----------------→|
+     |←-- Response: healthy ------------|
+     |-- caddy.add_route --------------→|
      |←-- Response: ok ----------------|
-     |-- container.create + start ----→|
-     |←-- Response: container_id ------|
-     |-- health.check ----------------→|
-     |←-- Response: healthy -----------|
-     |-- caddy.add_route -------------→|
-     |←-- Response: ok ----------------|
-     |-- container.stop (old) --------→|  (if replacing)
+     |-- container.stop (old) ---------→|  (if replacing)
 ```
+
+The agent builds locally — no image transfer needed. Workers need outbound internet access for git clone and base image pulls.
 
 ### App Migration Between Servers
 
@@ -340,6 +360,12 @@ DNS points directly to the server running the app. The dashboard shows: "Point a
 ### Wildcard Base Domain
 
 For `*.apps.icefall.dev`: DNS wildcard points to the control plane. Control plane Caddy proxies to the correct worker based on subdomain → app → server mapping.
+
+### Database Placement
+
+**Databases co-locate with their linked app's server.** When an app on Worker B has a linked Postgres, the Postgres container runs on Worker B too. Connection is via `localhost` — fast, no cross-server traffic, no security concerns.
+
+If an app migrates to another server, its linked database stays on the original server (manual move). The dashboard warns about this during migration.
 
 ### Cross-Server Communication
 
@@ -478,7 +504,24 @@ Secret envelope, agent auto-update, offline handling, audit logging, setup scrip
 
 ---
 
-## 13. What We Don't Build (V1)
+## 13. Confirmed Architectural Decisions
+
+| # | Decision | Choice | Rationale |
+|---|----------|--------|-----------|
+| 1 | Image builds | **Build on worker** | No image transfer (~100MB+ saved). Agent includes shared build logic. Workers need outbound internet. |
+| 2 | Binary structure | **Separate Cargo workspace** | `icefall` (~15MB), `icefall-agent` (~8MB), `icefall-common` (shared). Keeps agent lean. |
+| 3 | App placement | **Manual with visual capacity + "Recommended" tag** | Composite score: CPU + RAM + Disk + app count. User always confirms. No auto-select. |
+| 4 | Wildcard DNS | **Control plane proxies** | `*.apps.icefall.dev` → CP → reverse proxy to correct worker. Custom domains go direct. |
+| 5 | Offline threshold | **12 missed heartbeats (3 minutes)** | Avoids false alarms from brief blips. Then show "unreachable" + suggest migration. |
+| 6 | Database placement | **Co-locate with linked app** | DB runs on same server as app. `localhost` connection = fast + secure. |
+| 7 | Agent autonomy | **Docker restart + report on reconnect** | Docker `unless-stopped` handles crashes. Agent reports state changes on reconnect. No agent-level health loop. |
+| 8 | Control plane role | **Both by default, optional orchestrator-only** | CP runs apps like today. Toggle in settings to prevent new deployments to CP. |
+| 9 | Build logic in agent | **Included (shared crate)** | Agent has framework detection + Dockerfile generation. Self-contained builds. ~1MB extra. |
+| 10 | Recommendation metric | **CPU + RAM + Disk + app count** | Simple composite score for the "Recommended" tag. No historical analysis in V1. |
+
+---
+
+## 14. What We Don't Build (V1)
 
 | Feature | Rationale |
 |---------|-----------|
@@ -490,3 +533,8 @@ Secret envelope, agent auto-update, offline handling, audit logging, setup scrip
 | Container image signing | Trust boundary is the control plane |
 | Per-worker RBAC | All workers are trusted equally |
 | Volume backup from workers | Future enhancement |
+| Automatic app placement | Manual with recommendations is sufficient for 2-5 servers |
+| Cross-server database links | Databases co-locate with their app |
+| Agent-level health loop | Docker restart policy is sufficient; agent reports on reconnect |
+| Auto-failover on server offline | Show unreachable + suggest migration (user-initiated) |
+| Image transfer from CP to worker | Workers build locally (shared build logic in agent) |

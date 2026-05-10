@@ -15,8 +15,8 @@ Add a server selection step to the app creation wizard. This step only appears w
 - [ ] Only shown when 2 or more servers are registered
 - [ ] Single-server installations: step is skipped, server_id defaults to control plane
 
-### Server Cards
-- [ ] Each server displayed as a selectable radio-button card
+### Server Capacity Cards
+- [ ] Each server displayed as a selectable radio-button card with visual capacity indicators
 - [ ] Card contents:
   - Server name
   - Host IP/hostname
@@ -24,13 +24,17 @@ Add a server selection step to the app creation wizard. This step only appears w
   - CPU usage bar with percentage
   - RAM usage bar with percentage
   - Disk usage bar with percentage
-  - Number of apps already deployed
+  - App count indicator (e.g., "3 apps deployed")
+  - **"Recommended" tag** on the server with the best composite score (from IF-135)
 - [ ] Selected card has a visible highlight (border or background change)
 - [ ] Only online servers are selectable; offline servers shown but disabled with "Offline" label
+- [ ] Capacity bars use color coding: green (< 60%), amber (60-80%), red (> 80%)
 
-### Pre-Selection
-- [ ] Pre-selects the server with the lowest combined resource usage (average of CPU + RAM %)
-- [ ] If all servers have equal usage: pre-selects the first worker (not the control plane)
+### Pre-Selection and Recommendation
+- [ ] Pre-selects the server tagged as "Recommended" (best composite score based on CPU + RAM + Disk + app count)
+- [ ] "Recommended" tag is a composite score — not just one metric — covering CPU, RAM, disk, and app count
+- [ ] If all servers have equal scores: pre-selects the first worker (not the control plane)
+- [ ] User always confirms selection — no auto-placement, recommendation is advisory only
 
 ### Integration
 - [ ] Selected `server_id` stored in the wizard state
@@ -49,11 +53,12 @@ Add a server selection step to the app creation wizard. This step only appears w
 - Fetch server list with metrics from `GET /api/v1/servers`
 - The radio-card pattern can be reused for other selection UIs in the future
 - Resource usage data is approximate (based on last metrics snapshot) — this is for guidance, not precision
+- "Recommended" tag logic: use the composite score from the API response (IF-135), display tag on the card with the highest score
 - Wizard state management: use the existing wizard state pattern (likely nanostores or prop drilling)
 
 ## Out of Scope
 
-- Server recommendation engine or auto-placement
+- Automatic server placement (user always confirms, "Recommended" is advisory)
 - Resource reservation or capacity planning
 - Creating a new server from within the app creation flow
 - Server comparison view

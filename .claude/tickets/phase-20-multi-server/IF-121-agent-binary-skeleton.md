@@ -55,7 +55,7 @@ Create the minimal agent binary that can connect to the control plane over WebSo
 - [ ] Exit code 0 on clean shutdown
 
 ### Binary Size & Resource Targets
-- [ ] Target: < 8 MB stripped musl binary
+- [ ] Target: ~8 MB stripped musl binary (includes build logic from icefall-common: framework detection + Dockerfile generation)
 - [ ] Target: < 12 MB idle RAM usage
 - [ ] Profile: `[profile.release]` with `lto = true`, `codegen-units = 1`, `strip = true`
 
@@ -72,6 +72,10 @@ Create the minimal agent binary that can connect to the control plane over WebSo
 - Consider `tracing-subscriber` with JSON output for production and pretty output for development
 - For musl builds: ensure `bollard` and `reqwest` work with `native-tls` vendored or switch to `rustls`
 - Test with `cargo build --target x86_64-unknown-linux-musl` early to catch linking issues
+
+## Design Decision
+
+The agent binary is ~8 MB (not smaller) because it includes the full build pipeline from `icefall-common`: framework detection (`build/detect.rs`) and Dockerfile generation (`build/dockerfile.rs`). This allows the agent to handle the complete build flow locally on the worker — git clone, detect framework, generate Dockerfile, docker build — without any image transfer from the control plane.
 
 ## Out of Scope
 
