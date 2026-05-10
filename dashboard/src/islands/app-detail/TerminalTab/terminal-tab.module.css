@@ -53,12 +53,18 @@
 }
 
 .statusConnected {
-  composes: statusDot;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
   background: var(--color-success);
 }
 
 .statusConnecting {
-  composes: statusDot;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
   background: var(--color-warning);
   animation: pulse 1.2s ease-in-out infinite;
 }
@@ -75,7 +81,10 @@
 }
 
 .statusDisconnected {
-  composes: statusDot;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
   background: var(--color-error);
 }
 

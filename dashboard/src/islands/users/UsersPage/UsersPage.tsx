@@ -7,6 +7,7 @@ import { formatRelativeTime } from '@lib/format';
 import Button from '@islands/shared/Button/Button';
 import StatusDot from '@islands/shared/StatusDot/StatusDot';
 import { UserPlus, Key, Trash2, Copy, ShieldCheck, ShieldOff, RotateCcw, KeyRound } from 'lucide-preact';
+import { SkeletonTable } from '@islands/shared/Skeleton/Skeleton';
 import styles from './users-page.module.css';
 import formStyles from '@styles/form.module.css';
 
@@ -205,7 +206,7 @@ export default function UsersPage() {
       </div>
 
       {loading ? (
-        <p class={styles.loadingText}>Loading...</p>
+        <SkeletonTable rows={5} columns={6} />
       ) : (
         <>
           {/* Registration Settings */}

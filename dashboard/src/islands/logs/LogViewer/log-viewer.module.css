@@ -204,17 +204,20 @@
 }
 
 .logLineBorderError {
-  composes: logLine;
+  display: flex;
+  padding: 0 var(--space-4);
   border-left: 3px solid var(--color-error);
 }
 
 .logLineBorderWarn {
-  composes: logLine;
+  display: flex;
+  padding: 0 var(--space-4);
   border-left: 3px solid var(--color-warning);
 }
 
 .logLineBorderNone {
-  composes: logLine;
+  display: flex;
+  padding: 0 var(--space-4);
   border-left: 3px solid transparent;
 }
 
@@ -244,17 +247,29 @@
 }
 
 .levelError {
-  composes: level;
+  display: inline-block;
+  width: 45px;
+  flex-shrink: 0;
+  font-weight: var(--weight-semibold);
+  font-size: 0.6875rem;
   color: var(--color-error);
 }
 
 .levelWarn {
-  composes: level;
+  display: inline-block;
+  width: 45px;
+  flex-shrink: 0;
+  font-weight: var(--weight-semibold);
+  font-size: 0.6875rem;
   color: var(--color-warning);
 }
 
 .levelInfo {
-  composes: level;
+  display: inline-block;
+  width: 45px;
+  flex-shrink: 0;
+  font-weight: var(--weight-semibold);
+  font-size: 0.6875rem;
   color: var(--log-info-level);
 }
 
@@ -296,12 +311,16 @@
 }
 
 .autoScrollDotActive {
-  composes: autoScrollDot;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
   background: var(--color-success);
 }
 
 .autoScrollDotInactive {
-  composes: autoScrollDot;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
   background: var(--log-inactive-dot);
 }
 
@@ -330,7 +349,13 @@
 }
 
 .downloadButton {
-  composes: ghostButton;
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  font-size: inherit;
+  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-2);
   display: flex;
   align-items: center;
   gap: var(--space-1);

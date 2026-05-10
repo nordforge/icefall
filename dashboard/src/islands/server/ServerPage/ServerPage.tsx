@@ -8,6 +8,7 @@ import ProgressBar from '@islands/shared/ProgressBar/ProgressBar';
 import MetricsChart from '@islands/shared/MetricsChart/MetricsChart';
 import Button from '@islands/shared/Button/Button';
 import { Cpu, HardDrive, MemoryStick, Globe, Server, Hash, LayoutGrid, List, Clock } from 'lucide-preact';
+import Skeleton from '@islands/shared/Skeleton/Skeleton';
 import styles from './server-page.module.css';
 
 type InfoItem = {
@@ -116,7 +117,15 @@ export default function ServerPage() {
       </div>
 
       {loading && !status && (
-        <p class={styles.loadingText}>Loading server info...</p>
+        <div class={styles.metricsGrid}>
+          {[0, 1, 2].map(i => (
+            <div key={i} class={styles.metricCard}>
+              <Skeleton width="40%" height="1rem" />
+              <Skeleton width="100%" height="0.5rem" variant="rect" />
+              <Skeleton width="100%" height="120px" variant="rect" />
+            </div>
+          ))}
+        </div>
       )}
 
       {!loading && !status && (

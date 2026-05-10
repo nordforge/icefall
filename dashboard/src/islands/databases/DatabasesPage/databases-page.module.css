@@ -85,8 +85,10 @@
 }
 
 .dangerCard {
-  composes: card;
-  border-color: var(--color-error);
+  background: var(--color-surface);
+  border: 1px solid var(--color-error);
+  border-radius: var(--radius-md);
+  padding: var(--space-5);
 }
 
 .cardTitle {
@@ -114,12 +116,28 @@
 }
 
 .connectionStringRevealed {
-  composes: connectionString;
+  flex: 1;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  background: var(--color-surface-alt);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   color: var(--color-text);
 }
 
 .connectionStringHidden {
-  composes: connectionString;
+  flex: 1;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  background: var(--color-surface-alt);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   color: var(--color-text-muted);
 }
 
@@ -182,19 +200,19 @@
 }
 
 .tdMono {
-  composes: td;
+  padding: var(--space-2) var(--space-3);
   font-family: var(--font-mono);
   font-size: var(--text-xs);
 }
 
 .tdSecondary {
-  composes: td;
+  padding: var(--space-2) var(--space-3);
   font-size: var(--text-xs);
   color: var(--color-text-secondary);
 }
 
 .tdMuted {
-  composes: td;
+  padding: var(--space-2) var(--space-3);
   font-size: var(--text-xs);
   color: var(--color-text-muted);
 }
@@ -222,7 +240,10 @@
 
 /* Create form */
 .createCard {
-  composes: card;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-5);
   margin-bottom: var(--space-5);
 }
 

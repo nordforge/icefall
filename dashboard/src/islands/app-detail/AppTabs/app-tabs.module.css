@@ -41,10 +41,21 @@
 }
 
 .tabActive {
-  composes: tab;
-  font-weight: var(--weight-medium);
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-sm);
+  font-family: inherit;
+  background: none;
+  border: none;
+  margin-bottom: -1px;
+  border-bottom: 2px solid var(--color-primary);
   color: var(--color-primary);
-  border-bottom-color: var(--color-primary);
+  font-weight: var(--weight-medium);
+  white-space: nowrap;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition:
+    color var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out);
 }
 
 @media (prefers-reduced-motion: reduce) {
