@@ -1274,7 +1274,7 @@ dependencies = [
  "lettre",
  "nix",
  "qrcode",
- "rand 0.8.6",
+ "rand 0.9.4",
  "reqwest",
  "semver",
  "serde",
