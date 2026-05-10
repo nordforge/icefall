@@ -114,14 +114,24 @@
 }
 
 .roleSelect {
+  appearance: none;
   background: var(--color-surface-alt);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238B949E' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--space-2) center;
   border: 1px solid var(--color-border);
   color: var(--color-text);
   border-radius: var(--radius-sm);
-  padding: 2px var(--space-2);
+  padding: var(--space-1) calc(var(--space-2) + 16px) var(--space-1) var(--space-2);
   font-size: var(--text-xs);
   font-family: inherit;
   cursor: pointer;
+  height: 28px;
+}
+
+.roleSelect:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
 }
 
 .iconButton {

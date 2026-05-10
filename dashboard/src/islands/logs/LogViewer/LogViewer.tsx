@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'preact/hooks';
+import { useEffect, useRef, useState, useMemo } from 'preact/hooks';
 import { createSSEClient } from '@lib/sse';
 import { Search, Download } from 'lucide-preact';
 import styles from './log-viewer.module.css';
@@ -75,11 +75,11 @@ export default function LogViewer({ appId }: Props) {
     URL.revokeObjectURL(url);
   }
 
-  const filtered = lines.filter((l) => {
+  const filtered = useMemo(() => lines.filter((l) => {
     if (levelFilter !== 'all' && l.level !== levelFilter) return false;
     if (searchQuery && !l.message.toLowerCase().includes(searchQuery.toLowerCase())) return false;
     return true;
-  });
+  }), [lines, searchQuery, levelFilter]);
 
   const searchCount = searchQuery ? filtered.length : null;
 
@@ -102,7 +102,7 @@ export default function LogViewer({ appId }: Props) {
   return (
     <div class={styles.viewer}>
       <div class={styles.toolbar}>
-        <Search size={14} class={styles.searchIcon} />
+        <Search size={14} class={styles.searchIcon} aria-hidden="true" />
         <input
           id="log-search"
           type="text"

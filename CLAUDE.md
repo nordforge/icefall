@@ -1,6 +1,6 @@
 # Global Rules
 
-Domain rules in `rules/` load by file path. Skills in `skills/` load by keyword. **If the user's question relates to a topic below but the rule wasn't auto-loaded, read the rule file before answering.**
+Domain rules in `.claude/rules/` load by file path. Skills in `.claude/skills/` load by keyword. **If the user's question relates to a topic below but the rule wasn't auto-loaded, read the rule file before answering.**
 
 ## Project Stack
 
