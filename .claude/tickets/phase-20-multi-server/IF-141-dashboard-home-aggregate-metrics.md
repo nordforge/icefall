@@ -45,6 +45,7 @@ Enhance the dashboard home page to show aggregate metrics across all servers and
 - The health strip component: `src/islands/dashboard/ServerHealthStrip/ServerHealthStrip.tsx`
 - Weighted average for CPU: `sum(cpu% * core_count) / total_cores` is more accurate than a simple average
 - The existing home page component needs conditional rendering based on server count
+- **Server recommendation:** These same metrics (CPU, RAM, disk, app count) feed the composite recommendation score used in server selection (IF-135, IF-139). The aggregate view and the recommendation scoring share the same underlying data from IF-127
 
 ## Out of Scope
 

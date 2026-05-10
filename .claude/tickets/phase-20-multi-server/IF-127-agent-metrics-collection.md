@@ -72,6 +72,7 @@ The agent periodically collects system-level and per-container metrics and sends
 - CPU percentage calculation from Docker stats requires delta between two readings — cache the previous stats
 - The 10-second interval balances freshness against WebSocket bandwidth
 - Consider compressing metrics history after 1 hour (downsample to 1-minute intervals)
+- **Server recommendation scoring:** These metrics (CPU, RAM, disk, app count) are used by the control plane to compute a composite recommendation score for server selection during app creation (see IF-135, IF-139). The score determines which server gets the "Recommended" tag in the UI
 
 ## Out of Scope
 

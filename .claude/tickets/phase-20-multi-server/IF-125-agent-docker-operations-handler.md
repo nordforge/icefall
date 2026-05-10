@@ -6,7 +6,7 @@
 
 ## Description
 
-Implement the Docker operations handler in the agent that processes all container, image, volume, and network commands received from the control plane. The handler translates the control plane's `ContainerConfig` into bollard API calls against the local Docker socket and reports results back as Response messages. This is the core capability that allows the control plane to manage containers on remote servers.
+Implement the Docker operations handler in the agent that processes all container, image, volume, and network commands received from the control plane. The agent handles the **full build pipeline locally**: git clone, framework detection, Dockerfile generation, and `docker build` — no image transfer from the control plane. The handler translates the control plane's `ContainerConfig` into bollard API calls against the local Docker socket and reports results back as Response messages. This is the core capability that allows the control plane to manage containers on remote servers.
 
 ## Acceptance Criteria
 
@@ -22,10 +22,18 @@ Implement the Docker operations handler in the agent that processes all containe
 - [ ] `container.inspect` — returns full container details by ID
 - [ ] `container.exec` — executes a command in a running container, returns stdout/stderr and exit code
 
+### Build Pipeline Methods
+- [ ] `build.run` — full build pipeline on the agent:
+  1. `git clone` the repository (URL + branch/commit provided by control plane)
+  2. Framework detection via `icefall-common::build::detect` (reads project files, identifies framework)
+  3. Dockerfile generation via `icefall-common::build::dockerfile` (generates optimized Dockerfile for detected framework)
+  4. `docker build` from the generated Dockerfile, streams build output as Events
+  5. Cleans up cloned repo after build completes
+- [ ] Build output streamed line-by-line back to control plane as Event messages
+- [ ] Build context (repo URL, branch, commit SHA, env vars, build args) provided by control plane in the build command
+
 ### Image Methods
 - [ ] `image.pull` — pulls an image by name:tag, streams progress events back to control plane
-- [ ] `image.load` — loads an image from a tar stream (used for image transfers)
-- [ ] `image.build` — builds an image from a Dockerfile context (tar stream), streams build output
 - [ ] `image.list` — lists local images
 - [ ] `image.remove` — removes an image by name or ID
 
@@ -54,9 +62,12 @@ Implement the Docker operations handler in the agent that processes all containe
 
 - Use `bollard` crate connected to `/var/run/docker.sock` (Unix socket)
 - `bollard::Docker::connect_with_local_defaults()` is the standard connection method
-- For `image.pull` and `image.build`, stream progress via Event messages (not blocking the Response)
+- For `image.pull` and `build.run`, stream progress via Event messages (not blocking the Response)
 - ContainerConfig from `icefall-common` should map cleanly to `bollard::container::Config` — if fields diverge, add a conversion trait
 - Resource limits (CPU, memory) use Docker's `HostConfig` — ensure the mapping covers `NanoCpus` and `Memory`
+- Build logic (`detect.rs`, `dockerfile.rs`) comes from `icefall-common` — the agent uses the same detection and generation code as the control plane
+- Agent needs `git` available on the worker (installed by the setup script)
+- `image.load` and `image.build` removed — the agent handles builds end-to-end via `build.run`, not via image transfer
 
 ## Out of Scope
 

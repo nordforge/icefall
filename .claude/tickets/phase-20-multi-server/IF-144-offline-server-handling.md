@@ -11,7 +11,7 @@ Gracefully handle the scenario where a worker server goes offline. The dashboard
 ## Acceptance Criteria
 
 ### Offline Detection
-- [ ] Server marked as offline when no heartbeat received for 45 seconds (from IF-119)
+- [ ] Server marked as offline after **12 missed heartbeats (3 minutes)** — heartbeats are sent every 15 seconds, so 12 missed = 180 seconds with no response
 - [ ] SSE event `server.disconnected` triggers UI updates across the dashboard
 
 ### Persistent Banner
@@ -37,9 +37,16 @@ Gracefully handle the scenario where a worker server goes offline. The dashboard
 
 ### Recovery
 - [ ] When server reconnects: all disabled actions re-enable automatically
-- [ ] App status reverts to the actual container status (agent reports on reconnect)
+- [ ] Agent reports all container state changes on reconnect (Docker restart policy handles container recovery during outage — no agent-level health loop)
+- [ ] App status reverts to the actual container status based on the agent's reconnect report
 - [ ] Log streaming resumes from where it left off (agent sends buffered lines)
 - [ ] No manual refresh needed — updates via SSE
+
+### Migration Suggestion
+- [ ] When a server has been offline for an extended period: dashboard suggests migrating apps to an online server
+- [ ] Migration is **user-initiated only** — no automatic failover
+- [ ] "Migrate apps" button links to the migration flow (IF-134) with the offline server pre-selected as source
+- [ ] Suggestion appears in the offline banner and on the server detail page
 
 ### Edge Cases
 - [ ] Control-plane server cannot go offline (it is the server running the dashboard)
@@ -56,10 +63,11 @@ Gracefully handle the scenario where a worker server goes offline. The dashboard
 
 ## Out of Scope
 
-- Automatic failover (moving apps from offline servers to online servers)
+- Automatic failover or automatic migration (migration is always user-initiated)
 - Email/webhook notifications for server offline events (future alerting feature)
 - Offline server diagnostics (ping, traceroute, etc.)
 - Retry mechanisms for failed deploys after reconnection
+- Agent-level health loop (Docker restart policy handles container recovery; agent reports state on reconnect)
 
 ## Dependencies
 
