@@ -1,7 +1,71 @@
 import { useEffect, useRef, useState, useMemo, useCallback } from 'preact/hooks';
 import { createSSEClient } from '@lib/sse';
-import { Search, Download } from 'lucide-preact';
+import { Search, Download, Info, AlertTriangle, XCircle, Filter } from 'lucide-preact';
 import styles from './log-viewer.module.css';
+
+const LEVEL_OPTIONS = [
+  { value: 'all', label: 'All levels', icon: Filter },
+  { value: 'INFO', label: 'Info', icon: Info },
+  { value: 'WARN', label: 'Warning', icon: AlertTriangle },
+  { value: 'ERROR', label: 'Error', icon: XCircle },
+] as const;
+
+function LevelFilter({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const current = LEVEL_OPTIONS.find(o => o.value === value) || LEVEL_OPTIONS[0];
+
+  useEffect(() => {
+    if (!open) return;
+    function close(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    function closeKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setOpen(false);
+    }
+    document.addEventListener('mousedown', close);
+    document.addEventListener('keydown', closeKey);
+    return () => {
+      document.removeEventListener('mousedown', close);
+      document.removeEventListener('keydown', closeKey);
+    };
+  }, [open]);
+
+  return (
+    <div ref={ref} class={styles.levelDropdown}>
+      <button
+        type="button"
+        class={styles.levelTrigger}
+        onClick={() => setOpen(!open)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-label="Filter by log level"
+      >
+        <current.icon size={13} aria-hidden="true" />
+        {current.label}
+        <svg class={styles.levelChevron} width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6" /></svg>
+      </button>
+      {open && (
+        <ul role="listbox" class={styles.levelMenu} aria-label="Log level filter">
+          {LEVEL_OPTIONS.map(opt => (
+            <li key={opt.value}>
+              <button
+                type="button"
+                role="option"
+                aria-selected={value === opt.value}
+                class={`${styles.levelOption} ${value === opt.value ? styles.levelOptionActive : ''}`}
+                onClick={() => { onChange(opt.value); setOpen(false); }}
+              >
+                <opt.icon size={13} aria-hidden="true" class={styles[`levelIcon${opt.value}`] || ''} />
+                {opt.label}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
 
 type LogEntry = {
   timestamp: string;
@@ -143,19 +207,7 @@ export default function LogViewer({ appId }: Props) {
         <span class={styles.searchCount} role="status" aria-live="polite">
           {searchCount !== null ? `${searchCount} results` : ''}
         </span>
-        <label for="log-level-filter" class="sr-only">Filter by log level</label>
-        <select
-          id="log-level-filter"
-          value={levelFilter}
-          onChange={(e) => setLevelFilter((e.target as HTMLSelectElement).value)}
-          class={styles.levelSelect}
-          aria-label="Filter by log level"
-        >
-          <option value="all">All levels</option>
-          <option value="INFO">INFO</option>
-          <option value="WARN">WARN</option>
-          <option value="ERROR">ERROR</option>
-        </select>
+        <LevelFilter value={levelFilter} onChange={setLevelFilter} />
       </div>
 
       {/* a11y [WCAG 4.1.3]: live log output announced to AT */}

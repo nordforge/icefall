@@ -99,31 +99,88 @@
   color: var(--log-text-muted);
 }
 
-.levelSelect {
-  appearance: none;
+/* Custom level filter dropdown with icons */
+.levelDropdown {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.levelTrigger {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
   background: var(--log-select-bg);
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right var(--space-2) center;
   border: 1px solid var(--log-select-border);
   color: var(--log-select-text);
   border-radius: var(--radius-sm);
-  padding: var(--space-1) calc(var(--space-2) + 16px) var(--space-1) var(--space-2);
+  padding: var(--space-1) var(--space-2);
   font-size: var(--text-xs);
   font-family: var(--font-mono);
   cursor: pointer;
   height: 32px;
   line-height: 1;
+  white-space: nowrap;
 }
 
-.levelSelect:focus-visible {
+.levelTrigger:focus-visible {
   outline: 2px solid var(--color-border-focus);
   outline-offset: 2px;
 }
 
-.levelSelect:hover {
+.levelTrigger:hover {
   border-color: var(--log-text-muted);
 }
+
+.levelChevron {
+  margin-left: var(--space-1);
+  opacity: 0.6;
+}
+
+.levelMenu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 50;
+  background: var(--log-select-bg);
+  border: 1px solid var(--log-select-border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-1) 0;
+  list-style: none;
+  min-width: 140px;
+  box-shadow: 0 4px 12px oklch(0 0 0 / 0.3);
+}
+
+.levelOption {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  background: none;
+  border: none;
+  color: var(--log-select-text);
+  font-size: var(--text-xs);
+  font-family: var(--font-mono);
+  cursor: pointer;
+  text-align: left;
+}
+
+.levelOption:hover {
+  background: oklch(1 0 0 / 0.06);
+}
+
+.levelOption:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: -2px;
+}
+
+.levelOptionActive {
+  color: var(--color-primary, oklch(0.65 0.17 260));
+}
+
+.levelIconINFO { color: var(--log-info-level); }
+.levelIconWARN { color: var(--color-warning); }
+.levelIconERROR { color: var(--color-error); }
 
 .logContainer {
   flex: 1;
