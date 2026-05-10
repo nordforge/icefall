@@ -143,7 +143,7 @@ export default function DeployDetail({ appId, deployId, appName }: Props) {
         )}
       </div>
 
-      {duration && (
+      {duration != null && duration > 0 && (
         <div class={styles.footer}>
           <span class={styles.footerDuration}>
             Total duration: {formatDuration(duration)}

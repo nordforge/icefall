@@ -17,6 +17,13 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     ...options,
   });
   if (!res.ok) {
+    if ((res.status === 401 || res.status === 400) && !path.startsWith('/auth/')) {
+      const body = await res.json().catch(() => ({ error: '' }));
+      if (body.error === 'Not authenticated' || res.status === 401) {
+        window.location.href = '/login';
+        throw new ApiError(res.status, 'Session expired');
+      }
+    }
     const body = await res.json().catch(() => ({ error: res.statusText }));
     throw new ApiError(res.status, body.error || 'Unknown error');
   }
@@ -24,6 +31,12 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 }
 
 export const api = {
+  logout: async () => {
+    await fetch(`${API_BASE}/auth/logout`, { method: 'POST', credentials: 'same-origin' });
+    window.location.href = '/login';
+  },
+
+
   listApps: (params?: { tag?: string; project_id?: string }) => {
     const search = new URLSearchParams();
     if (params?.tag) search.set('tag', params.tag);
@@ -145,6 +158,41 @@ export const api = {
 
   deactivateUser: (userId: string) =>
     request<{ message: string }>(`/users/${userId}`, { method: 'DELETE' }),
+
+  resetUserPassword: (userId: string) =>
+    request<{
+      data: { user_id: string; email: string; temporary_password: string };
+      warning: string;
+    }>(`/users/${userId}/reset-password`, { method: 'POST' }),
+
+  resetUser2fa: (userId: string) =>
+    request<{ message: string; user_id: string; email: string }>(
+      `/users/${userId}/2fa`,
+      { method: 'DELETE' },
+    ),
+
+  getRegistrationSettings: () =>
+    request<{
+      data: {
+        allow_registration: boolean;
+        allowed_domains: string | null;
+        default_role: string;
+      };
+    }>('/settings/registration'),
+
+  updateRegistrationSettings: (body: {
+    allow_registration?: boolean;
+    allowed_domains?: string;
+    default_role?: string;
+  }) =>
+    request<{
+      data: {
+        allow_registration: boolean;
+        allowed_domains: string | null;
+        default_role: string;
+      };
+      message: string;
+    }>('/settings/registration', { method: 'PUT', body: JSON.stringify(body) }),
 
   listTokens: () => request<{ data: ApiToken[] }>('/tokens'),
 
@@ -324,6 +372,30 @@ export const api = {
     request<{ message: string; path: string }>(
       `/apps/${appId}/volumes/${mountIndex}/delete`,
       { method: 'POST', body: JSON.stringify({ path }) },
+    ),
+
+  // Profile
+  changePassword: (currentPassword: string, newPassword: string) =>
+    request<{ message: string }>(
+      '/users/me/password',
+      { method: 'PUT', body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }) },
+    ),
+
+  changeEmail: (email: string, password: string) =>
+    request<{ message: string; data: { email: string } }>(
+      '/users/me/email',
+      { method: 'PUT', body: JSON.stringify({ email, password }) },
+    ),
+
+  listSessions: () =>
+    request<{ data: Array<{ id: string; created_at: string; expires_at: string; is_current: boolean }> }>(
+      '/users/me/sessions',
+    ),
+
+  revokeAllSessions: () =>
+    request<{ message: string }>(
+      '/users/me/sessions',
+      { method: 'DELETE' },
     ),
 };
 

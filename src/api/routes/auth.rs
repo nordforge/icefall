@@ -147,7 +147,8 @@ async fn change_password(
         return Err(ApiError::BadRequest("New password must be at least 12 characters".into()));
     }
 
-    let _new_hash = hash_password(&body.new_password)?;
+    let new_hash = hash_password(&body.new_password)?;
+    state.db.update_user_password(&user.id, &new_hash).await?;
     state.db.delete_user_sessions(&user.id).await?;
 
     Ok(Json(serde_json::json!({ "message": "password changed" })))

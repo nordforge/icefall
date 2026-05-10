@@ -16,6 +16,8 @@ pub fn routes() -> Router<AppState> {
         .route("/users/me", get(get_me))
         .route("/users/{id}/role", put(change_role))
         .route("/users/{id}", delete(deactivate_user))
+        .route("/users/{id}/reset-password", post(reset_password))
+        .route("/users/{id}/2fa", delete(admin_reset_2fa))
         .route("/users/accept-invite", post(accept_invite))
         .route("/tokens", get(list_tokens).post(create_token))
         .route("/tokens/{id}", delete(revoke_token))
@@ -36,7 +38,15 @@ async fn list_users(
     let users = state.db.list_users().await?;
     let safe: Vec<serde_json::Value> = users
         .iter()
-        .map(|u| serde_json::json!({ "id": u.id, "email": u.email, "role": u.role, "created_at": u.created_at }))
+        .map(|u| serde_json::json!({
+            "id": u.id,
+            "email": u.email,
+            "role": u.role,
+            "totp_enabled": u.totp_enabled,
+            "is_active": true,
+            "last_login_at": null,
+            "created_at": u.created_at,
+        }))
         .collect();
 
     Ok(Json(serde_json::json!({ "data": safe })))
@@ -50,7 +60,7 @@ async fn get_me(
         .await?
         .ok_or_else(|| ApiError::BadRequest("Not authenticated".into()))?;
 
-    Ok(Json(serde_json::json!({ "data": { "id": user.id, "email": user.email, "role": user.role, "totp_enabled": user.totp_enabled } })))
+    Ok(Json(serde_json::json!({ "data": { "id": user.id, "email": user.email, "role": user.role, "totp_enabled": user.totp_enabled, "created_at": user.created_at } })))
 }
 
 #[derive(Deserialize)]
@@ -166,6 +176,77 @@ async fn deactivate_user(
     Ok(Json(serde_json::json!({ "message": "user deactivated" })))
 }
 
+// --- Password Reset (Admin) ---
+
+async fn reset_password(
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+    headers: HeaderMap,
+) -> Result<Json<serde_json::Value>, ApiError> {
+    let caller = authenticate_from_headers(&state, &headers)
+        .await?
+        .ok_or_else(|| ApiError::BadRequest("Not authenticated".into()))?;
+    if caller.role != "admin" {
+        return Err(ApiError::BadRequest("Admin access required".into()));
+    }
+
+    // Verify target user exists
+    let target = state.db.get_user_by_id(&id).await?
+        .ok_or_else(|| ApiError::NotFound("User not found".into()))?;
+
+    // Generate a secure temporary password (16 chars alphanumeric)
+    let temp_password = generate_temp_password(16);
+    let password_hash = hash_password(&temp_password)?;
+
+    state.db.update_user_password(&id, &password_hash).await?;
+
+    // Invalidate all existing sessions for the target user
+    state.db.delete_user_sessions(&id).await?;
+
+    Ok(Json(serde_json::json!({
+        "data": {
+            "user_id": id,
+            "email": target.email,
+            "temporary_password": temp_password,
+        },
+        "warning": "This temporary password will only be shown once. Share it securely with the user."
+    })))
+}
+
+// --- Admin 2FA Reset ---
+
+async fn admin_reset_2fa(
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+    headers: HeaderMap,
+) -> Result<Json<serde_json::Value>, ApiError> {
+    let caller = authenticate_from_headers(&state, &headers)
+        .await?
+        .ok_or_else(|| ApiError::BadRequest("Not authenticated".into()))?;
+    if caller.role != "admin" {
+        return Err(ApiError::BadRequest("Admin access required".into()));
+    }
+
+    // Verify target user exists
+    let target = state.db.get_user_by_id(&id).await?
+        .ok_or_else(|| ApiError::NotFound("User not found".into()))?;
+
+    if !target.totp_enabled {
+        return Err(ApiError::BadRequest("2FA is not enabled for this user".into()));
+    }
+
+    state.db.admin_reset_user_2fa(&id).await?;
+
+    // Invalidate sessions so they must log in fresh
+    state.db.delete_user_sessions(&id).await?;
+
+    Ok(Json(serde_json::json!({
+        "message": "Two-factor authentication has been reset for this user",
+        "user_id": id,
+        "email": target.email,
+    })))
+}
+
 // --- API Tokens ---
 
 #[derive(Deserialize)]
@@ -223,6 +304,18 @@ async fn revoke_token(
 
     state.db.delete_api_token(&id).await?;
     Ok(Json(serde_json::json!({ "message": "token revoked" })))
+}
+
+fn generate_temp_password(len: usize) -> String {
+    use rand::Rng;
+    let charset: &[u8] = b"ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%";
+    let mut rng = rand::thread_rng();
+    (0..len)
+        .map(|_| {
+            let idx = rng.gen_range(0..charset.len());
+            charset[idx] as char
+        })
+        .collect()
 }
 
 fn generate_random_hex(len: usize) -> String {

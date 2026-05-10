@@ -168,19 +168,49 @@
 | [IF-071](tickets/phase-15-critical-gaps/IF-071-notification-subscriptions-ui.md) | Per-event notification subscriptions | 2026-05-08 | Checkbox matrix (events x channels) in Settings page |
 | [IF-072](tickets/phase-15-critical-gaps/IF-072-tags.md) | App tags | 2026-05-08 | Tags column, tag input in SettingsTab, filter chips on AppGrid, tag display on AppCard |
 
-### Phase 16 — v1.1 Fast Follow
+### Phase 16 — Self-Update System
 | Ticket | Title | Completed | Notes |
 |--------|-------|-----------|-------|
-| [IF-073](tickets/phase-16-v1.1-fast-follow/IF-073-docker-compose-support.md) | Docker Compose support | 2026-05-08 | Compose parser, multi-service deploy, isolated networks, variable interpolation, depends_on ordering |
-| [IF-074](tickets/phase-16-v1.1-fast-follow/IF-074-projects.md) | Projects (resource grouping) | 2026-05-08 | Project CRUD, app/db assignment, sidebar grouping, settings dropdown, project detail page |
-| [IF-075](tickets/phase-16-v1.1-fast-follow/IF-075-two-factor-authentication.md) | Two-Factor Authentication (2FA) | 2026-05-08 | TOTP setup with QR code, backup codes, login flow, admin reset, settings UI |
-| [IF-076](tickets/phase-16-v1.1-fast-follow/IF-076-oauth-sso.md) | OAuth SSO (GitHub + Google) | 2026-05-08 | PKCE flow, account linking, provider config, login buttons, settings admin |
-| [IF-077](tickets/phase-16-v1.1-fast-follow/IF-077-container-terminal.md) | Container terminal (browser shell) | 2026-05-08 | xterm.js + WebSocket + Docker exec, resize, dark theme, new tab |
-| [IF-078](tickets/phase-16-v1.1-fast-follow/IF-078-command-palette.md) | Command palette | 2026-05-08 | Cmd+K fuzzy search, actions, recent items, keyboard nav, layout mount |
-| [IF-079](tickets/phase-16-v1.1-fast-follow/IF-079-volume-management.md) | Volume management & browsing | 2026-05-08 | File browser drawer, upload/download, size tracking, path validation |
-| [IF-080](tickets/phase-16-v1.1-fast-follow/IF-080-s3-object-storage-mounts.md) | S3 / object storage mounts | 2026-05-08 | rclone sidecar, S3 volume type in settings, shared Docker volumes |
-| [IF-081](tickets/phase-16-v1.1-fast-follow/IF-081-expanded-database-support.md) | Expanded database support | 2026-05-08 | MariaDB, ClickHouse, KeyDB, DragonFly, CockroachDB, Valkey, Cassandra + backups for all |
-| [IF-082](tickets/phase-16-v1.1-fast-follow/IF-082-native-static-deploy.md) | Native static site deployment | — | No-Docker deploy for static sites, Caddy file_server, symlink rollback, <5s deploys |
+| [IF-097](tickets/phase-16-self-update/IF-097-release-pipeline-signing.md) | Release pipeline & binary signing | — | GitHub Actions multi-arch musl builds, Ed25519 manifest signing, release workflow |
+| [IF-098](tickets/phase-16-self-update/IF-098-update-discovery-api.md) | Update discovery & version checking | — | GitHub Releases polling, manifest verification, semver comparison, API endpoints |
+| [IF-099](tickets/phase-16-self-update/IF-099-update-download-verify.md) | Update download & integrity verification | — | Streaming download with progress, SHA-256 + Ed25519 chain, extraction & validation |
+| [IF-100](tickets/phase-16-self-update/IF-100-update-apply-restart.md) | Update apply, restart & graceful shutdown | — | Atomic binary swap, SQLite backup + migrations, systemd socket activation, zero-downtime |
+| [IF-101](tickets/phase-16-self-update/IF-101-update-rollback.md) | Update rollback & failure recovery | — | Automatic rollback via ExecStopPost, systemd watchdog, manual rollback CLI/API |
+| [IF-102](tickets/phase-16-self-update/IF-102-update-dashboard-ui.md) | Update dashboard UI | — | Sidebar pill, 7-step update dialog, reconnection overlay, settings section |
+| [IF-103](tickets/phase-16-self-update/IF-103-auto-update-scheduling.md) | Auto-update scheduling | — | Maintenance window, pre-download, deploy-aware, breaking change skip |
+| [IF-104](tickets/phase-16-self-update/IF-104-cli-update-command.md) | CLI update command | — | Interactive + scripted update, offline --from-file, rollback subcommand |
+
+### Phase 17 — v1.1 Fast Follow
+| Ticket | Title | Completed | Notes |
+|--------|-------|-----------|-------|
+| [IF-073](tickets/phase-17-v1.1-fast-follow/IF-073-docker-compose-support.md) | Docker Compose support | 2026-05-08 | Compose parser, multi-service deploy, isolated networks, variable interpolation, depends_on ordering |
+| [IF-074](tickets/phase-17-v1.1-fast-follow/IF-074-projects.md) | Projects (resource grouping) | 2026-05-08 | Project CRUD, app/db assignment, sidebar grouping, settings dropdown, project detail page |
+| [IF-075](tickets/phase-17-v1.1-fast-follow/IF-075-two-factor-authentication.md) | Two-Factor Authentication (2FA) | 2026-05-08 | TOTP setup with QR code, backup codes, login flow, admin reset, settings UI |
+| [IF-076](tickets/phase-17-v1.1-fast-follow/IF-076-oauth-sso.md) | OAuth SSO (GitHub + Google) | 2026-05-08 | PKCE flow, account linking, provider config, login buttons, settings admin |
+| [IF-077](tickets/phase-17-v1.1-fast-follow/IF-077-container-terminal.md) | Container terminal (browser shell) | 2026-05-08 | xterm.js + WebSocket + Docker exec, resize, dark theme, new tab |
+| [IF-078](tickets/phase-17-v1.1-fast-follow/IF-078-command-palette.md) | Command palette | 2026-05-08 | Cmd+K fuzzy search, actions, recent items, keyboard nav, layout mount |
+| [IF-079](tickets/phase-17-v1.1-fast-follow/IF-079-volume-management.md) | Volume management & browsing | 2026-05-08 | File browser drawer, upload/download, size tracking, path validation |
+| [IF-080](tickets/phase-17-v1.1-fast-follow/IF-080-s3-object-storage-mounts.md) | S3 / object storage mounts | 2026-05-08 | rclone sidecar, S3 volume type in settings, shared Docker volumes |
+| [IF-081](tickets/phase-17-v1.1-fast-follow/IF-081-expanded-database-support.md) | Expanded database support | 2026-05-08 | MariaDB, ClickHouse, KeyDB, DragonFly, CockroachDB, Valkey, Cassandra + backups for all |
+| [IF-082](tickets/phase-17-v1.1-fast-follow/IF-082-native-static-deploy.md) | Native static site deployment | — | No-Docker deploy for static sites, Caddy file_server, symlink rollback, <5s deploys |
+| [IF-083](tickets/phase-17-v1.1-fast-follow/IF-083-user-profile-page.md) | User profile page | — | Profile view and edit |
+| [IF-084](tickets/phase-17-v1.1-fast-follow/IF-084-user-preferences.md) | User preferences | — | Per-user settings and preferences |
+| [IF-085](tickets/phase-17-v1.1-fast-follow/IF-085-admin-user-management.md) | Admin user management | — | Admin panel for user CRUD |
+
+### Phase 18 — UX Polish
+| Ticket | Title | Completed | Notes |
+|--------|-------|-----------|-------|
+| [IF-086](tickets/phase-18-ux-polish/IF-086-view-transitions.md) | View Transitions (without crashes) | — | Re-enable ClientRouter, all islands to client:only, transition:persist sidebar |
+| [IF-087](tickets/phase-18-ux-polish/IF-087-prefetching.md) | Link prefetching & data preloading | — | Hover prefetch, API cache, tab data preload |
+| [IF-088](tickets/phase-18-ux-polish/IF-088-skeleton-loading.md) | Skeleton loading states | — | Shimmer placeholders for all pages, shared Skeleton component |
+| [IF-089](tickets/phase-18-ux-polish/IF-089-app-detail-routing-polish.md) | App detail routing polish | — | Tab fade transitions, scroll preservation, deploy detail animation |
+| [IF-090](tickets/phase-18-ux-polish/IF-090-sidebar-active-state.md) | Sidebar navigation polish | — | Active indicator, mobile drawer, keyboard nav, app context |
+| [IF-091](tickets/phase-18-ux-polish/IF-091-toast-notifications.md) | Toast notification system | — | Global toast store, success/error/info types, auto-dismiss |
+| [IF-092](tickets/phase-18-ux-polish/IF-092-optimistic-updates.md) | Optimistic UI updates | — | Instant feedback for actions, revert on error |
+| [IF-093](tickets/phase-18-ux-polish/IF-093-responsive-polish.md) | Responsive design polish | — | Mobile tables→cards, form stacking, tab scroll, breakpoint audit |
+| [IF-094](tickets/phase-18-ux-polish/IF-094-empty-states.md) | Empty states & onboarding hints | — | Illustrations, action buttons, guidance text |
+| [IF-095](tickets/phase-18-ux-polish/IF-095-confirmation-dialogs.md) | Consistent confirmation dialogs | — | Shared modal dialog, replace inline confirmations |
+| [IF-096](tickets/phase-18-ux-polish/IF-096-keyboard-shortcuts.md) | Global keyboard shortcuts | — | g+h/d/s/p navigation, shortcut help overlay |
 
 ---
 
@@ -188,11 +218,11 @@
 
 | Metric | Count |
 |--------|-------|
-| Total tickets | 89 |
+| Total tickets | 111 |
 | Done | 88 |
-| Backlog | 1 |
+| Backlog | 23 |
 | Superseded | 1 |
-| Phases complete | 16 / 16 |
+| Phases complete | 15 / 18 |
 
 ### Progress
 | Phase | Status | Tickets |
@@ -212,18 +242,24 @@
 | 13 — Onboarding | **Done** | 10/10 |
 | 14 — Dashboard Surface | **Done** | 6/6 |
 | 15 — Critical Gaps | **Done** | 8/8 |
-| 16 — v1.1 Fast Follow | **Done** | 9/10 |
+| 16 — Self-Update System | Backlog | 0/8 |
+| 17 — v1.1 Fast Follow | Partial | 9/13 |
+| 18 — UX Polish | Backlog | 0/11 |
 
 ### Size breakdown
 | Size | Count | Estimated effort |
 |------|-------|-----------------|
 | S | 16 | 1-2 days each |
-| M | 49 | 3-5 days each |
-| L | 11 | 1-2 weeks each |
+| M | 54 | 3-5 days each |
+| L | 14 | 1-2 weeks each |
 
 ### Critical path (must complete in order)
 ```
 Phases 1-15 (done)
+IF-097 (release pipeline) → IF-098 (discovery) → IF-099 (download) → IF-100 (apply) → IF-101 (rollback)
+IF-100 (apply) → IF-102 (dashboard UI)
+IF-100 (apply) → IF-103 (auto-update)
+IF-098 + IF-099 + IF-100 + IF-101 → IF-104 (CLI)
 IF-064 (volumes) → IF-073 (Docker Compose)
 IF-065 (Docker image deploy) → IF-073 (Docker Compose)
 IF-072 (tags) + IF-074 (projects) → IF-078 (command palette)

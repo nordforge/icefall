@@ -1,6 +1,6 @@
 # IF-079: Volume management & browsing
 
-**Phase:** 16 — v1.1 Fast Follow
+**Phase:** 17 — v1.1 Fast Follow
 **Priority:** Medium
 **Estimate:** L
 

@@ -16,6 +16,7 @@ pub mod notifications;
 pub mod oauth;
 pub mod onboarding;
 pub mod openapi;
+pub mod profile;
 pub mod projects;
 pub mod server;
 pub mod settings;
@@ -42,6 +43,7 @@ pub fn api_routes() -> Router<AppState> {
         .merge(health::routes())
         .merge(logs::routes())
         .merge(metrics::routes())
+        .merge(profile::routes())
         .merge(users::routes())
         .merge(settings::routes())
         .merge(server::routes())

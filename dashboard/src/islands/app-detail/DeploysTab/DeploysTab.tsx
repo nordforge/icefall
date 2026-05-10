@@ -59,7 +59,7 @@ export default function DeploysTab({ appId }: Props) {
               <tr key={d.id} class={isLast ? styles.rowLast : styles.row}>
                 <td class={styles.cell}>
                   <a href={`/apps/${appId}/deploys/${d.id}`} class={styles.deployLink}>
-                    #{deploys.length - i}
+                    #{d.id.slice(0, 8)}
                   </a>
                 </td>
                 <td class={`${styles.cell} ${styles.commitSha}`}>
