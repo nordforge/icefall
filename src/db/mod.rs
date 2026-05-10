@@ -53,6 +53,8 @@ pub trait Database: Send + Sync + 'static {
     async fn create_deploy(&self, deploy: &NewDeploy) -> Result<Deploy, DbError>;
     async fn get_deploy(&self, id: &str) -> Result<Option<Deploy>, DbError>;
     async fn list_deploys(&self, app_id: &str, limit: i64) -> Result<Vec<Deploy>, DbError>;
+    async fn get_latest_deploys_for_apps(&self, app_ids: &[String])
+        -> Result<Vec<Deploy>, DbError>;
     async fn update_deploy_status(
         &self,
         id: &str,

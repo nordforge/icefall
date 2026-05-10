@@ -111,15 +111,15 @@
   color: var(--color-text-muted);
 }
 
-/* a11y [WCAG 2.5.8]: minimum 24×24 target size */
+/* a11y [WCAG 2.5.8]: minimum 28×28 target size */
 .iconButton {
   background: none;
   border: none;
   color: var(--color-text-muted);
   cursor: pointer;
   padding: var(--space-1);
-  min-width: 1.5rem;
-  min-height: 1.5rem;
+  min-width: 28px;
+  min-height: 28px;
   display: inline-flex;
   align-items: center;
   justify-content: center;

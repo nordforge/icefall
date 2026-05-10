@@ -177,6 +177,26 @@ export default function CommandPalette() {
     }
   }, [open]);
 
+  // a11y [WCAG 2.4.3]: focus trap — keep Tab cycling within the palette
+  const paletteRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const dialog = paletteRef.current;
+    if (!dialog) return;
+    const focusable = dialog.querySelectorAll<HTMLElement>(
+      'a[href], button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])'
+    );
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    function handleTab(e: KeyboardEvent) {
+      if (e.key !== 'Tab') return;
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last?.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first?.focus(); }
+    }
+    dialog.addEventListener('keydown', handleTab);
+    return () => dialog.removeEventListener('keydown', handleTab);
+  }, [open, results, confirm]);
+
   /* ---------------------------------------------------------------- */
   /*  Determine mode (search vs action)                                */
   /* ---------------------------------------------------------------- */
@@ -430,6 +450,7 @@ export default function CommandPalette() {
 
   return (
     <div
+      ref={paletteRef}
       class={styles.overlay}
       data-overlay="true"
       onClick={handleOverlayClick}

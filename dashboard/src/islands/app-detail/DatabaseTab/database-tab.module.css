@@ -166,6 +166,7 @@
   align-items: center;
   justify-content: center;
   font-weight: 700;
+  /* 0.625rem (10px) — below --text-xs scale for compact icon badges */
   font-size: 0.625rem;
   flex-shrink: 0;
 }

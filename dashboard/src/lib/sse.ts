@@ -32,6 +32,7 @@ export function createSSEClient(
 
     source.onerror = () => {
       source?.close();
+      source = null;
       const delay = Math.min(1000 * Math.pow(2, retryCount), MAX_RETRY_DELAY);
       const jitter = delay * (0.5 + Math.random() * 0.5);
       reconnectTimer = setTimeout(connect, jitter);
@@ -43,8 +44,10 @@ export function createSSEClient(
 
   return {
     close() {
-      source?.close();
       if (reconnectTimer) clearTimeout(reconnectTimer);
+      if (!source) return;
+      source.close();
+      source = null;
     },
   };
 }

@@ -1,4 +1,5 @@
 import { useRef } from 'preact/hooks';
+import { memo } from 'preact/compat';
 import styles from './sparkline.module.css';
 
 let sparklineCounter = 0;
@@ -16,7 +17,7 @@ type Props = {
 const W = 1000;
 const H = 400;
 
-export default function Sparkline({
+function Sparkline({
   data,
   min = 0,
   max,
@@ -72,3 +73,5 @@ export default function Sparkline({
     </svg>
   );
 }
+
+export default memo(Sparkline);

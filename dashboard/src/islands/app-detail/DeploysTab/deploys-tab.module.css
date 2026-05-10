@@ -91,7 +91,7 @@
 }
 
 /* Tablet+: restore standard table layout */
-@media (min-width: 640px) {
+@media (min-width: 641px) {
   .table,
   .table tbody,
   .table tr,

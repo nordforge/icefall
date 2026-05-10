@@ -1,3 +1,9 @@
+/* Breakpoints (cannot be CSS custom properties — used in media queries)
+   --bp-sm: 641px   (mobile → tablet)
+   --bp-md: 769px   (tablet → desktop)
+   --bp-lg: 1025px  (desktop → wide)
+*/
+
 :root,
 :root[data-theme="light"] {
   /* Backgrounds */

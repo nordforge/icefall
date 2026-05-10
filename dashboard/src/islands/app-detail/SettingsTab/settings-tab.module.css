@@ -132,8 +132,9 @@
   white-space: nowrap;
 }
 
+/* a11y [WCAG 2.5.8]: minimum 28×28 target size */
 .copyButton {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   background: none;
@@ -143,6 +144,8 @@
   cursor: pointer;
   color: var(--color-text-secondary);
   flex-shrink: 0;
+  min-width: 28px;
+  min-height: 28px;
 }
 
 .copyButton:hover {
@@ -196,6 +199,7 @@
   line-height: 1.4;
 }
 
+/* a11y [WCAG 2.5.8]: minimum 28×28 target size */
 .tagRemove {
   display: inline-flex;
   align-items: center;
@@ -207,6 +211,8 @@
   color: var(--color-text-muted);
   border-radius: var(--radius-sm);
   flex-shrink: 0;
+  min-width: 28px;
+  min-height: 28px;
 }
 
 .tagRemove:hover {

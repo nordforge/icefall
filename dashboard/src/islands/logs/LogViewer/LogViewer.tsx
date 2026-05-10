@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useMemo } from 'preact/hooks';
+import { useEffect, useRef, useState, useMemo, useCallback } from 'preact/hooks';
 import { createSSEClient } from '@lib/sse';
 import { Search, Download } from 'lucide-preact';
 import styles from './log-viewer.module.css';
@@ -10,6 +10,8 @@ type LogEntry = {
 }
 
 const MAX_LINES = 10_000;
+const ROW_HEIGHT = 22;
+const OVERSCAN = 10;
 
 type Props = {
   appId: string;
@@ -21,6 +23,8 @@ export default function LogViewer({ appId }: Props) {
   const [searchQuery, setSearchQuery] = useState('');
   const [autoScroll, setAutoScroll] = useState(true);
   const [levelFilter, setLevelFilter] = useState('all');
+  const [scrollTop, setScrollTop] = useState(0);
+  const [containerHeight, setContainerHeight] = useState(600);
   const containerRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number | null>(null);
 
@@ -51,18 +55,40 @@ export default function LogViewer({ appId }: Props) {
     };
   }, [appId]);
 
+  // Measure container height on mount and resize
+  useEffect(() => {
+    function measure() {
+      if (containerRef.current) {
+        setContainerHeight(containerRef.current.clientHeight);
+      }
+    }
+    measure();
+    const observer = new ResizeObserver(measure);
+    if (containerRef.current) observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  const filtered = useMemo(() => lines.filter((l) => {
+    if (levelFilter !== 'all' && l.level !== levelFilter) return false;
+    if (searchQuery && !l.message.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+    return true;
+  }), [lines, searchQuery, levelFilter]);
+
+  // Auto-scroll when new lines arrive
   useEffect(() => {
     if (autoScroll && containerRef.current) {
-      containerRef.current.scrollTop = containerRef.current.scrollHeight;
+      const totalHeight = filtered.length * ROW_HEIGHT;
+      containerRef.current.scrollTop = totalHeight;
     }
-  }, [lines.length, autoScroll]);
+  }, [filtered.length, autoScroll]);
 
-  function handleScroll() {
+  const handleScroll = useCallback(() => {
     if (!containerRef.current) return;
-    const { scrollTop, scrollHeight, clientHeight } = containerRef.current;
-    const atBottom = scrollHeight - scrollTop - clientHeight < 50;
+    const el = containerRef.current;
+    setScrollTop(el.scrollTop);
+    const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 50;
     if (!atBottom && autoScroll) setAutoScroll(false);
-  }
+  }, [autoScroll]);
 
   function handleDownload() {
     const text = lines.map((l) => `${l.timestamp} [${l.level}] ${l.message}`).join('\n');
@@ -75,13 +101,14 @@ export default function LogViewer({ appId }: Props) {
     URL.revokeObjectURL(url);
   }
 
-  const filtered = useMemo(() => lines.filter((l) => {
-    if (levelFilter !== 'all' && l.level !== levelFilter) return false;
-    if (searchQuery && !l.message.toLowerCase().includes(searchQuery.toLowerCase())) return false;
-    return true;
-  }), [lines, searchQuery, levelFilter]);
-
   const searchCount = searchQuery ? filtered.length : null;
+
+  // Virtualization calculations
+  const totalHeight = filtered.length * ROW_HEIGHT;
+  const startIdx = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - OVERSCAN);
+  const endIdx = Math.min(filtered.length, Math.ceil((scrollTop + containerHeight) / ROW_HEIGHT) + OVERSCAN);
+  const visibleItems = filtered.slice(startIdx, endIdx);
+  const offsetY = startIdx * ROW_HEIGHT;
 
   const levelClass = (level: string) => {
     switch (level) {
@@ -136,6 +163,7 @@ export default function LogViewer({ appId }: Props) {
         ref={containerRef}
         onScroll={handleScroll}
         class={styles.logContainer}
+        style={{ overflow: 'auto' }}
         role="log"
         aria-live="polite"
         aria-label="Application logs"
@@ -145,25 +173,30 @@ export default function LogViewer({ appId }: Props) {
             {lines.length === 0 ? 'Waiting for log output...' : 'No matching logs.'}
           </div>
         ) : (
-          filtered.map((line, i) => (
-            <div
-              key={i}
-              class={lineBorderClass(line.level)}
-            >
-              <span class={styles.lineNumber}>
-                {i + 1}
-              </span>
-              <span class={styles.timestamp}>
-                {line.timestamp.replace('T', ' ').replace('Z', '').slice(0, 23)}
-              </span>
-              <span class={levelClass(line.level)}>
-                {line.level}
-              </span>
-              <span class={styles.message}>
-                {line.message}
-              </span>
+          <div style={{ height: `${totalHeight}px`, position: 'relative' }}>
+            <div style={{ transform: `translateY(${offsetY}px)` }}>
+              {visibleItems.map((line, i) => (
+                <div
+                  key={startIdx + i}
+                  class={lineBorderClass(line.level)}
+                  style={{ height: `${ROW_HEIGHT}px` }}
+                >
+                  <span class={styles.lineNumber}>
+                    {startIdx + i + 1}
+                  </span>
+                  <span class={styles.timestamp}>
+                    {line.timestamp.replace('T', ' ').replace('Z', '').slice(0, 23)}
+                  </span>
+                  <span class={levelClass(line.level)}>
+                    {line.level}
+                  </span>
+                  <span class={styles.message}>
+                    {line.message}
+                  </span>
+                </div>
+              ))}
             </div>
-          ))
+          </div>
         )}
       </div>
 
