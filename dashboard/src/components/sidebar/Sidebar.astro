@@ -2,6 +2,8 @@
 import styles from '@styles/sidebar.module.css';
 import ThemeToggle from '../theme/ThemeToggle';
 import LogoutButton from '@islands/shared/LogoutButton/LogoutButton';
+import UpdatePill from '@islands/update/UpdatePill/UpdatePill';
+import UpdateDialog from '@islands/update/UpdateDialog/UpdateDialog';
 import pkg from '../../../package.json';
 
 const currentPath = Astro.url.pathname;
@@ -68,6 +70,8 @@ function isActive(href: string): boolean {
   </nav>
 
   <div class={styles.footer}>
+    <UpdatePill client:only="preact" />
+    <UpdateDialog client:only="preact" />
     <div class={styles.footerRow}>
       <div class={styles.footerStatus}>
         <span class={styles.statusDotGreen} aria-hidden="true"></span>

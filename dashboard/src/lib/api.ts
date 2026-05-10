@@ -1,4 +1,5 @@
 import type { App, Deploy, Domain, EnvVar, Project, ServerStatus, ServerMetricsSnapshot, User, ApiToken, HealthCheckResult } from './types';
+import type { UpdateInfo, UpdateStatus } from '@stores/update';
 import { getCached, setCache, invalidatePrefix } from './cache';
 
 const API_BASE = '/api/v1';
@@ -439,6 +440,40 @@ export const api = {
       `/users/${userId}`,
       { method: 'DELETE' },
     ),
+
+  // Self-update
+  checkForUpdate: () =>
+    request<{ data: UpdateInfo }>('/system/update/check'),
+
+  getUpdateStatus: () =>
+    request<{ data: UpdateStatus }>('/system/update/status'),
+
+  applyUpdate: () =>
+    request<{ data: UpdateStatus }>('/system/update/apply', { method: 'POST' }),
+
+  downloadUpdate: () =>
+    request<{ data: any }>('/system/update/download', { method: 'POST' }),
+
+  skipUpdateVersion: (version: string) =>
+    request<{ message: string }>('/system/update/skip', {
+      method: 'POST',
+      body: JSON.stringify({ version }),
+    }),
+
+  getUpdatePreferences: () =>
+    request<{ data: any }>('/system/update/preferences'),
+
+  updateUpdatePreferences: (body: any) =>
+    request<{ data: any }>('/system/update/preferences', {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    }),
+
+  getUpdateHistory: () =>
+    request<{ data: any[] }>('/system/update/history'),
+
+  rollbackUpdate: () =>
+    request<{ message: string }>('/system/update/rollback', { method: 'POST' }),
 };
 
 export { ApiError };

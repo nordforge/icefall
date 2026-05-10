@@ -1,7 +1,7 @@
 use clap::Parser;
 use icefall::cli::{
     AppsCommands, Cli, Commands, DaemonCommands, DbCommands, DomainsCommands, EnvCommands,
-    MigrateCommands,
+    MigrateCommands, UpdateCommands,
 };
 
 #[tokio::main]
@@ -51,7 +51,13 @@ async fn main() {
                 icefall::cli::commands::migrate::import(&from, dry_run).await;
             }
         },
-        Commands::Update => icefall::cli::commands::update::run().await,
+        Commands::Update { command } => match command {
+            None => icefall::cli::commands::update::run().await,
+            Some(UpdateCommands::Check) => icefall::cli::commands::update::check().await,
+            Some(UpdateCommands::Rollback { yes }) => {
+                icefall::cli::commands::update::rollback(yes).await
+            }
+        },
         Commands::Status => icefall::cli::commands::server::status().await,
     }
 }

@@ -22,6 +22,7 @@ pub mod server;
 pub mod settings;
 pub mod terminal;
 pub mod two_factor;
+pub mod update;
 pub mod users;
 pub mod volumes;
 pub mod webhooks;
@@ -58,5 +59,6 @@ pub fn api_routes() -> Router<AppState> {
         .merge(oauth::routes())
         .merge(projects::routes())
         .merge(volumes::routes())
+        .merge(update::routes())
         .merge(openapi::routes())
 }

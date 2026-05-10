@@ -76,9 +76,24 @@ pub enum Commands {
         command: MigrateCommands,
     },
     /// Self-update icefall
-    Update,
+    Update {
+        #[command(subcommand)]
+        command: Option<UpdateCommands>,
+    },
     /// Show server status overview
     Status,
+}
+
+#[derive(Subcommand)]
+pub enum UpdateCommands {
+    /// Check for updates without applying
+    Check,
+    /// Roll back to the previous version
+    Rollback {
+        /// Skip confirmation prompt
+        #[arg(long)]
+        yes: bool,
+    },
 }
 
 #[derive(Subcommand)]
