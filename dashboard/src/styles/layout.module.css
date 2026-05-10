@@ -23,9 +23,15 @@
 }
 
 .pageTitle {
-  font-size: var(--text-2xl);
+  font-size: var(--text-xl);
   font-weight: var(--weight-semibold);
   color: var(--color-text);
+}
+
+@media (min-width: 641px) {
+  .pageTitle {
+    font-size: var(--text-2xl);
+  }
 }
 
 @media (min-width: 641px) {

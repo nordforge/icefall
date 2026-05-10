@@ -280,6 +280,18 @@ pub trait Database: Send + Sync + 'static {
         default_role: &str,
     ) -> Result<RegistrationSettings, DbError>;
 
+    // User deletion
+    async fn delete_user(&self, user_id: &str) -> Result<(), DbError>;
+    async fn count_admin_users(&self) -> Result<i64, DbError>;
+
+    // User preferences
+    async fn get_user_preferences(&self, user_id: &str) -> Result<serde_json::Value, DbError>;
+    async fn update_user_preferences(
+        &self,
+        user_id: &str,
+        preferences: &serde_json::Value,
+    ) -> Result<(), DbError>;
+
     // Admin 2FA reset
     async fn admin_reset_user_2fa(&self, user_id: &str) -> Result<(), DbError>;
 

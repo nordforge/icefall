@@ -16,6 +16,10 @@ pub fn routes() -> Router<AppState> {
             "/users/me/sessions",
             get(list_sessions).delete(revoke_all_sessions),
         )
+        .route(
+            "/users/me/preferences",
+            get(get_preferences).put(update_preferences),
+        )
 }
 
 #[derive(Deserialize)]
@@ -146,6 +150,50 @@ async fn revoke_all_sessions(
     Ok(Json(
         serde_json::json!({ "message": "All other sessions have been revoked" }),
     ))
+}
+
+async fn get_preferences(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+) -> Result<Json<serde_json::Value>, ApiError> {
+    let user = authenticate_from_headers(&state, &headers)
+        .await?
+        .ok_or_else(|| ApiError::BadRequest("Not authenticated".into()))?;
+
+    let preferences = state.db.get_user_preferences(&user.id).await?;
+
+    Ok(Json(serde_json::json!({ "data": preferences })))
+}
+
+async fn update_preferences(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Json(body): Json<serde_json::Value>,
+) -> Result<Json<serde_json::Value>, ApiError> {
+    let user = authenticate_from_headers(&state, &headers)
+        .await?
+        .ok_or_else(|| ApiError::BadRequest("Not authenticated".into()))?;
+
+    if !body.is_object() {
+        return Err(ApiError::BadRequest(
+            "Preferences must be a JSON object".into(),
+        ));
+    }
+
+    // Merge incoming preferences into existing ones (partial update)
+    let mut existing = state.db.get_user_preferences(&user.id).await?;
+    if let (Some(existing_obj), Some(incoming_obj)) = (existing.as_object_mut(), body.as_object()) {
+        for (key, value) in incoming_obj {
+            existing_obj.insert(key.clone(), value.clone());
+        }
+    }
+
+    state
+        .db
+        .update_user_preferences(&user.id, &existing)
+        .await?;
+
+    Ok(Json(serde_json::json!({ "data": existing })))
 }
 
 fn hash_password(password: &str) -> Result<String, ApiError> {

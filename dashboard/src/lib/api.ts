@@ -1,4 +1,5 @@
 import type { App, Deploy, Domain, EnvVar, Project, ServerStatus, ServerMetricsSnapshot, User, ApiToken, HealthCheckResult } from './types';
+import { getCached, setCache, invalidatePrefix } from './cache';
 
 const API_BASE = '/api/v1';
 
@@ -11,6 +12,14 @@ class ApiError extends Error {
 }
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
+  const method = (options?.method ?? 'GET').toUpperCase();
+
+  // Serve GET requests from cache when a fresh entry exists
+  if (method === 'GET') {
+    const cached = getCached<T>(path);
+    if (cached !== null) return cached;
+  }
+
   const res = await fetch(`${API_BASE}${path}`, {
     credentials: 'same-origin',
     headers: { 'Content-Type': 'application/json' },
@@ -27,7 +36,19 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     const body = await res.json().catch(() => ({ error: res.statusText }));
     throw new ApiError(res.status, body.error || 'Unknown error');
   }
-  return res.json();
+
+  const data: T = await res.json();
+
+  // Cache GET responses; invalidate related caches on mutations
+  if (method === 'GET') {
+    setCache(path, data);
+  } else {
+    // Invalidate the resource path (e.g. /apps/123 invalidates /apps*)
+    const basePath = '/' + path.split('/').filter(Boolean).slice(0, 2).join('/');
+    invalidatePrefix(basePath);
+  }
+
+  return data;
 }
 
 export const api = {
@@ -395,6 +416,27 @@ export const api = {
   revokeAllSessions: () =>
     request<{ message: string }>(
       '/users/me/sessions',
+      { method: 'DELETE' },
+    ),
+
+  deleteAccount: (password: string) =>
+    request<{ message: string }>(
+      '/users/me',
+      { method: 'DELETE', body: JSON.stringify({ password }) },
+    ),
+
+  getPreferences: () =>
+    request<{ data: Record<string, unknown> }>('/users/me/preferences'),
+
+  updatePreferences: (preferences: Record<string, unknown>) =>
+    request<{ data: Record<string, unknown> }>(
+      '/users/me/preferences',
+      { method: 'PUT', body: JSON.stringify(preferences) },
+    ),
+
+  deleteUser: (userId: string) =>
+    request<{ message: string }>(
+      `/users/${userId}`,
       { method: 'DELETE' },
     ),
 };

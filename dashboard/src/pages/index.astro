@@ -9,8 +9,8 @@ import AppGrid from '@islands/dashboard/AppGrid/AppGrid';
   <div class={layoutStyles.pageHeader}>
     <h1 class={layoutStyles.pageTitle}>Dashboard</h1>
   </div>
-  <ServerStats client:load />
+  <ServerStats client:only="preact" />
   <div style="margin-top: var(--space-6);">
-    <AppGrid client:load />
+    <AppGrid client:only="preact" />
   </div>
 </DashboardLayout>

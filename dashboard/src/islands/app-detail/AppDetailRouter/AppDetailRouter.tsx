@@ -38,10 +38,21 @@ export default function AppDetailRouter() {
   const [DeployDetail, setDeployDetail] = useState<ComponentType<any> | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Tab fade transition state
+  const [tabTransition, setTabTransition] = useState<'visible' | 'entering'>('visible');
+  const prevTabRef = useRef(route.tab);
+
+  // Scroll position preservation per tab
+  const scrollPositions = useRef<Record<string, number>>({});
+
   const { appId, tab: activeTab, subId } = route;
 
   // Central navigation function — all internal links go through this
   const navigate = useCallback((path: string, replace = false) => {
+    // Save scroll position before navigating
+    const currentTab = parseRoute().tab;
+    scrollPositions.current[currentTab] = window.scrollY;
+
     if (replace) {
       window.history.replaceState(null, '', path);
     } else {
@@ -53,11 +64,13 @@ export default function AppDetailRouter() {
   // Sync state with URL on browser back/forward
   useEffect(() => {
     function onPopState() {
+      const currentTab = parseRoute().tab;
+      scrollPositions.current[activeTab] = window.scrollY;
       setRoute(parseRoute());
     }
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);
-  }, []);
+  }, [activeTab]);
 
   // Intercept <a> clicks inside this island that point to /apps/{appId}/...
   // This prevents full page reloads for internal navigation
@@ -101,7 +114,33 @@ export default function AppDetailRouter() {
     refreshStatus();
   }, [appId, refreshStatus]);
 
-  // Lazy-load tab component
+  // Lazy-load tab component with fade transition
+  useEffect(() => {
+    const tabChanged = prevTabRef.current !== activeTab;
+    prevTabRef.current = activeTab;
+
+    if (tabChanged) {
+      // Start fade-out briefly, then swap content
+      setTabTransition('entering');
+      const timer = setTimeout(() => {
+        setTabTransition('visible');
+      }, 30);
+
+      // Restore scroll position after a micro delay
+      const scrollTimer = setTimeout(() => {
+        const saved = scrollPositions.current[activeTab];
+        if (saved != null) {
+          window.scrollTo(0, saved);
+        }
+      }, 60);
+
+      return () => {
+        clearTimeout(timer);
+        clearTimeout(scrollTimer);
+      };
+    }
+  }, [activeTab]);
+
   useEffect(() => {
     if (componentCache.current[activeTab]) {
       setLoadedTabs(prev => ({ ...prev, [activeTab]: componentCache.current[activeTab] }));
@@ -134,10 +173,10 @@ export default function AppDetailRouter() {
     return <div class={styles.error} role="alert">{error || 'App not found'}</div>;
   }
 
-  // Deploy detail sub-view
+  // Deploy detail sub-view with slide-in animation
   if (activeTab === 'deploys' && subId && DeployDetail) {
     return (
-      <div ref={containerRef}>
+      <div ref={containerRef} class={styles.deploySlide}>
         <DeployDetail appId={app.id} deployId={subId} appName={app.name} />
       </div>
     );
@@ -146,6 +185,8 @@ export default function AppDetailRouter() {
   const TabComponent = loadedTabs[activeTab] || null;
   const tabProps = activeTab === 'overview' || activeTab === 'settings' ? { app } : { appId: app.id };
 
+  const panelClass = `${styles.tabPanel} ${tabTransition === 'entering' ? styles.tabPanelEntering : styles.tabPanelVisible}`;
+
   return (
     <div ref={containerRef}>
       <AppHeader app={app} status={appStatus} onStatusChange={refreshStatus} />
@@ -153,11 +194,13 @@ export default function AppDetailRouter() {
         navigate(`/apps/${app.id}/${tab}`);
       }} />
       <div class={styles.tabContent}>
-        {TabComponent ? (
-          <TabComponent key={activeTab} {...tabProps} />
-        ) : (
-          <div class={styles.tabLoading}>Loading...</div>
-        )}
+        <div class={panelClass}>
+          {TabComponent ? (
+            <TabComponent key={activeTab} {...tabProps} />
+          ) : (
+            <div class={styles.tabLoading}>Loading...</div>
+          )}
+        </div>
       </div>
     </div>
   );

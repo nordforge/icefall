@@ -2,7 +2,15 @@
   display: flex;
   gap: var(--space-1);
   border-bottom: 1px solid var(--color-border);
-  overflow: visible;
+  /* Mobile: horizontal scroll instead of wrapping */
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.nav::-webkit-scrollbar {
+  display: none;
 }
 
 .tab {
@@ -17,6 +25,7 @@
   font-weight: var(--weight-normal);
   white-space: nowrap;
   cursor: pointer;
+  flex-shrink: 0;
   transition:
     color var(--duration-fast) var(--ease-out),
     border-color var(--duration-fast) var(--ease-out);

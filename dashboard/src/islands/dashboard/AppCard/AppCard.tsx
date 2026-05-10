@@ -3,6 +3,7 @@ import { formatRelativeTime } from '@lib/format';
 import StatusDot from '@islands/shared/StatusDot/StatusDot';
 import Button from '@islands/shared/Button/Button';
 import { api } from '@lib/api';
+import { addToast } from '@stores/toast';
 import { Rocket, RotateCcw, Play } from 'lucide-preact';
 import { useState } from 'preact/hooks';
 import styles from './app-card.module.css';
@@ -15,7 +16,8 @@ type Props = {
 
 export default function AppCard({ app, latestDeployStatus, latestDeployTime }: Props) {
   const [deploying, setDeploying] = useState(false);
-  const status = latestDeployStatus || 'stopped';
+  const [optimisticStatus, setOptimisticStatus] = useState<string | null>(null);
+  const status = optimisticStatus || latestDeployStatus || 'stopped';
   const isOnline = status === 'running';
   const isFailed = status === 'failed';
   const isBuilding = status === 'building' || status === 'deploying';
@@ -23,10 +25,14 @@ export default function AppCard({ app, latestDeployStatus, latestDeployTime }: P
 
   async function handleDeploy() {
     setDeploying(true);
+    // Optimistic: show deploying status immediately
+    setOptimisticStatus('deploying');
     try {
       await api.triggerDeploy(app.id);
       window.location.href = `/apps/${app.id}/deploys`;
-    } catch {
+    } catch (err: any) {
+      setOptimisticStatus(null);
+      addToast('error', err.message || 'Failed to trigger deploy');
       setDeploying(false);
     }
   }

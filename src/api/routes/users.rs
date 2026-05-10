@@ -13,7 +13,7 @@ pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/users", get(list_users))
         .route("/users/invite", post(invite_user))
-        .route("/users/me", get(get_me))
+        .route("/users/me", get(get_me).delete(delete_own_account))
         .route("/users/{id}/role", put(change_role))
         .route("/users/{id}", delete(deactivate_user))
         .route("/users/{id}/reset-password", post(reset_password))
@@ -65,6 +65,58 @@ async fn get_me(
     Ok(Json(
         serde_json::json!({ "data": { "id": user.id, "email": user.email, "role": user.role, "totp_enabled": user.totp_enabled, "created_at": user.created_at } }),
     ))
+}
+
+#[derive(Deserialize)]
+struct DeleteAccountRequest {
+    password: String,
+}
+
+async fn delete_own_account(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Json(body): Json<DeleteAccountRequest>,
+) -> Result<Json<serde_json::Value>, ApiError> {
+    let user = authenticate_from_headers(&state, &headers)
+        .await?
+        .ok_or_else(|| ApiError::BadRequest("Not authenticated".into()))?;
+
+    if !verify_password(&body.password, &user.password_hash) {
+        return Err(ApiError::BadRequest("Password is incorrect".into()));
+    }
+
+    // Cannot delete the last admin
+    if user.role == "admin" {
+        let admin_count = state.db.count_admin_users().await?;
+        if admin_count <= 1 {
+            return Err(ApiError::BadRequest(
+                "Cannot delete the last admin account".into(),
+            ));
+        }
+    }
+
+    // Delete all sessions, tokens, then the user
+    state.db.delete_user_sessions(&user.id).await?;
+    let tokens = state.db.list_api_tokens(&user.id).await?;
+    for token in tokens {
+        state.db.delete_api_token(&token.id).await?;
+    }
+    state.db.delete_user(&user.id).await?;
+
+    Ok(Json(
+        serde_json::json!({ "message": "Account deleted successfully" }),
+    ))
+}
+
+fn verify_password(password: &str, hash: &str) -> bool {
+    use argon2::{password_hash::PasswordHash, Argon2, PasswordVerifier};
+    let parsed = match PasswordHash::new(hash) {
+        Ok(h) => h,
+        Err(_) => return false,
+    };
+    Argon2::default()
+        .verify_password(password.as_bytes(), &parsed)
+        .is_ok()
 }
 
 #[derive(Deserialize)]
@@ -188,25 +240,37 @@ async fn deactivate_user(
     }
     if caller.id == id {
         return Err(ApiError::BadRequest(
-            "Cannot deactivate your own account".into(),
+            "Cannot delete your own account through this endpoint. Use DELETE /users/me instead."
+                .into(),
         ));
     }
 
-    let admins: Vec<_> = state
+    // Verify target user exists
+    let target = state
         .db
-        .list_users()
+        .get_user_by_id(&id)
         .await?
-        .into_iter()
-        .filter(|u| u.role == "admin")
-        .collect();
-    if admins.len() <= 1 && admins.first().map(|a| &a.id) == Some(&id) {
-        return Err(ApiError::BadRequest(
-            "Cannot deactivate the last admin".into(),
-        ));
+        .ok_or_else(|| ApiError::NotFound("User not found".into()))?;
+
+    // Cannot delete the last admin
+    if target.role == "admin" {
+        let admin_count = state.db.count_admin_users().await?;
+        if admin_count <= 1 {
+            return Err(ApiError::BadRequest("Cannot delete the last admin".into()));
+        }
     }
 
+    // Delete sessions, tokens, then the user
     state.db.delete_user_sessions(&id).await?;
-    Ok(Json(serde_json::json!({ "message": "user deactivated" })))
+    let tokens = state.db.list_api_tokens(&id).await?;
+    for token in tokens {
+        state.db.delete_api_token(&token.id).await?;
+    }
+    state.db.delete_user(&id).await?;
+
+    Ok(Json(
+        serde_json::json!({ "message": "User deleted successfully" }),
+    ))
 }
 
 // --- Password Reset (Admin) ---

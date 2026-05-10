@@ -16,3 +16,43 @@
   padding: var(--space-4);
   color: var(--color-text-muted);
 }
+
+/* Tab fade transitions */
+.tabPanel {
+  opacity: 1;
+  transition: opacity var(--duration-fast) var(--ease-out);
+}
+
+.tabPanelEntering {
+  opacity: 0;
+}
+
+.tabPanelVisible {
+  opacity: 1;
+}
+
+/* Deploy detail slide-in from right */
+.deploySlide {
+  animation: slideInRight var(--duration-normal) var(--ease-out) forwards;
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tabPanel {
+    transition: none;
+  }
+
+  .deploySlide {
+    animation: none;
+  }
+}

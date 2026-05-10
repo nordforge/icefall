@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'preact/hooks';
 import { api } from '@lib/api';
+import { addToast } from '@stores/toast';
 import { createSSEClient } from '@lib/sse';
 import type { Deploy, BuildStep } from '@lib/types';
 import { formatDuration, shortSha, formatRelativeTime } from '@lib/format';
@@ -119,7 +120,17 @@ export default function DeployDetail({ appId, deployId, appName }: Props) {
         </div>
         <div class={styles.actions}>
           {isActive && <Button variant="secondary"><X size={14} /> Cancel Deploy</Button>}
-          <Button variant="primary" onClick={() => api.triggerDeploy(appId).then(() => window.location.reload())}>
+          <Button variant="primary" onClick={() => {
+            // Optimistic: show deploying status immediately
+            setDeploy(prev => prev ? { ...prev, status: 'deploying' } : prev);
+            api.triggerDeploy(appId).then(() => {
+              window.location.reload();
+            }).catch((err: any) => {
+              // Revert status on failure
+              setDeploy(prev => prev ? { ...prev, status: deploy?.status || 'failed' } : prev);
+              addToast('error', err.message || 'Failed to trigger redeploy');
+            });
+          }}>
             <RotateCcw size={14} /> Redeploy
           </Button>
         </div>
