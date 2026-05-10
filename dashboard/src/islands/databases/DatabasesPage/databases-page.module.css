@@ -6,8 +6,14 @@
 }
 
 .pageTitle {
-  font-size: var(--text-2xl);
+  font-size: var(--text-xl);
   font-weight: var(--weight-semibold);
+}
+
+@media (min-width: 641px) {
+  .pageTitle {
+    font-size: var(--text-2xl);
+  }
 }
 
 .loadingText {
@@ -258,8 +264,14 @@
 /* Grid list */
 .dbGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: 1fr;
   gap: var(--space-4);
+}
+
+@media (min-width: 641px) {
+  .dbGrid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
 }
 
 .dbCard {

@@ -35,9 +35,17 @@
 
 .header {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+  flex-direction: column;
+  gap: var(--space-4);
   margin-bottom: var(--space-6);
+}
+
+@media (min-width: 641px) {
+  .header {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
 }
 
 .titleRow {
@@ -48,8 +56,14 @@
 }
 
 .title {
-  font-size: var(--text-2xl);
+  font-size: var(--text-xl);
   font-weight: var(--weight-semibold);
+}
+
+@media (min-width: 641px) {
+  .title {
+    font-size: var(--text-2xl);
+  }
 }
 
 .meta {
@@ -57,6 +71,7 @@
   gap: var(--space-4);
   font-size: var(--text-sm);
   color: var(--color-text-secondary);
+  flex-wrap: wrap;
 }
 
 .metaItem {
@@ -74,6 +89,7 @@
 .actions {
   display: flex;
   gap: var(--space-2);
+  flex-wrap: wrap;
 }
 
 .stepsList {

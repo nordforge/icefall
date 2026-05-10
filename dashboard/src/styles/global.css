@@ -92,3 +92,43 @@ table {
   white-space: nowrap;
   border: 0;
 }
+
+/* Responsive typography: reduce heading sizes on mobile */
+h1 {
+  font-size: var(--text-xl);
+}
+
+h2 {
+  font-size: var(--text-lg);
+}
+
+@media (min-width: 641px) {
+  h1 {
+    font-size: var(--text-2xl);
+  }
+
+  h2 {
+    font-size: var(--text-xl);
+  }
+}
+
+/* Responsive table wrapper: horizontal scroll with scroll hint on mobile */
+.table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  /* Subtle scroll hint via mask gradient */
+  mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    oklch(0 0 0) var(--space-2),
+    oklch(0 0 0) calc(100% - var(--space-4)),
+    transparent 100%
+  );
+}
+
+@media (min-width: 641px) {
+  .table-responsive {
+    overflow-x: visible;
+    mask-image: none;
+  }
+}
