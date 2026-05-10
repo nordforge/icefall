@@ -1,4 +1,4 @@
-use bollard::container::LogsOptions;
+use bollard::query_parameters::LogsOptions;
 use futures_util::Stream;
 use futures_util::StreamExt;
 use serde::{Deserialize, Serialize};
@@ -18,7 +18,7 @@ impl DockerClient {
         follow: bool,
         tail: Option<usize>,
     ) -> impl Stream<Item = Result<LogLine, DockerError>> {
-        let options = LogsOptions::<String> {
+        let options = LogsOptions {
             follow,
             stdout: true,
             stderr: true,
@@ -33,20 +33,21 @@ impl DockerClient {
             .map(|result| {
                 result
                     .map(|output| {
+                        use bollard::container::LogOutput;
                         let (stream, message) = match output {
-                            bollard::container::LogOutput::StdOut { message } => (
+                            LogOutput::StdOut { message } => (
                                 "stdout".to_string(),
                                 String::from_utf8_lossy(&message).to_string(),
                             ),
-                            bollard::container::LogOutput::StdErr { message } => (
+                            LogOutput::StdErr { message } => (
                                 "stderr".to_string(),
                                 String::from_utf8_lossy(&message).to_string(),
                             ),
-                            bollard::container::LogOutput::Console { message } => (
+                            LogOutput::Console { message } => (
                                 "console".to_string(),
                                 String::from_utf8_lossy(&message).to_string(),
                             ),
-                            bollard::container::LogOutput::StdIn { message } => (
+                            LogOutput::StdIn { message } => (
                                 "stdin".to_string(),
                                 String::from_utf8_lossy(&message).to_string(),
                             ),

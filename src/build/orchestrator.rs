@@ -294,8 +294,12 @@ impl BuildOrchestrator {
                 }
             }
 
-            if let Some(error) = &info.error {
-                return Err(BuildError::DockerBuild(error.clone()));
+            if let Some(ref detail) = info.error_detail {
+                let msg = detail
+                    .message
+                    .clone()
+                    .unwrap_or_else(|| "unknown build error".to_string());
+                return Err(BuildError::DockerBuild(msg));
             }
         }
 

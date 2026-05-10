@@ -162,7 +162,7 @@ async fn oauth_authorize(
 
     let (code_verifier, code_challenge, state_token) = {
         use rand::RngCore;
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
         let mut verifier_bytes = [0u8; 32];
         rng.fill_bytes(&mut verifier_bytes);
         let verifier = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(verifier_bytes);
@@ -699,7 +699,7 @@ async fn update_oauth_settings(
 
 fn hash_password_for_oauth(password: &str) -> Result<String, ApiError> {
     use argon2::{password_hash::SaltString, Argon2, PasswordHasher};
-    let salt = SaltString::generate(&mut rand::thread_rng());
+    let salt = SaltString::generate(&mut argon2::password_hash::rand_core::OsRng);
     let hash = Argon2::default()
         .hash_password(password.as_bytes(), &salt)
         .map_err(|e| ApiError::Internal(Box::new(std::io::Error::other(e.to_string()))))?;

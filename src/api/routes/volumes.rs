@@ -406,7 +406,7 @@ async fn upload_file(
             .map_err(|e| ApiError::Internal(Box::new(e)))?;
     }
 
-    use bollard::container::UploadToContainerOptions;
+    use bollard::query_parameters::UploadToContainerOptions;
     state
         .docker
         .inner()
@@ -416,7 +416,7 @@ async fn upload_file(
                 path: dest_dir.clone(),
                 ..Default::default()
             }),
-            bytes::Bytes::from(tar_buf),
+            bollard::body_full(bytes::Bytes::from(tar_buf)),
         )
         .await
         .map_err(|e| ApiError::Internal(Box::new(DockerError::Api(e))))?;

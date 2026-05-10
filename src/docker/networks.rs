@@ -1,17 +1,18 @@
-use bollard::models::EndpointSettings;
-use bollard::network::{ConnectNetworkOptions, CreateNetworkOptions};
+use bollard::models::{
+    EndpointSettings, NetworkConnectRequest, NetworkCreateRequest, NetworkDisconnectRequest,
+};
 
 use crate::docker::{DockerClient, DockerError};
 
 impl DockerClient {
     pub async fn create_network(&self, name: &str) -> Result<String, DockerError> {
-        let options = CreateNetworkOptions {
+        let config = NetworkCreateRequest {
             name: name.to_string(),
-            driver: "bridge".to_string(),
+            driver: Some("bridge".to_string()),
             ..Default::default()
         };
 
-        let response = self.inner().create_network(options).await?;
+        let response = self.inner().create_network(config).await?;
         Ok(response.id)
     }
 
@@ -25,11 +26,11 @@ impl DockerClient {
         network: &str,
         container: &str,
     ) -> Result<(), DockerError> {
-        let options = ConnectNetworkOptions {
+        let config = NetworkConnectRequest {
             container: container.to_string(),
-            endpoint_config: EndpointSettings::default(),
+            endpoint_config: Some(EndpointSettings::default()),
         };
-        self.inner().connect_network(network, options).await?;
+        self.inner().connect_network(network, config).await?;
         Ok(())
     }
 
@@ -39,14 +40,14 @@ impl DockerClient {
         container: &str,
         alias: &str,
     ) -> Result<(), DockerError> {
-        let options = ConnectNetworkOptions {
+        let config = NetworkConnectRequest {
             container: container.to_string(),
-            endpoint_config: EndpointSettings {
+            endpoint_config: Some(EndpointSettings {
                 aliases: Some(vec![alias.to_string()]),
                 ..Default::default()
-            },
+            }),
         };
-        self.inner().connect_network(network, options).await?;
+        self.inner().connect_network(network, config).await?;
         Ok(())
     }
 
@@ -58,9 +59,9 @@ impl DockerClient {
         self.inner()
             .disconnect_network(
                 network,
-                bollard::network::DisconnectNetworkOptions {
+                NetworkDisconnectRequest {
                     container: container.to_string(),
-                    force: false,
+                    force: Some(false),
                 },
             )
             .await?;

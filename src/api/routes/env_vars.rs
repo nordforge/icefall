@@ -66,7 +66,7 @@ async fn list_env_vars(
 
     let filtered: Vec<EnvVarResponse> = vars
         .into_iter()
-        .filter(|v| params.scope.as_ref().map_or(true, |s| &v.scope == s))
+        .filter(|v| params.scope.as_ref().is_none_or(|s| &v.scope == s))
         .map(|v| EnvVarResponse {
             id: v.id,
             key: v.key,
