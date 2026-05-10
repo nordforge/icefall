@@ -173,7 +173,7 @@ export default function ProjectsPage() {
           {selectedProject.apps && selectedProject.apps.length > 0 ? (
             <div class={styles.resourceList}>
               {selectedProject.apps.map((app) => (
-                <a key={app.id} href={`/apps/${app.name}`} class={styles.resourceCard}>
+                <a key={app.id} href={`/apps/${app.id}`} class={styles.resourceCard}>
                   <Grid2x2 size={16} aria-hidden="true" />
                   <div>
                     <div class={styles.resourceName}>{app.name}</div>

@@ -113,6 +113,12 @@ export type User = {
   created_at: string;
 }
 
+export type RegistrationSettings = {
+  allow_registration: boolean;
+  allowed_domains: string | null;
+  default_role: string;
+}
+
 export type ApiToken = {
   id: string;
   name: string;

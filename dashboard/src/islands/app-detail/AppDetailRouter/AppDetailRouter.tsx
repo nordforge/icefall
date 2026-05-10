@@ -24,21 +24,67 @@ const TAB_LOADERS: Record<string, () => Promise<{ default: ComponentType<any> }>
   settings: () => import('@islands/app-detail/SettingsTab/SettingsTab'),
 };
 
+const VALID_TABS = new Set(Object.keys(TAB_LOADERS));
+
 export default function AppDetailRouter() {
-  const initial = parseRoute();
+  const [route, setRoute] = useState(parseRoute);
   const [app, setApp] = useState<App | null>(null);
   const [appStatus, setAppStatus] = useState<DeployStatus | 'online'>('stopped');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [activeTab, setActiveTab] = useState(initial.tab);
-  const [subId] = useState(initial.subId);
 
   const componentCache = useRef<Record<string, ComponentType<any>>>({});
   const [loadedTabs, setLoadedTabs] = useState<Record<string, ComponentType<any>>>({});
   const [DeployDetail, setDeployDetail] = useState<ComponentType<any> | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  const appId = initial.appId;
+  const { appId, tab: activeTab, subId } = route;
 
+  // Central navigation function — all internal links go through this
+  const navigate = useCallback((path: string, replace = false) => {
+    if (replace) {
+      window.history.replaceState(null, '', path);
+    } else {
+      window.history.pushState(null, '', path);
+    }
+    setRoute(parseRoute());
+  }, []);
+
+  // Sync state with URL on browser back/forward
+  useEffect(() => {
+    function onPopState() {
+      setRoute(parseRoute());
+    }
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
+
+  // Intercept <a> clicks inside this island that point to /apps/{appId}/...
+  // This prevents full page reloads for internal navigation
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    function handleClick(e: MouseEvent) {
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+
+      const link = (e.target as HTMLElement).closest('a');
+      if (!link) return;
+
+      const href = link.getAttribute('href');
+      if (!href || !href.startsWith(`/apps/${appId}`)) return;
+
+      // This is an internal app link — handle it as SPA navigation
+      e.preventDefault();
+      e.stopPropagation();
+      navigate(href);
+    }
+
+    container.addEventListener('click', handleClick);
+    return () => container.removeEventListener('click', handleClick);
+  }, [appId, navigate]);
+
+  // Load app data
   const refreshStatus = useCallback(() => {
     if (!appId) return;
     api.listDeploys(appId).then(({ data }) => {
@@ -55,6 +101,7 @@ export default function AppDetailRouter() {
     refreshStatus();
   }, [appId, refreshStatus]);
 
+  // Lazy-load tab component
   useEffect(() => {
     if (componentCache.current[activeTab]) {
       setLoadedTabs(prev => ({ ...prev, [activeTab]: componentCache.current[activeTab] }));
@@ -70,13 +117,14 @@ export default function AppDetailRouter() {
     }
   }, [activeTab]);
 
+  // Load deploy detail component when needed
   useEffect(() => {
-    if (activeTab === 'deploys' && subId) {
+    if (activeTab === 'deploys' && subId && !DeployDetail) {
       import('@islands/deploy/DeployDetail/DeployDetail').then((m) => {
         setDeployDetail(() => m.default);
       });
     }
-  }, [activeTab, subId]);
+  }, [activeTab, subId, DeployDetail]);
 
   if (loading) {
     return <div class={styles.loading}>Loading...</div>;
@@ -86,17 +134,24 @@ export default function AppDetailRouter() {
     return <div class={styles.error} role="alert">{error || 'App not found'}</div>;
   }
 
+  // Deploy detail sub-view
   if (activeTab === 'deploys' && subId && DeployDetail) {
-    return <DeployDetail appId={app.id} deployId={subId} appName={app.name} />;
+    return (
+      <div ref={containerRef}>
+        <DeployDetail appId={app.id} deployId={subId} appName={app.name} />
+      </div>
+    );
   }
 
   const TabComponent = loadedTabs[activeTab] || null;
   const tabProps = activeTab === 'overview' || activeTab === 'settings' ? { app } : { appId: app.id };
 
   return (
-    <div>
+    <div ref={containerRef}>
       <AppHeader app={app} status={appStatus} onStatusChange={refreshStatus} />
-      <AppTabs appId={app.id} activeTab={activeTab} onTabChange={setActiveTab} />
+      <AppTabs appId={app.id} activeTab={activeTab} onTabChange={(tab) => {
+        navigate(`/apps/${app.id}/${tab}`);
+      }} />
       <div class={styles.tabContent}>
         {TabComponent ? (
           <TabComponent key={activeTab} {...tabProps} />

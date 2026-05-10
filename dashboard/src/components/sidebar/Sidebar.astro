@@ -1,6 +1,7 @@
 ---
 import styles from '@styles/sidebar.module.css';
 import ThemeToggle from '../theme/ThemeToggle';
+import LogoutButton from '@islands/shared/LogoutButton/LogoutButton';
 import pkg from '../../../package.json';
 
 const currentPath = Astro.url.pathname;
@@ -11,6 +12,7 @@ const navItems = [
   { href: '/databases', label: 'Databases', icon: 'database' },
   { href: '/server', label: 'Server', icon: 'server' },
   { href: '/users', label: 'Users', icon: 'users' },
+  { href: '/profile', label: 'Profile', icon: 'profile' },
   { href: '/settings', label: 'Settings', icon: 'settings' },
   { href: '/docs', label: 'Docs', icon: 'book' },
 ];
@@ -49,6 +51,7 @@ function isActive(href: string): boolean {
           {item.icon === 'database' && <><ellipse cx="12" cy="5" rx="9" ry="3" /><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" /><path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3" /></>}
           {item.icon === 'server' && <><rect x="2" y="2" width="20" height="8" rx="2" /><rect x="2" y="14" width="20" height="8" rx="2" /><circle cx="6" cy="6" r="1" fill="currentColor" /><circle cx="6" cy="18" r="1" fill="currentColor" /></>}
           {item.icon === 'users' && <><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></>}
+          {item.icon === 'profile' && <><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></>}
           {item.icon === 'settings' && <><path d="M20 7h-9" /><path d="M14 17H5" /><circle cx="17" cy="17" r="3" /><circle cx="7" cy="7" r="3" /></>}
           {item.icon === 'book' && <><path d="M4 19V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v14" /><path d="M4 19h16" /><path d="M12 3v16" /></>}
         </svg>
@@ -63,7 +66,10 @@ function isActive(href: string): boolean {
         <span class={styles.statusDotGreen} aria-hidden="true"></span>
         Operational
       </div>
-      <ThemeToggle client:idle />
+      <div style="display: flex; align-items: center; gap: var(--space-2);">
+        <LogoutButton client:idle />
+        <ThemeToggle client:idle />
+      </div>
     </div>
   </div>
 </aside>

@@ -153,11 +153,17 @@ pub trait Database: Send + Sync + 'static {
         env_snapshot: &str,
     ) -> Result<(), DbError>;
 
+    // User profile updates
+    async fn update_user_password(&self, user_id: &str, password_hash: &str) -> Result<(), DbError>;
+    async fn update_user_email(&self, user_id: &str, email: &str) -> Result<(), DbError>;
+
     // Sessions
     async fn create_session(&self, user_id: &str, expires_at: &str) -> Result<Session, DbError>;
     async fn get_session(&self, session_id: &str) -> Result<Option<Session>, DbError>;
     async fn delete_session(&self, session_id: &str) -> Result<(), DbError>;
     async fn delete_user_sessions(&self, user_id: &str) -> Result<(), DbError>;
+    async fn list_user_sessions(&self, user_id: &str) -> Result<Vec<Session>, DbError>;
+    async fn delete_user_sessions_except(&self, user_id: &str, keep_session_id: &str) -> Result<(), DbError>;
 
     // API Tokens
     async fn create_api_token(&self, user_id: &str, name: &str, token_hash: &str, expires_at: Option<&str>) -> Result<ApiToken, DbError>;
@@ -212,6 +218,18 @@ pub trait Database: Send + Sync + 'static {
     // OAuth Settings
     async fn get_oauth_settings(&self) -> Result<Option<OAuthSettings>, DbError>;
     async fn upsert_oauth_settings(&self, settings: &OAuthSettings) -> Result<(), DbError>;
+
+    // Registration Settings
+    async fn get_registration_settings(&self) -> Result<RegistrationSettings, DbError>;
+    async fn upsert_registration_settings(
+        &self,
+        allow_registration: bool,
+        allowed_domains: Option<&str>,
+        default_role: &str,
+    ) -> Result<RegistrationSettings, DbError>;
+
+    // Admin 2FA reset
+    async fn admin_reset_user_2fa(&self, user_id: &str) -> Result<(), DbError>;
 
     // Migrations
     async fn run_migrations(&self) -> Result<(), DbError>;

@@ -761,6 +761,34 @@ impl Database for SqliteDatabase {
         Ok(users)
     }
 
+    // --- User Profile Updates ---
+
+    async fn update_user_password(&self, user_id: &str, password_hash: &str) -> Result<(), DbError> {
+        sqlx::query("UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?")
+            .bind(password_hash)
+            .bind(now_iso8601())
+            .bind(user_id)
+            .execute(&self.pool)
+            .await?;
+        Ok(())
+    }
+
+    async fn update_user_email(&self, user_id: &str, email: &str) -> Result<(), DbError> {
+        sqlx::query("UPDATE users SET email = ?, updated_at = ? WHERE id = ?")
+            .bind(email)
+            .bind(now_iso8601())
+            .bind(user_id)
+            .execute(&self.pool)
+            .await
+            .map_err(|e| match e {
+                sqlx::Error::Database(ref db_err) if db_err.message().contains("UNIQUE") => {
+                    DbError::Duplicate(format!("email '{}' is already in use", email))
+                }
+                other => DbError::Sqlx(other),
+            })?;
+        Ok(())
+    }
+
     // --- Server Metrics ---
 
     async fn insert_server_metric(
@@ -1095,6 +1123,18 @@ impl Database for SqliteDatabase {
 
     async fn delete_user_sessions(&self, user_id: &str) -> Result<(), DbError> {
         sqlx::query("DELETE FROM sessions WHERE user_id = ?").bind(user_id).execute(&self.pool).await?;
+        Ok(())
+    }
+
+    async fn list_user_sessions(&self, user_id: &str) -> Result<Vec<Session>, DbError> {
+        Ok(sqlx::query_as::<_, Session>("SELECT * FROM sessions WHERE user_id = ? ORDER BY created_at DESC")
+            .bind(user_id).fetch_all(&self.pool).await?)
+    }
+
+    async fn delete_user_sessions_except(&self, user_id: &str, keep_session_id: &str) -> Result<(), DbError> {
+        sqlx::query("DELETE FROM sessions WHERE user_id = ? AND id != ?")
+            .bind(user_id).bind(keep_session_id)
+            .execute(&self.pool).await?;
         Ok(())
     }
 
@@ -1445,6 +1485,75 @@ impl Database for SqliteDatabase {
         .execute(&self.pool)
         .await?;
 
+        Ok(())
+    }
+
+    // --- Registration Settings ---
+
+    async fn get_registration_settings(&self) -> Result<RegistrationSettings, DbError> {
+        let settings = sqlx::query_as::<_, RegistrationSettings>(
+            "SELECT * FROM registration_settings WHERE id = 'singleton'",
+        )
+        .fetch_optional(&self.pool)
+        .await?;
+
+        match settings {
+            Some(s) => Ok(s),
+            None => {
+                // Return defaults if no row exists yet
+                Ok(RegistrationSettings {
+                    id: "singleton".to_string(),
+                    allow_registration: false,
+                    allowed_domains: None,
+                    default_role: "viewer".to_string(),
+                    updated_at: now_iso8601(),
+                })
+            }
+        }
+    }
+
+    async fn upsert_registration_settings(
+        &self,
+        allow_registration: bool,
+        allowed_domains: Option<&str>,
+        default_role: &str,
+    ) -> Result<RegistrationSettings, DbError> {
+        let now = now_iso8601();
+
+        sqlx::query(
+            "INSERT INTO registration_settings (id, allow_registration, allowed_domains, default_role, updated_at)
+             VALUES ('singleton', ?, ?, ?, ?)
+             ON CONFLICT(id) DO UPDATE SET
+                allow_registration = excluded.allow_registration,
+                allowed_domains = excluded.allowed_domains,
+                default_role = excluded.default_role,
+                updated_at = excluded.updated_at",
+        )
+        .bind(allow_registration)
+        .bind(allowed_domains)
+        .bind(default_role)
+        .bind(&now)
+        .execute(&self.pool)
+        .await?;
+
+        self.get_registration_settings().await
+    }
+
+    // --- Admin 2FA reset ---
+
+    async fn admin_reset_user_2fa(&self, user_id: &str) -> Result<(), DbError> {
+        let now = now_iso8601();
+        let result = sqlx::query(
+            "UPDATE users SET totp_enabled = 0, totp_secret = NULL, totp_backup_codes = NULL, updated_at = ? WHERE id = ?",
+        )
+        .bind(&now)
+        .bind(user_id)
+        .execute(&self.pool)
+        .await?;
+
+        if result.rows_affected() == 0 {
+            return Err(DbError::NotFound(format!("user {user_id}")));
+        }
         Ok(())
     }
 

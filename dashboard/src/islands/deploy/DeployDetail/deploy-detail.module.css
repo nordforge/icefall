@@ -4,6 +4,35 @@
   margin-bottom: var(--space-2);
 }
 
+.breadcrumbList {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.breadcrumbList li + li::before {
+  content: '/';
+  margin-right: var(--space-1);
+  color: var(--color-text-muted);
+}
+
+.breadcrumbList a {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.breadcrumbList a:hover {
+  text-decoration: underline;
+}
+
+.breadcrumbList a:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
 .header {
   display: flex;
   justify-content: space-between;

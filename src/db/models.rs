@@ -355,6 +355,17 @@ pub struct OAuthSettings {
     pub google_enabled: bool,
 }
 
+// --- Registration Settings ---
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
+pub struct RegistrationSettings {
+    pub id: String,
+    pub allow_registration: bool,
+    pub allowed_domains: Option<String>,
+    pub default_role: String,
+    pub updated_at: String,
+}
+
 pub fn now_iso8601() -> String {
     Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Millis, true)
 }

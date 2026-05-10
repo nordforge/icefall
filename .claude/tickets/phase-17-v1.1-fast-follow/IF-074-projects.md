@@ -1,6 +1,6 @@
 # IF-074: Projects (resource grouping)
 
-**Phase:** 16 — v1.1 Fast Follow
+**Phase:** 17 — v1.1 Fast Follow
 **Priority:** Medium
 **Estimate:** M
 

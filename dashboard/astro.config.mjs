@@ -6,6 +6,7 @@ import path from 'path';
 
 export default defineConfig({
   integrations: [preact()],
+  devToolbar: { enabled: false },
   output: 'static',
   adapter: node({ mode: 'standalone' }),
   server: { port: 4321 },
@@ -31,6 +32,14 @@ export default defineConfig({
           target: 'http://localhost:3001',
           changeOrigin: true,
           ws: true,
+          configure: (proxy) => {
+            proxy.on('proxyRes', (proxyRes) => {
+              if (proxyRes.headers['content-type']?.includes('text/event-stream')) {
+                proxyRes.headers['cache-control'] = 'no-cache';
+                proxyRes.headers['x-accel-buffering'] = 'no';
+              }
+            });
+          },
         },
       },
     },
