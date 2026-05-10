@@ -1,4 +1,4 @@
-use bollard::volume::CreateVolumeOptions;
+use bollard::models::VolumeCreateRequest;
 use serde::{Deserialize, Serialize};
 
 use crate::docker::{DockerClient, DockerError};
@@ -12,21 +12,26 @@ pub struct VolumeInfo {
 
 impl DockerClient {
     pub async fn create_volume(&self, name: &str) -> Result<(), DockerError> {
-        let options = CreateVolumeOptions {
-            name: name.to_string(),
+        let config = VolumeCreateRequest {
+            name: Some(name.to_string()),
             ..Default::default()
         };
-        self.inner().create_volume(options).await?;
+        self.inner().create_volume(config).await?;
         Ok(())
     }
 
     pub async fn remove_volume(&self, name: &str) -> Result<(), DockerError> {
-        self.inner().remove_volume(name, None).await?;
+        self.inner()
+            .remove_volume(name, None::<bollard::query_parameters::RemoveVolumeOptions>)
+            .await?;
         Ok(())
     }
 
     pub async fn list_volumes(&self) -> Result<Vec<VolumeInfo>, DockerError> {
-        let response = self.inner().list_volumes::<String>(None).await?;
+        let response = self
+            .inner()
+            .list_volumes(None::<bollard::query_parameters::ListVolumesOptions>)
+            .await?;
 
         let volumes = response
             .volumes

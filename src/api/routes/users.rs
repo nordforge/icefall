@@ -356,10 +356,10 @@ async fn revoke_token(
 fn generate_temp_password(len: usize) -> String {
     use rand::Rng;
     let charset: &[u8] = b"ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%";
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     (0..len)
         .map(|_| {
-            let idx = rng.gen_range(0..charset.len());
+            let idx = rng.random_range(0..charset.len());
             charset[idx] as char
         })
         .collect()
@@ -367,15 +367,15 @@ fn generate_temp_password(len: usize) -> String {
 
 fn generate_random_hex(len: usize) -> String {
     use rand::Rng;
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     (0..len)
-        .map(|_| format!("{:02x}", rng.gen::<u8>()))
+        .map(|_| format!("{:02x}", rng.random::<u8>()))
         .collect()
 }
 
 fn hash_password(password: &str) -> Result<String, ApiError> {
     use argon2::{password_hash::SaltString, Argon2, PasswordHasher};
-    let salt = SaltString::generate(&mut rand::thread_rng());
+    let salt = SaltString::generate(&mut argon2::password_hash::rand_core::OsRng);
     let hash = Argon2::default()
         .hash_password(password.as_bytes(), &salt)
         .map_err(|e| ApiError::Internal(Box::new(std::io::Error::other(e.to_string()))))?;

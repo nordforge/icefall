@@ -6,7 +6,8 @@ use axum::http::HeaderMap;
 use axum::response::IntoResponse;
 use axum::routing::get;
 use axum::Router;
-use bollard::exec::{CreateExecOptions, ResizeExecOptions, StartExecOptions, StartExecResults};
+use bollard::exec::{CreateExecOptions, StartExecOptions, StartExecResults};
+use bollard::query_parameters::ResizeExecOptions;
 use futures_util::{SinkExt, StreamExt};
 use serde::Deserialize;
 use tokio::io::AsyncWriteExt;
@@ -200,8 +201,8 @@ async fn handle_terminal_inner(
                                     .resize_exec(
                                         &exec_id,
                                         ResizeExecOptions {
-                                            width: resize.cols,
-                                            height: resize.rows,
+                                            w: resize.cols as i32,
+                                            h: resize.rows as i32,
                                         },
                                     )
                                     .await;
