@@ -15,6 +15,8 @@ import {
   Copy,
   Plus,
   LogOut,
+  Settings2,
+  AlertTriangle,
 } from 'lucide-preact';
 import styles from './profile-page.module.css';
 import formStyles from '@styles/form.module.css';
@@ -68,6 +70,16 @@ export default function ProfilePage() {
   const [sessionsLoading, setSessionsLoading] = useState(false);
   const [sessionsMsg, setSessionsMsg] = useState('');
 
+  // Preferences
+  const [preferences, setPreferences] = useState<Record<string, unknown>>({});
+  const [prefSaving, setPrefSaving] = useState(false);
+
+  // Danger zone
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [deleteSubmitting, setDeleteSubmitting] = useState(false);
+  const [deleteErr, setDeleteErr] = useState('');
+
   useEffect(() => {
     Promise.all([
       api.getMe().then(({ data }) => setUser(data)).catch(() => {}),
@@ -75,6 +87,7 @@ export default function ProfilePage() {
       api.getEnabledOAuthProviders().then(({ data }) => setEnabledProviders(data)).catch(() => {}),
       api.listTokens().then(({ data }) => setTokens(data)).catch(() => {}),
       api.listSessions().then(({ data }) => setSessions(data)).catch(() => {}),
+      api.getPreferences().then(({ data }) => setPreferences(data)).catch(() => {}),
     ]).finally(() => setLoading(false));
   }, []);
 
@@ -515,6 +528,144 @@ export default function ProfilePage() {
           </table>
         </div>
       </section>
+
+      {/* --- Preferences --- */}
+      <section class={styles.section} aria-labelledby="preferences-heading">
+        <h2 id="preferences-heading" class={styles.sectionHeading}>
+          <Settings2 size={18} aria-hidden="true" /> Preferences
+        </h2>
+        <p class={styles.sectionDescription}>
+          Settings synced across all your devices.
+        </p>
+
+        <div class={formStyles.fieldGroup}>
+          <div>
+            <label htmlFor="pref-theme" class={formStyles.label}>Theme</label>
+            <select
+              id="pref-theme"
+              class={formStyles.input}
+              value={(preferences.theme as string) || 'system'}
+              onChange={async (e) => {
+                const theme = (e.target as HTMLSelectElement).value;
+                const updated = { ...preferences, theme };
+                setPreferences(updated);
+                document.documentElement.setAttribute('data-theme', theme === 'system'
+                  ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+                  : theme);
+                localStorage.setItem('icefall-theme', theme);
+                setPrefSaving(true);
+                try { await api.updatePreferences({ theme }); } catch {}
+                setPrefSaving(false);
+              }}
+            >
+              <option value="light">Light</option>
+              <option value="dark">Dark</option>
+              <option value="system">System</option>
+            </select>
+          </div>
+          <div>
+            <label htmlFor="pref-timezone" class={formStyles.label}>Timezone</label>
+            <select
+              id="pref-timezone"
+              class={formStyles.input}
+              value={(preferences.timezone as string) || Intl.DateTimeFormat().resolvedOptions().timeZone}
+              onChange={async (e) => {
+                const timezone = (e.target as HTMLSelectElement).value;
+                setPreferences(prev => ({ ...prev, timezone }));
+                setPrefSaving(true);
+                try { await api.updatePreferences({ timezone }); } catch {}
+                setPrefSaving(false);
+              }}
+            >
+              {Intl.supportedValuesOf('timeZone').map(tz => (
+                <option key={tz} value={tz}>{tz.replace(/_/g, ' ')}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label class={formStyles.label}>
+              <input
+                type="checkbox"
+                checked={preferences.email_notifications !== false}
+                onChange={async (e) => {
+                  const email_notifications = (e.target as HTMLInputElement).checked;
+                  setPreferences(prev => ({ ...prev, email_notifications }));
+                  setPrefSaving(true);
+                  try { await api.updatePreferences({ email_notifications }); } catch {}
+                  setPrefSaving(false);
+                }}
+              />
+              {' '}Email notifications for deploy events
+            </label>
+          </div>
+        </div>
+        {prefSaving && <p class={styles.savingIndicator}>Saving...</p>}
+      </section>
+
+      {/* --- Danger Zone --- */}
+      <section class={styles.section} aria-labelledby="danger-heading">
+        <h2 id="danger-heading" class={styles.sectionHeadingDanger}>
+          <AlertTriangle size={18} aria-hidden="true" /> Danger Zone
+        </h2>
+        <p class={styles.sectionDescription}>
+          Permanently delete your account and all associated data. This action cannot be undone.
+        </p>
+
+        {deleteErr && <p class={styles.feedbackError} role="alert">{deleteErr}</p>}
+
+        {!deleteConfirm ? (
+          <Button variant="danger" onClick={() => setDeleteConfirm(true)}>
+            Delete Account
+          </Button>
+        ) : (
+          <div class={styles.dangerCard}>
+            <p class={styles.dangerText}>
+              Enter your password to confirm account deletion. All your sessions, tokens, and data will be permanently removed.
+            </p>
+            <div class={formStyles.fieldGroup}>
+              <div>
+                <label htmlFor="delete-password" class={formStyles.label}>Password</label>
+                <input
+                  id="delete-password"
+                  class={formStyles.input}
+                  type="password"
+                  autoComplete="current-password"
+                  value={deletePassword}
+                  onInput={e => setDeletePassword((e.target as HTMLInputElement).value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' && deletePassword) handleDeleteAccount();
+                  }}
+                />
+              </div>
+            </div>
+            <div class={styles.formActions}>
+              <Button variant="ghost" onClick={() => { setDeleteConfirm(false); setDeletePassword(''); setDeleteErr(''); }}>
+                Cancel
+              </Button>
+              <Button
+                variant="danger"
+                onClick={handleDeleteAccount}
+                loading={deleteSubmitting}
+                disabled={!deletePassword}
+              >
+                Permanently Delete Account
+              </Button>
+            </div>
+          </div>
+        )}
+      </section>
     </div>
   );
+
+  async function handleDeleteAccount() {
+    setDeleteErr('');
+    setDeleteSubmitting(true);
+    try {
+      await api.deleteAccount(deletePassword);
+      window.location.href = '/login';
+    } catch (e: any) {
+      setDeleteErr(e.message || 'Failed to delete account');
+    }
+    setDeleteSubmitting(false);
+  }
 }

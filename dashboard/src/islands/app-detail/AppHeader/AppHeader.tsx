@@ -2,6 +2,7 @@ import type { App, DeployStatus } from '@lib/types';
 import StatusDot from '@islands/shared/StatusDot/StatusDot';
 import Button from '@islands/shared/Button/Button';
 import { api } from '@lib/api';
+import { addToast } from '@stores/toast';
 import { useState } from 'preact/hooks';
 import { Settings, Rocket, GitBranch, Container, Layers, Square, Play, RotateCw } from 'lucide-preact';
 import styles from './app-header.module.css';
@@ -17,44 +18,73 @@ export default function AppHeader({ app, status, onStatusChange }: Props) {
   const [stopping, setStopping] = useState(false);
   const [starting, setStarting] = useState(false);
   const [restarting, setRestarting] = useState(false);
+  const [optimisticStatus, setOptimisticStatus] = useState<DeployStatus | 'online' | null>(null);
 
-  const isRunning = status === 'running' || status === 'online';
-  const isStopped = status === 'stopped';
+  const displayStatus = optimisticStatus ?? status;
+  const isRunning = displayStatus === 'running' || displayStatus === 'online';
+  const isStopped = displayStatus === 'stopped';
 
   async function handleDeploy() {
     setDeploying(true);
+    // Optimistic: show deploying status immediately
+    setOptimisticStatus('deploying');
     try {
       await api.triggerDeploy(app.id);
       window.location.href = `/apps/${app.id}/deploys`;
-    } catch {
+    } catch (err: any) {
+      // Revert optimistic status
+      setOptimisticStatus(null);
+      addToast('error', err.message || 'Failed to trigger deploy');
       setDeploying(false);
     }
   }
 
   async function handleStop() {
     setStopping(true);
+    const prevStatus = status;
+    // Optimistic: show stopped immediately
+    setOptimisticStatus('stopped');
     try {
       await api.stopApp(app.id);
       onStatusChange?.();
-    } catch { /* handled by API error */ }
+      setOptimisticStatus(null);
+    } catch (err: any) {
+      // Revert to previous status
+      setOptimisticStatus(null);
+      addToast('error', err.message || 'Failed to stop app');
+    }
     setStopping(false);
   }
 
   async function handleStart() {
     setStarting(true);
+    // Optimistic: show running immediately
+    setOptimisticStatus('running');
     try {
       await api.startApp(app.id);
       onStatusChange?.();
-    } catch { /* handled by API error */ }
+      setOptimisticStatus(null);
+    } catch (err: any) {
+      // Revert to previous status
+      setOptimisticStatus(null);
+      addToast('error', err.message || 'Failed to start app');
+    }
     setStarting(false);
   }
 
   async function handleRestart() {
     setRestarting(true);
+    // Optimistic: show deploying briefly (restart in progress)
+    setOptimisticStatus('deploying');
     try {
       await api.restartApp(app.id);
       onStatusChange?.();
-    } catch { /* handled by API error */ }
+      setOptimisticStatus(null);
+    } catch (err: any) {
+      // Revert to previous status
+      setOptimisticStatus(null);
+      addToast('error', err.message || 'Failed to restart app');
+    }
     setRestarting(false);
   }
 
@@ -67,7 +97,7 @@ export default function AppHeader({ app, status, onStatusChange }: Props) {
         </nav>
         <div class={styles.titleRow}>
           <h1 class={styles.title}>{app.name}</h1>
-          <StatusDot status={status || 'online'} />
+          <StatusDot status={displayStatus || 'online'} />
         </div>
         <div class={styles.meta}>
           {app.compose_content ? (

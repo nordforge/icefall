@@ -1641,6 +1641,63 @@ impl Database for SqliteDatabase {
         self.get_registration_settings().await
     }
 
+    // --- User Deletion ---
+
+    async fn delete_user(&self, user_id: &str) -> Result<(), DbError> {
+        let result = sqlx::query("DELETE FROM users WHERE id = ?")
+            .bind(user_id)
+            .execute(&self.pool)
+            .await?;
+        if result.rows_affected() == 0 {
+            return Err(DbError::NotFound(format!("user {user_id}")));
+        }
+        Ok(())
+    }
+
+    async fn count_admin_users(&self) -> Result<i64, DbError> {
+        let row = sqlx::query("SELECT COUNT(*) as count FROM users WHERE role = 'admin'")
+            .fetch_one(&self.pool)
+            .await?;
+        Ok(row.get::<i64, _>("count"))
+    }
+
+    // --- User Preferences ---
+
+    async fn get_user_preferences(&self, user_id: &str) -> Result<serde_json::Value, DbError> {
+        let row = sqlx::query("SELECT preferences FROM users WHERE id = ?")
+            .bind(user_id)
+            .fetch_optional(&self.pool)
+            .await?;
+        match row {
+            Some(row) => {
+                let raw: String = row.get("preferences");
+                let value: serde_json::Value =
+                    serde_json::from_str(&raw).unwrap_or_else(|_| serde_json::json!({}));
+                Ok(value)
+            }
+            None => Err(DbError::NotFound(format!("user {user_id}"))),
+        }
+    }
+
+    async fn update_user_preferences(
+        &self,
+        user_id: &str,
+        preferences: &serde_json::Value,
+    ) -> Result<(), DbError> {
+        let json_str = serde_json::to_string(preferences)
+            .map_err(|e| DbError::Sqlx(sqlx::Error::Protocol(e.to_string())))?;
+        let result = sqlx::query("UPDATE users SET preferences = ?, updated_at = ? WHERE id = ?")
+            .bind(&json_str)
+            .bind(now_iso8601())
+            .bind(user_id)
+            .execute(&self.pool)
+            .await?;
+        if result.rows_affected() == 0 {
+            return Err(DbError::NotFound(format!("user {user_id}")));
+        }
+        Ok(())
+    }
+
     // --- Admin 2FA reset ---
 
     async fn admin_reset_user_2fa(&self, user_id: &str) -> Result<(), DbError> {

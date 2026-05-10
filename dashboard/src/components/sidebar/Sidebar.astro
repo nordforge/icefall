@@ -18,7 +18,10 @@ const navItems = [
 ];
 
 function isActive(href: string): boolean {
-  if (href === '/') return currentPath === '/';
+  if (href === '/') {
+    // The root route is the apps listing — also highlight for /apps/* detail pages
+    return currentPath === '/' || currentPath.startsWith('/apps');
+  }
   return currentPath.startsWith(href);
 }
 ---
@@ -38,12 +41,16 @@ function isActive(href: string): boolean {
     </span>
   </a>
 
-  <nav aria-label="Main" class={styles.nav}>
-    {navItems.map((item) => (
+  {/* a11y [WCAG 2.1.1]: arrow-key navigation via roving tabindex managed by inline script */}
+  <nav aria-label="Main" class={styles.nav} id="sidebar-nav">
+    {navItems.map((item, i) => (
       <a
         href={item.href}
         aria-current={isActive(item.href) ? 'page' : undefined}
         class:list={[styles.navItem, isActive(item.href) && styles.navItemActive]}
+        data-astro-prefetch="hover"
+        tabindex={i === 0 ? 0 : -1}
+        data-nav-index={i}
       >
         <svg aria-hidden="true" class={styles.navIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
           {item.icon === 'grid' && <><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /></>}
@@ -67,9 +74,53 @@ function isActive(href: string): boolean {
         Operational
       </div>
       <div style="display: flex; align-items: center; gap: var(--space-2);">
-        <LogoutButton client:idle />
-        <ThemeToggle client:idle />
+        <LogoutButton client:only="preact" />
+        <ThemeToggle client:only="preact" />
       </div>
     </div>
   </div>
 </aside>
+
+<script>
+  // a11y [WCAG 2.1.1]: arrow-key navigation for sidebar nav items (roving tabindex)
+  function initSidebarKeyboard() {
+    const nav = document.getElementById('sidebar-nav');
+    if (!nav) return;
+    const links = Array.from(nav.querySelectorAll<HTMLAnchorElement>('[data-nav-index]'));
+    if (links.length === 0) return;
+
+    // Restore focus to the active page link
+    const active = nav.querySelector<HTMLAnchorElement>('[aria-current="page"]');
+    if (active) {
+      links.forEach(l => l.setAttribute('tabindex', '-1'));
+      active.setAttribute('tabindex', '0');
+    }
+
+    nav.addEventListener('keydown', (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      const idx = Number(target.getAttribute('data-nav-index'));
+      if (Number.isNaN(idx)) return;
+
+      let next = -1;
+      if (e.key === 'ArrowDown') {
+        next = idx < links.length - 1 ? idx + 1 : 0;
+      } else if (e.key === 'ArrowUp') {
+        next = idx > 0 ? idx - 1 : links.length - 1;
+      } else if (e.key === 'Home') {
+        next = 0;
+      } else if (e.key === 'End') {
+        next = links.length - 1;
+      }
+
+      if (next >= 0) {
+        e.preventDefault();
+        links[idx].setAttribute('tabindex', '-1');
+        links[next].setAttribute('tabindex', '0');
+        links[next].focus();
+      }
+    });
+  }
+
+  initSidebarKeyboard();
+  document.addEventListener('astro:after-swap', initSidebarKeyboard);
+</script>
