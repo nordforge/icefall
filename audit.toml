@@ -1,9 +1,10 @@
-# cargo-audit configuration
-# https://github.com/rustsec/rustsec/tree/main/cargo-audit
-
-[advisories]
-# RUSTSEC-2023-0071: Marvin Attack in `rsa` crate.
-# This is a transitive dependency from sqlx-mysql (pulled by sqlx's macro crate
-# regardless of features). We only use SQLite — the rsa crate is never invoked.
-# No fixed version exists upstream. Safe to ignore.
-ignore = ["RUSTSEC-2023-0071"]
+# Ignored security advisories
+#
+# cargo-audit does not auto-read config files in v0.22.
+# The --ignore flags are passed in .github/workflows/security-audit.yml.
+# This file exists as documentation of why each advisory is ignored.
+#
+# RUSTSEC-2023-0071: Marvin Attack in `rsa` crate (severity: medium).
+#   Transitive dependency from sqlx-mysql, pulled by sqlx's macro crate
+#   regardless of features. We only use SQLite — the rsa crate is never invoked.
+#   No fixed version exists upstream.
