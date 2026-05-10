@@ -228,10 +228,10 @@ fn db_configs() -> HashMap<&'static str, DbTypeConfig> {
 
 fn generate_password() -> String {
     use rand::Rng;
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     (0..32)
         .map(|_| {
-            let idx = rng.gen_range(0..62);
+            let idx = rng.random_range(0..62);
 
             match idx {
                 0..=9 => (b'0' + idx) as char,

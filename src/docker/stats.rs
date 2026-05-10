@@ -1,4 +1,5 @@
-use bollard::container::{NetworkStats, Stats, StatsOptions};
+use bollard::models::{ContainerNetworkStats, ContainerStatsResponse};
+use bollard::query_parameters::StatsOptions;
 use futures_util::StreamExt;
 use serde::{Deserialize, Serialize};
 
@@ -31,21 +32,34 @@ impl DockerClient {
     }
 }
 
-fn parse_stats(stats: &Stats) -> ContainerStats {
+fn parse_stats(stats: &ContainerStatsResponse) -> ContainerStats {
     let cpu_percent = calculate_cpu_percent(stats);
 
-    let memory_usage_bytes = stats.memory_stats.usage.unwrap_or(0);
+    let memory_usage_bytes = stats
+        .memory_stats
+        .as_ref()
+        .and_then(|m| m.usage)
+        .unwrap_or(0);
 
-    let memory_limit_bytes = stats.memory_stats.limit.unwrap_or(0);
+    let memory_limit_bytes = stats
+        .memory_stats
+        .as_ref()
+        .and_then(|m| m.limit)
+        .unwrap_or(0);
 
     let (network_rx_bytes, network_tx_bytes) = stats
         .networks
         .as_ref()
-        .map(|nets: &std::collections::HashMap<String, NetworkStats>| {
-            nets.values().fold((0u64, 0u64), |(rx, tx), net| {
-                (rx + net.rx_bytes, tx + net.tx_bytes)
-            })
-        })
+        .map(
+            |nets: &std::collections::HashMap<String, ContainerNetworkStats>| {
+                nets.values().fold((0u64, 0u64), |(rx, tx), net| {
+                    (
+                        rx + net.rx_bytes.unwrap_or(0),
+                        tx + net.tx_bytes.unwrap_or(0),
+                    )
+                })
+            },
+        )
         .unwrap_or((0, 0));
 
     ContainerStats {
@@ -57,14 +71,42 @@ fn parse_stats(stats: &Stats) -> ContainerStats {
     }
 }
 
-fn calculate_cpu_percent(stats: &Stats) -> f64 {
-    let cpu_delta = stats.cpu_stats.cpu_usage.total_usage as f64
-        - stats.precpu_stats.cpu_usage.total_usage as f64;
+fn calculate_cpu_percent(stats: &ContainerStatsResponse) -> f64 {
+    let total_usage = stats
+        .cpu_stats
+        .as_ref()
+        .and_then(|c| c.cpu_usage.as_ref())
+        .and_then(|u| u.total_usage)
+        .unwrap_or(0);
 
-    let system_delta = stats.cpu_stats.system_cpu_usage.unwrap_or(0) as f64
-        - stats.precpu_stats.system_cpu_usage.unwrap_or(0) as f64;
+    let pre_total_usage = stats
+        .precpu_stats
+        .as_ref()
+        .and_then(|c| c.cpu_usage.as_ref())
+        .and_then(|u| u.total_usage)
+        .unwrap_or(0);
 
-    let num_cpus = stats.cpu_stats.online_cpus.unwrap_or(1) as f64;
+    let cpu_delta = total_usage as f64 - pre_total_usage as f64;
+
+    let system_cpu = stats
+        .cpu_stats
+        .as_ref()
+        .and_then(|c| c.system_cpu_usage)
+        .unwrap_or(0);
+
+    let pre_system_cpu = stats
+        .precpu_stats
+        .as_ref()
+        .and_then(|c| c.system_cpu_usage)
+        .unwrap_or(0);
+
+    let system_delta = system_cpu as f64 - pre_system_cpu as f64;
+
+    let num_cpus = stats
+        .cpu_stats
+        .as_ref()
+        .and_then(|c| c.online_cpus)
+        .unwrap_or(1) as f64;
 
     if system_delta > 0.0 && cpu_delta > 0.0 {
         (cpu_delta / system_delta) * num_cpus * 100.0
