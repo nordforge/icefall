@@ -1,0 +1,88 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: oklch(0 0 0 / 0.6);
+  animation: overlayIn var(--duration-normal) var(--ease-out) forwards;
+}
+
+.overlayExit {
+  animation: overlayOut var(--duration-normal) var(--ease-out) forwards;
+}
+
+.content {
+  text-align: center;
+  color: oklch(0.95 0.005 250);
+}
+
+.heading {
+  font-size: var(--text-xl);
+  font-weight: var(--weight-semibold);
+  margin-bottom: var(--space-3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+}
+
+.dots {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: currentColor;
+  opacity: 0.3;
+}
+
+.dot:nth-child(1) { animation: pulse 1.4s ease-in-out infinite; }
+.dot:nth-child(2) { animation: pulse 1.4s ease-in-out 0.2s infinite; }
+.dot:nth-child(3) { animation: pulse 1.4s ease-in-out 0.4s infinite; }
+
+@keyframes pulse {
+  0%, 60%, 100% { opacity: 0.3; transform: scale(1); }
+  30% { opacity: 1; transform: scale(1.2); }
+}
+
+.subtext {
+  font-size: var(--text-sm);
+  color: oklch(0.7 0.01 250);
+  margin-top: var(--space-1);
+}
+
+.retryWrap {
+  margin-top: var(--space-5);
+}
+
+@keyframes overlayIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes overlayOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .overlay,
+  .overlayExit {
+    animation: none;
+  }
+
+  .dot {
+    animation: none;
+    opacity: 0.7;
+  }
+
+  .overlayExit {
+    opacity: 0;
+  }
+}

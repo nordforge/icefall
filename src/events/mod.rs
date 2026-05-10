@@ -24,6 +24,7 @@ pub enum EventType {
     BuildComplete,
     DeployStatus,
     HealthStatus,
+    UpdateAvailable,
 }
 
 impl EventType {
@@ -35,6 +36,7 @@ impl EventType {
             Self::BuildComplete => "build.complete",
             Self::DeployStatus => "deploy.status",
             Self::HealthStatus => "health.status",
+            Self::UpdateAvailable => "update.available",
         }
     }
 }
