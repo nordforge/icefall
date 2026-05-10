@@ -495,6 +495,7 @@ export default function SettingsPage() {
                   <div key={ch.id} class={styles.subCheckCell}>
                     <input
                       type="checkbox"
+                      class={formStyles.checkbox}
                       checked={isSubscribed(ch.id, evt.key)}
                       onChange={() => toggleSubscription(ch.id, evt.key)}
                       aria-label={`${evt.label} via ${channelLabel(ch)}`}

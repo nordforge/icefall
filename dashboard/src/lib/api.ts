@@ -98,6 +98,9 @@ export const api = {
   listDeploys: (appId: string) =>
     request<{ data: Deploy[] }>(`/apps/${appId}/deploys`),
 
+  getLatestDeploys: (appIds: string[]) =>
+    request<{ data: Deploy[] }>(`/deploys/latest?app_ids=${appIds.join(',')}`),
+
   triggerDeploy: (appId: string) =>
     request<{ data: Deploy }>(`/apps/${appId}/deploys`, { method: 'POST' }),
 

@@ -461,6 +461,36 @@ impl Database for SqliteDatabase {
         Ok(deploys)
     }
 
+    async fn get_latest_deploys_for_apps(
+        &self,
+        app_ids: &[String],
+    ) -> Result<Vec<Deploy>, DbError> {
+        if app_ids.is_empty() {
+            return Ok(Vec::new());
+        }
+        let placeholders: Vec<String> = app_ids
+            .iter()
+            .enumerate()
+            .map(|(i, _)| format!("?{}", i + 1))
+            .collect();
+        let query = format!(
+            "SELECT d.* FROM deploys d
+             INNER JOIN (
+               SELECT app_id, MAX(created_at) as max_created
+               FROM deploys
+               GROUP BY app_id
+             ) latest ON d.app_id = latest.app_id AND d.created_at = latest.max_created
+             WHERE d.app_id IN ({})",
+            placeholders.join(", ")
+        );
+        let mut q = sqlx::query_as::<_, Deploy>(&query);
+        for id in app_ids {
+            q = q.bind(id);
+        }
+        let deploys = q.fetch_all(&self.pool).await?;
+        Ok(deploys)
+    }
+
     async fn update_deploy_status(
         &self,
         id: &str,

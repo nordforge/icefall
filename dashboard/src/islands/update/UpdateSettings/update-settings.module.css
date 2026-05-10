@@ -85,7 +85,7 @@
   background: var(--color-surface-alt);
   cursor: pointer;
   padding: 0;
-  transition: background-color var(--duration-fast) ease;
+  transition: background-color var(--duration-fast) var(--ease-out);
 }
 
 .toggle:focus-visible {
@@ -106,7 +106,7 @@
   height: 18px;
   border-radius: 50%;
   background: oklch(1.0 0 0);
-  transition: transform var(--duration-fast) ease;
+  transition: transform var(--duration-fast) var(--ease-out);
 }
 
 .toggleOn .toggleKnob {

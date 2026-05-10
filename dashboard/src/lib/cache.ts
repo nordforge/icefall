@@ -33,3 +33,12 @@ export function invalidatePrefix(prefix: string): void {
     if (key.startsWith(prefix)) store.delete(key);
   }
 }
+
+/** Periodic sweep to remove stale entries that were never read. */
+const SWEEP_INTERVAL = 60_000;
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, entry] of store) {
+    if (now - entry.timestamp > TTL) store.delete(key);
+  }
+}, SWEEP_INTERVAL);

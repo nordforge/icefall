@@ -586,6 +586,7 @@ export default function ProfilePage() {
             <label class={formStyles.label}>
               <input
                 type="checkbox"
+                class={formStyles.checkbox}
                 checked={preferences.email_notifications !== false}
                 onChange={async (e) => {
                   const email_notifications = (e.target as HTMLInputElement).checked;

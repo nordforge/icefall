@@ -134,14 +134,15 @@
   outline-offset: 2px;
 }
 
+/* a11y [WCAG 2.5.8]: minimum 28×28 target size */
 .iconButton {
   background: none;
   border: none;
   color: var(--color-text-muted);
   cursor: pointer;
   padding: var(--space-1);
-  min-width: 1.5rem;
-  min-height: 1.5rem;
+  min-width: 28px;
+  min-height: 28px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -220,7 +221,7 @@
   border: 1px solid var(--color-border);
   background: var(--color-surface-alt);
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: background var(--duration-fast) var(--ease-out);
   flex-shrink: 0;
 }
 
@@ -242,7 +243,7 @@
   height: 1rem;
   border-radius: 50%;
   background: var(--color-text-on-primary, #fff);
-  transition: transform 0.15s ease;
+  transition: transform var(--duration-fast) var(--ease-out);
 }
 
 .toggleOn .toggleThumb {
