@@ -38,14 +38,12 @@ export default function AppGrid() {
         $appsLoading.set(false);
 
         const deployMap: Record<string, Deploy> = {};
-        const results = await Promise.allSettled(
-          data.map((app) => api.listDeploys(app.id)),
-        );
-        results.forEach((result, i) => {
-          if (result.status === 'fulfilled' && result.value.data.length > 0) {
-            deployMap[data[i].id] = result.value.data[0];
+        if (data.length > 0) {
+          const { data: latestDeploys } = await api.getLatestDeploys(data.map(a => a.id));
+          for (const deploy of latestDeploys) {
+            deployMap[deploy.app_id] = deploy;
           }
-        });
+        }
         if (active) setDeploys(deployMap);
       } catch {
         if (active) $appsLoading.set(false);

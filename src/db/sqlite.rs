@@ -461,6 +461,36 @@ impl Database for SqliteDatabase {
         Ok(deploys)
     }
 
+    async fn get_latest_deploys_for_apps(
+        &self,
+        app_ids: &[String],
+    ) -> Result<Vec<Deploy>, DbError> {
+        if app_ids.is_empty() {
+            return Ok(Vec::new());
+        }
+        let placeholders: Vec<String> = app_ids
+            .iter()
+            .enumerate()
+            .map(|(i, _)| format!("?{}", i + 1))
+            .collect();
+        let query = format!(
+            "SELECT d.* FROM deploys d
+             INNER JOIN (
+               SELECT app_id, MAX(created_at) as max_created
+               FROM deploys
+               GROUP BY app_id
+             ) latest ON d.app_id = latest.app_id AND d.created_at = latest.max_created
+             WHERE d.app_id IN ({})",
+            placeholders.join(", ")
+        );
+        let mut q = sqlx::query_as::<_, Deploy>(&query);
+        for id in app_ids {
+            q = q.bind(id);
+        }
+        let deploys = q.fetch_all(&self.pool).await?;
+        Ok(deploys)
+    }
+
     async fn update_deploy_status(
         &self,
         id: &str,
@@ -1714,6 +1744,145 @@ impl Database for SqliteDatabase {
             return Err(DbError::NotFound(format!("user {user_id}")));
         }
         Ok(())
+    }
+
+    // --- Update State ---
+
+    async fn get_update_state(&self) -> Result<UpdateState, DbError> {
+        let state = sqlx::query_as::<_, UpdateState>("SELECT * FROM update_state WHERE id = 1")
+            .fetch_one(&self.pool)
+            .await?;
+        Ok(state)
+    }
+
+    async fn set_update_available(
+        &self,
+        version: &str,
+        release_url: &str,
+        release_notes: &str,
+        highlights: &str,
+    ) -> Result<(), DbError> {
+        sqlx::query(
+            "UPDATE update_state SET available_version = ?, release_url = ?, release_notes = ?, changelog_highlights = ?, download_state = 'none', download_progress = 0, download_path = NULL, error_message = NULL WHERE id = 1",
+        )
+        .bind(version)
+        .bind(release_url)
+        .bind(release_notes)
+        .bind(highlights)
+        .execute(&self.pool)
+        .await?;
+        Ok(())
+    }
+
+    async fn set_update_download_state(
+        &self,
+        state: &str,
+        progress: i64,
+        path: Option<&str>,
+    ) -> Result<(), DbError> {
+        sqlx::query(
+            "UPDATE update_state SET download_state = ?, download_progress = ?, download_path = ? WHERE id = 1",
+        )
+        .bind(state)
+        .bind(progress)
+        .bind(path)
+        .execute(&self.pool)
+        .await?;
+        Ok(())
+    }
+
+    async fn set_update_error(&self, error: &str) -> Result<(), DbError> {
+        sqlx::query(
+            "UPDATE update_state SET error_message = ?, download_state = 'error' WHERE id = 1",
+        )
+        .bind(error)
+        .execute(&self.pool)
+        .await?;
+        Ok(())
+    }
+
+    async fn clear_update_available(&self) -> Result<(), DbError> {
+        sqlx::query(
+            "UPDATE update_state SET available_version = NULL, release_url = NULL, release_notes = NULL, changelog_highlights = NULL, download_state = 'none', download_progress = 0, download_path = NULL, error_message = NULL WHERE id = 1",
+        )
+        .execute(&self.pool)
+        .await?;
+        Ok(())
+    }
+
+    async fn update_highest_seen(&self, version: &str) -> Result<(), DbError> {
+        sqlx::query("UPDATE update_state SET highest_seen_version = ? WHERE id = 1")
+            .bind(version)
+            .execute(&self.pool)
+            .await?;
+        Ok(())
+    }
+
+    async fn set_last_check_at(&self, timestamp: &str) -> Result<(), DbError> {
+        sqlx::query("UPDATE update_state SET last_check_at = ? WHERE id = 1")
+            .bind(timestamp)
+            .execute(&self.pool)
+            .await?;
+        Ok(())
+    }
+
+    // --- Update Preferences ---
+
+    async fn set_update_channel(&self, channel: &str) -> Result<(), DbError> {
+        sqlx::query("UPDATE update_state SET channel = ? WHERE id = 1")
+            .bind(channel)
+            .execute(&self.pool)
+            .await?;
+        Ok(())
+    }
+
+    // --- Skipped Versions ---
+
+    async fn skip_update_version(&self, version: &str) -> Result<(), DbError> {
+        let now = now_iso8601();
+        sqlx::query("INSERT OR REPLACE INTO skipped_updates (version, skipped_at) VALUES (?, ?)")
+            .bind(version)
+            .bind(&now)
+            .execute(&self.pool)
+            .await?;
+        Ok(())
+    }
+
+    async fn is_version_skipped(&self, version: &str) -> Result<bool, DbError> {
+        let row = sqlx::query("SELECT version FROM skipped_updates WHERE version = ?")
+            .bind(version)
+            .fetch_optional(&self.pool)
+            .await?;
+        Ok(row.is_some())
+    }
+
+    // --- Update History ---
+
+    async fn record_update_history(&self, entry: &UpdateHistoryEntry) -> Result<(), DbError> {
+        sqlx::query(
+            "INSERT INTO update_history (id, version, previous_version, status, duration_secs, error, changelog_url, applied_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        )
+        .bind(&entry.id)
+        .bind(&entry.version)
+        .bind(&entry.previous_version)
+        .bind(&entry.status)
+        .bind(entry.duration_secs)
+        .bind(&entry.error)
+        .bind(&entry.changelog_url)
+        .bind(&entry.applied_at)
+        .execute(&self.pool)
+        .await?;
+        Ok(())
+    }
+
+    async fn list_update_history(&self, limit: usize) -> Result<Vec<UpdateHistoryEntry>, DbError> {
+        let entries = sqlx::query_as::<_, UpdateHistoryEntry>(
+            "SELECT * FROM update_history ORDER BY applied_at DESC LIMIT ?",
+        )
+        .bind(limit as i64)
+        .fetch_all(&self.pool)
+        .await?;
+        Ok(entries)
     }
 
     // --- Migrations ---

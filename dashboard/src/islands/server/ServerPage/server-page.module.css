@@ -88,7 +88,7 @@
   margin-bottom: var(--space-6);
 }
 
-@media (min-width: 640px) {
+@media (min-width: 641px) {
   .metricsGrid {
     grid-template-columns: repeat(3, 1fr);
   }
@@ -232,7 +232,9 @@
 }
 
 .infoCardValueMono {
-  composes: infoCardValue;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
   font-family: var(--font-mono);
 }
 
@@ -274,6 +276,7 @@
 }
 
 .detailValueMono {
-  composes: detailValue;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
   font-family: var(--font-mono);
 }

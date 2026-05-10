@@ -74,18 +74,24 @@
 
 .searchInput {
   flex: 1;
-  background: transparent;
-  border: none;
+  background: var(--log-select-bg);
+  border: 1px solid var(--log-select-border);
   color: var(--log-input-text);
   font-size: var(--text-sm);
   font-family: var(--font-mono);
+  height: 32px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-sm);
 }
 
-/* a11y [WCAG 2.4.7]: visible focus ring on log search input */
+.searchInput::placeholder {
+  color: var(--log-text-muted);
+}
+
 .searchInput:focus-visible {
   outline: 2px solid var(--color-border-focus);
   outline-offset: 2px;
-  border-radius: var(--radius-sm);
+  border-color: var(--log-text-muted);
 }
 
 .searchCount {
@@ -93,21 +99,95 @@
   color: var(--log-text-muted);
 }
 
-.levelSelect {
+/* Custom level filter dropdown with icons */
+.levelDropdown {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.levelTrigger {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
   background: var(--log-select-bg);
   border: 1px solid var(--log-select-border);
   color: var(--log-select-text);
   border-radius: var(--radius-sm);
-  padding: 2px var(--space-2);
+  padding: var(--space-1) var(--space-2);
   font-size: var(--text-xs);
+  font-family: var(--font-mono);
+  cursor: pointer;
+  height: 32px;
+  line-height: 1;
+  white-space: nowrap;
 }
+
+.levelTrigger:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+.levelTrigger:hover {
+  border-color: var(--log-text-muted);
+}
+
+.levelChevron {
+  margin-left: var(--space-1);
+  opacity: 0.6;
+}
+
+.levelMenu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 50;
+  background: var(--log-select-bg);
+  border: 1px solid var(--log-select-border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-1) 0;
+  list-style: none;
+  min-width: 140px;
+  box-shadow: 0 4px 12px oklch(0 0 0 / 0.3);
+}
+
+.levelOption {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  background: none;
+  border: none;
+  color: var(--log-select-text);
+  font-size: var(--text-xs);
+  font-family: var(--font-mono);
+  cursor: pointer;
+  text-align: left;
+}
+
+.levelOption:hover {
+  background: oklch(1 0 0 / 0.06);
+}
+
+.levelOption:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: -2px;
+}
+
+.levelOptionActive {
+  color: var(--color-primary, oklch(0.65 0.17 260));
+}
+
+.levelIconINFO { color: var(--log-info-level); }
+.levelIconWARN { color: var(--color-warning); }
+.levelIconERROR { color: var(--color-error); }
 
 .logContainer {
   flex: 1;
   overflow: auto;
   background: var(--log-bg);
   font-family: var(--font-mono);
-  font-size: 0.8125rem;
+  font-size: var(--text-sm);
   line-height: 1.7;
   padding: var(--space-2) 0;
 }
@@ -124,17 +204,20 @@
 }
 
 .logLineBorderError {
-  composes: logLine;
+  display: flex;
+  padding: 0 var(--space-4);
   border-left: 3px solid var(--color-error);
 }
 
 .logLineBorderWarn {
-  composes: logLine;
+  display: flex;
+  padding: 0 var(--space-4);
   border-left: 3px solid var(--color-warning);
 }
 
 .logLineBorderNone {
-  composes: logLine;
+  display: flex;
+  padding: 0 var(--space-4);
   border-left: 3px solid transparent;
 }
 
@@ -151,29 +234,42 @@
   color: var(--log-timestamp);
   width: 200px;
   flex-shrink: 0;
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
 }
 
 .level {
   display: inline-block;
   width: 45px;
   flex-shrink: 0;
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
+  /* 0.6875rem (11px) — below --text-xs scale for compact log-level badges */
   font-size: 0.6875rem;
 }
 
 .levelError {
-  composes: level;
+  display: inline-block;
+  width: 45px;
+  flex-shrink: 0;
+  font-weight: var(--weight-semibold);
+  font-size: 0.6875rem;
   color: var(--color-error);
 }
 
 .levelWarn {
-  composes: level;
+  display: inline-block;
+  width: 45px;
+  flex-shrink: 0;
+  font-weight: var(--weight-semibold);
+  font-size: 0.6875rem;
   color: var(--color-warning);
 }
 
 .levelInfo {
-  composes: level;
+  display: inline-block;
+  width: 45px;
+  flex-shrink: 0;
+  font-weight: var(--weight-semibold);
+  font-size: 0.6875rem;
   color: var(--log-info-level);
 }
 
@@ -215,12 +311,16 @@
 }
 
 .autoScrollDotActive {
-  composes: autoScrollDot;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
   background: var(--color-success);
 }
 
 .autoScrollDotInactive {
-  composes: autoScrollDot;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
   background: var(--log-inactive-dot);
 }
 
@@ -235,10 +335,27 @@
   color: inherit;
   cursor: pointer;
   font-size: inherit;
+  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-2);
+}
+
+.ghostButton:hover {
+  color: var(--log-text);
+}
+
+.ghostButton:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
 }
 
 .downloadButton {
-  composes: ghostButton;
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  font-size: inherit;
+  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-2);
   display: flex;
   align-items: center;
   gap: var(--space-1);

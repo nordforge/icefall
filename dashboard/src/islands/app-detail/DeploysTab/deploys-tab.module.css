@@ -76,12 +76,14 @@
 }
 
 .commitSha {
-  composes: mono;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
   color: var(--color-info);
 }
 
 .duration {
-  composes: mono;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
   color: var(--color-text-secondary);
 }
 
@@ -91,7 +93,7 @@
 }
 
 /* Tablet+: restore standard table layout */
-@media (min-width: 640px) {
+@media (min-width: 641px) {
   .table,
   .table tbody,
   .table tr,

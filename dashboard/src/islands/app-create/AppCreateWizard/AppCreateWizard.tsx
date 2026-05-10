@@ -39,8 +39,15 @@ export default function AppCreateWizard() {
 
   const lastStep = steps.length - 1;
   const isReviewStep = step === lastStep;
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
   function update(field: string, value: string) {
+    // Clear validation error for this field when user types
+    setValidationErrors(prev => {
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
     setForm((prev) => ({ ...prev, [field]: value }));
     if (field === 'git_repo' && !form.name) {
       const name = value.split('/').pop()?.replace('.git', '') || '';
@@ -111,6 +118,32 @@ export default function AppCreateWizard() {
     return true;
   }
 
+  /** Validate current step and either advance or show inline errors. */
+  function validateAndAdvance() {
+    const errors: Record<string, string> = {};
+
+    if (deploySource === 'git' && step === 1) {
+      if (!form.name.trim()) errors.name = 'App name is required';
+    }
+    if (deploySource === 'image' && step === 1) {
+      if (!form.name.trim()) errors.name = 'App name is required';
+      if (!form.image_ref.trim()) errors.image_ref = 'Docker image is required';
+      if (!form.port.trim()) errors.port = 'Container port is required';
+    }
+    if (deploySource === 'compose' && step === 1) {
+      if (!form.name.trim()) errors.name = 'Stack name is required';
+      if (!form.compose_content.trim()) errors.compose_content = 'Compose file content is required';
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      return;
+    }
+
+    setValidationErrors({});
+    setStep(step + 1);
+  }
+
   async function handleDeploy() {
     setDeploying(true);
     try {
@@ -148,6 +181,7 @@ export default function AppCreateWizard() {
   }
 
   function handleBack() {
+    setValidationErrors({});
     if (step === 1) {
       // Going back to source selection
       setDeploySource(null);
@@ -207,7 +241,8 @@ export default function AppCreateWizard() {
       <div class={formStyles.fieldGroup}>
         <div>
           <label htmlFor="create-app-name" class={formStyles.label}>App Name</label>
-          <input id="create-app-name" class={formStyles.input} value={form.name} onInput={(e) => update('name', (e.target as HTMLInputElement).value)} placeholder="my-awesome-app" />
+          <input id="create-app-name" class={formStyles.input} value={form.name} onInput={(e) => update('name', (e.target as HTMLInputElement).value)} placeholder="my-awesome-app" aria-invalid={!!validationErrors.name} aria-describedby={validationErrors.name ? 'err-name' : undefined} />
+          {validationErrors.name && <p id="err-name" role="alert" class={styles.fieldError}>{validationErrors.name}</p>}
         </div>
         <div>
           <label htmlFor="create-repo-url" class={formStyles.label}>Repository URL</label>
@@ -249,7 +284,8 @@ export default function AppCreateWizard() {
       <div class={formStyles.fieldGroup}>
         <div>
           <label htmlFor="create-app-name" class={formStyles.label}>App Name</label>
-          <input id="create-app-name" class={formStyles.input} value={form.name} onInput={(e) => update('name', (e.target as HTMLInputElement).value)} placeholder="my-ghost-blog" />
+          <input id="create-app-name" class={formStyles.input} value={form.name} onInput={(e) => update('name', (e.target as HTMLInputElement).value)} placeholder="my-ghost-blog" aria-invalid={!!validationErrors.name} aria-describedby={validationErrors.name ? 'err-name' : undefined} />
+          {validationErrors.name && <p id="err-name" role="alert" class={styles.fieldError}>{validationErrors.name}</p>}
         </div>
         <div>
           <label htmlFor="create-image-ref" class={formStyles.label}>Docker Image</label>
@@ -259,10 +295,16 @@ export default function AppCreateWizard() {
             value={form.image_ref}
             onInput={(e) => update('image_ref', (e.target as HTMLInputElement).value)}
             placeholder="ghost:5-alpine"
+            aria-invalid={!!validationErrors.image_ref}
+            aria-describedby={validationErrors.image_ref ? 'err-image-ref' : 'hint-image-ref'}
           />
-          <span class={formStyles.hint}>
-            Image name from Docker Hub or a full registry URL.
-          </span>
+          {validationErrors.image_ref ? (
+            <p id="err-image-ref" role="alert" class={styles.fieldError}>{validationErrors.image_ref}</p>
+          ) : (
+            <span id="hint-image-ref" class={formStyles.hint}>
+              Image name from Docker Hub or a full registry URL.
+            </span>
+          )}
         </div>
         <div>
           <label htmlFor="create-image-port" class={formStyles.label}>Container Port</label>
@@ -274,10 +316,16 @@ export default function AppCreateWizard() {
             max="65535"
             value={form.port}
             onInput={(e) => update('port', (e.target as HTMLInputElement).value)}
+            aria-invalid={!!validationErrors.port}
+            aria-describedby={validationErrors.port ? 'err-port' : 'hint-port'}
           />
-          <span class={formStyles.hint}>
-            The port the container listens on internally.
-          </span>
+          {validationErrors.port ? (
+            <p id="err-port" role="alert" class={styles.fieldError}>{validationErrors.port}</p>
+          ) : (
+            <span id="hint-port" class={formStyles.hint}>
+              The port the container listens on internally.
+            </span>
+          )}
         </div>
       </div>
     );
@@ -295,7 +343,10 @@ export default function AppCreateWizard() {
             value={form.name}
             onInput={(e) => update('name', (e.target as HTMLInputElement).value)}
             placeholder="my-wordpress-stack"
+            aria-invalid={!!validationErrors.name}
+            aria-describedby={validationErrors.name ? 'err-name' : undefined}
           />
+          {validationErrors.name && <p id="err-name" role="alert" class={styles.fieldError}>{validationErrors.name}</p>}
         </div>
         <div>
           <label htmlFor="create-compose-content" class={formStyles.label}>
@@ -313,7 +364,12 @@ export default function AppCreateWizard() {
             rows={14}
             spellcheck={false}
             style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)' }}
+            aria-invalid={!!validationErrors.compose_content}
+            aria-describedby={validationErrors.compose_content ? 'err-compose' : undefined}
           />
+          {validationErrors.compose_content && (
+            <p id="err-compose" role="alert" class={styles.fieldError}>{validationErrors.compose_content}</p>
+          )}
           {composeError && (
             <p role="alert" class={styles.composeError}>{composeError}</p>
           )}
@@ -464,7 +520,7 @@ export default function AppCreateWizard() {
             <ArrowLeft size={14} /> Back
           </Button>
           {!isReviewStep ? (
-            <Button variant="primary" onClick={() => setStep(step + 1)} disabled={!canAdvance()}>
+            <Button variant="primary" onClick={validateAndAdvance}>
               Next <ArrowRight size={14} />
             </Button>
           ) : (

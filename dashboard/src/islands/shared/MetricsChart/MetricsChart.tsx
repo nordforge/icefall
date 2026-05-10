@@ -1,4 +1,4 @@
-import { useState, useRef } from 'preact/hooks';
+import { useState, useRef, useEffect } from 'preact/hooks';
 import Sparkline from '@islands/shared/Sparkline/Sparkline';
 import styles from './metrics-chart.module.css';
 
@@ -33,6 +33,13 @@ export default function MetricsChart({
 }: Props) {
   const [hoverIdx, setHoverIdx] = useState<number | null>(null);
   const chartRef = useRef<HTMLDivElement>(null);
+  const rafRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+  }, []);
 
   if (data.length < 2) {
     return (
@@ -46,12 +53,16 @@ export default function MetricsChart({
   const yMax = max ?? Math.max(...values);
 
   function handleMouseMove(e: MouseEvent) {
-    if (!chartRef.current || data.length === 0) return;
-    const rect = chartRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const ratio = x / rect.width;
-    const idx = Math.round(ratio * (data.length - 1));
-    setHoverIdx(Math.max(0, Math.min(idx, data.length - 1)));
+    if (rafRef.current) return;
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = null;
+      if (!chartRef.current || data.length === 0) return;
+      const rect = chartRef.current.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const ratio = x / rect.width;
+      const idx = Math.round(ratio * (data.length - 1));
+      setHoverIdx(Math.max(0, Math.min(idx, data.length - 1)));
+    });
   }
 
   const hoverPoint = hoverIdx !== null ? data[hoverIdx] : null;

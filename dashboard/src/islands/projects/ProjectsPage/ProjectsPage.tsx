@@ -4,6 +4,7 @@ import { api } from '@lib/api';
 import { formatRelativeTime } from '@lib/format';
 import Button from '@islands/shared/Button/Button';
 import { Plus, FolderOpen, Pencil, Trash2, ArrowLeft, Grid2x2, Database } from 'lucide-preact';
+import { SkeletonCard } from '@islands/shared/Skeleton/Skeleton';
 import styles from './projects-page.module.css';
 import formStyles from '@styles/form.module.css';
 
@@ -287,7 +288,11 @@ export default function ProjectsPage() {
       )}
 
       {loading ? (
-        <p class={styles.loadingText}>Loading projects...</p>
+        <div class={styles.projectGrid}>
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+        </div>
       ) : projects.length === 0 && !showCreate ? (
         <div class={styles.emptyState}>
           <div class={styles.emptyIcon}>

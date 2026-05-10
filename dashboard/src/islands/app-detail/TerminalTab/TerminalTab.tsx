@@ -55,7 +55,7 @@ export default function TerminalTab({ appId }: Props) {
         magenta: '#c678dd',
         cyan: '#56b6c2',
         white: '#e2e4ed',
-        brightBlack: '#5c6370',
+        brightBlack: '#7c8294',
         brightRed: '#e06c75',
         brightGreen: '#98c379',
         brightYellow: '#e5c07b',

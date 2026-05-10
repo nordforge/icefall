@@ -114,7 +114,7 @@ export default function AppHeader({ app, status, onStatusChange }: Props) {
             <>
               {app.git_repo && (
                 <span class={styles.branchInfo}>
-                  <GitBranch size={14} />
+                  <GitBranch size={14} aria-hidden="true" />
                   <span class={styles.mono}>{app.git_branch}</span>
                 </span>
               )}

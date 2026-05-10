@@ -1,4 +1,8 @@
+import { useRef } from 'preact/hooks';
+import { memo } from 'preact/compat';
 import styles from './sparkline.module.css';
+
+let sparklineCounter = 0;
 
 type Props = {
   data: number[];
@@ -13,7 +17,7 @@ type Props = {
 const W = 1000;
 const H = 400;
 
-export default function Sparkline({
+function Sparkline({
   data,
   min = 0,
   max,
@@ -37,7 +41,8 @@ export default function Sparkline({
 
   const linePoints = points.join(' ');
   const fillPoints = `0,${H} ${linePoints} ${W},${H}`;
-  const gradientId = `spark-${Math.random().toString(36).slice(2, 8)}`;
+  const idRef = useRef(`spark-${++sparklineCounter}`);
+  const gradientId = idRef.current;
 
   return (
     <svg
@@ -68,3 +73,5 @@ export default function Sparkline({
     </svg>
   );
 }
+
+export default memo(Sparkline);

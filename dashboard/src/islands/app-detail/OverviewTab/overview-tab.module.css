@@ -22,7 +22,10 @@
 }
 
 .deploysPanel {
-  composes: panel;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-5);
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
@@ -38,7 +41,11 @@
 }
 
 .sectionTitleFlush {
-  composes: sectionTitle;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   margin-bottom: 0;
 }
 
@@ -163,7 +170,7 @@
   color: oklch(0.35 0.1 150);
 }
 
-:global(.dark) .health_healthy {
+:global([data-theme="dark"]) .health_healthy {
   background: oklch(0.25 0.05 150);
   color: oklch(0.8 0.08 150);
 }
@@ -173,7 +180,7 @@
   color: oklch(0.35 0.12 25);
 }
 
-:global(.dark) .health_unhealthy {
+:global([data-theme="dark"]) .health_unhealthy {
   background: oklch(0.25 0.05 25);
   color: oklch(0.8 0.08 25);
 }
@@ -223,7 +230,7 @@
   color: oklch(0.35 0.1 260);
 }
 
-:global(.dark) .composeBadge {
+:global([data-theme="dark"]) .composeBadge {
   background: oklch(0.25 0.04 260);
   color: oklch(0.8 0.06 260);
 }
@@ -259,7 +266,7 @@
   color: oklch(0.35 0.1 85);
 }
 
-:global(.dark) .nativeBadge {
+:global([data-theme="dark"]) .nativeBadge {
   background: oklch(0.25 0.05 85);
   color: oklch(0.8 0.08 85);
 }
@@ -275,7 +282,7 @@
   color: oklch(0.35 0.1 210);
 }
 
-:global(.dark) .containerBadge {
+:global([data-theme="dark"]) .containerBadge {
   background: oklch(0.25 0.04 210);
   color: oklch(0.8 0.06 210);
 }

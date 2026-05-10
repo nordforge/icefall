@@ -58,7 +58,7 @@
   gap: var(--space-4);
 }
 
-@media (min-width: 640px) {
+@media (min-width: 641px) {
   .grid {
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   }
