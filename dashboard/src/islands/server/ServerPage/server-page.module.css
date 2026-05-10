@@ -232,7 +232,9 @@
 }
 
 .infoCardValueMono {
-  composes: infoCardValue;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
   font-family: var(--font-mono);
 }
 
@@ -274,6 +276,7 @@
 }
 
 .detailValueMono {
-  composes: detailValue;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
   font-family: var(--font-mono);
 }

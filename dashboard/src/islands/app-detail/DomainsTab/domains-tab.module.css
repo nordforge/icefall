@@ -55,7 +55,7 @@
 }
 
 .domainCell {
-  composes: td;
+  padding: var(--space-3) var(--space-4);
   font-weight: var(--weight-medium);
 }
 
@@ -80,12 +80,16 @@
 }
 
 .dnsConfigured {
-  composes: dnsStatus;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
   color: var(--color-success);
 }
 
 .dnsPending {
-  composes: dnsStatus;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
   color: var(--color-warning);
 }
 

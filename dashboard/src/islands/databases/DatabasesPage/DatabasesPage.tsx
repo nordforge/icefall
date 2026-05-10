@@ -7,6 +7,7 @@ import StatusDot from '@islands/shared/StatusDot/StatusDot';
 import DatabaseBrowser from '@islands/databases/DatabaseBrowser/DatabaseBrowser';
 import { formatRelativeTime, formatBytes } from '@lib/format';
 import { Plus, Database, Trash2, Copy, Eye, EyeOff, RefreshCw, Download, RotateCcw } from 'lucide-preact';
+import { SkeletonCard } from '@islands/shared/Skeleton/Skeleton';
 import styles from './databases-page.module.css';
 import formStyles from '@styles/form.module.css';
 
@@ -124,7 +125,11 @@ export default function DatabasesPage() {
           <Plus size={14} aria-hidden="true" /> Add Database
         </Button>
       </div>
-      <p class={styles.loadingText}>Loading databases...</p>
+      <div class={styles.dbGrid}>
+        <SkeletonCard />
+        <SkeletonCard />
+        <SkeletonCard />
+      </div>
     </div>
   );
 

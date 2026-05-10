@@ -64,7 +64,7 @@
 }
 
 .tdActions {
-  composes: td;
+  padding: var(--space-3) var(--space-4);
   display: flex;
   gap: var(--space-2);
 }
@@ -74,7 +74,7 @@
 }
 
 .tdAddActions {
-  composes: tdAdd;
+  padding: var(--space-2) var(--space-4);
   display: flex;
   gap: var(--space-2);
 }
@@ -100,13 +100,21 @@
 }
 
 .scopeProduction {
-  composes: scopeBadge;
+  display: inline-block;
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
   background: var(--color-primary-subtle);
   color: var(--color-primary);
 }
 
 .scopeShared {
-  composes: scopeBadge;
+  display: inline-block;
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
   background: var(--color-surface-alt);
   color: var(--color-text-muted);
 }
