@@ -157,9 +157,7 @@ async fn gitlab_webhook(
 async fn handle_push(state: &AppState, app: &crate::db::models::App, branch: &str, sha: &str) {
     if branch == app.git_branch {
         trigger_deploy(state, app, branch, sha, "production").await;
-    } else if app.preview_enabled
-        && matches_preview_pattern(&app.preview_branch_pattern, branch)
-    {
+    } else if app.preview_enabled && matches_preview_pattern(&app.preview_branch_pattern, branch) {
         trigger_deploy(state, app, branch, sha, "preview").await;
     }
 }
@@ -242,11 +240,8 @@ async fn trigger_deploy(
     tokio::spawn(async move {
         let _guard = lock.lock().await;
 
-        let orchestrator = BuildOrchestrator::new(
-            state.docker.clone(),
-            state.db.clone(),
-            state.config.clone(),
-        );
+        let orchestrator =
+            BuildOrchestrator::new(state.docker.clone(), state.db.clone(), state.config.clone());
 
         match orchestrator.build(&deploy_id, &app, build_config).await {
             Ok(result) => {
@@ -267,12 +262,7 @@ async fn trigger_deploy(
                 };
 
                 if let Err(e) = manager
-                    .deploy(
-                        &current_deploy,
-                        &app,
-                        &env_clone,
-                        &result.image_ref,
-                    )
+                    .deploy(&current_deploy, &app, &env_clone, &result.image_ref)
                     .await
                 {
                     tracing::error!("Deploy failed for {deploy_id}: {e}");
@@ -305,11 +295,7 @@ async fn envs_first_or_create(
         .ok()
 }
 
-async fn handle_branch_delete(
-    state: &AppState,
-    app: &crate::db::models::App,
-    branch: &str,
-) {
+async fn handle_branch_delete(state: &AppState, app: &crate::db::models::App, branch: &str) {
     let env = match state.db.get_environment_by_branch(&app.id, branch).await {
         Ok(Some(env)) if env.env_type == "preview" => env,
         _ => return,

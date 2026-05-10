@@ -13,17 +13,9 @@ impl CaddyClient {
         upstream: &str,
     ) -> Result<(), CaddyError> {
         let route = CaddyRoute::reverse_proxy_with_path(domain, path, upstream);
-        let url = format!(
-            "{}/config/apps/http/servers/srv0/routes",
-            self.base_url()
-        );
+        let url = format!("{}/config/apps/http/servers/srv0/routes", self.base_url());
 
-        let response = self
-            .client()
-            .post(&url)
-            .json(&route)
-            .send()
-            .await?;
+        let response = self.client().post(&url).json(&route).send().await?;
 
         if !response.status().is_success() {
             let status = response.status().as_u16();
@@ -63,11 +55,7 @@ impl CaddyClient {
         Ok(())
     }
 
-    pub async fn update_route(
-        &self,
-        domain: &str,
-        new_upstream: &str,
-    ) -> Result<(), CaddyError> {
+    pub async fn update_route(&self, domain: &str, new_upstream: &str) -> Result<(), CaddyError> {
         let routes = self.get_routes_raw().await?;
 
         let index = routes
@@ -104,14 +92,7 @@ impl CaddyClient {
             .into_iter()
             .filter_map(|r| {
                 let domain = r.matchers.first()?.host.first()?.clone();
-                let upstream = r
-                    .handle
-                    .first()?
-                    .upstreams
-                    .as_ref()?
-                    .first()?
-                    .dial
-                    .clone();
+                let upstream = r.handle.first()?.upstreams.as_ref()?.first()?.dial.clone();
                 Some(RouteInfo { domain, upstream })
             })
             .collect();
@@ -127,17 +108,9 @@ impl CaddyClient {
         root_path: &str,
     ) -> Result<(), CaddyError> {
         let route = CaddyRoute::file_server(domain, root_path);
-        let url = format!(
-            "{}/config/apps/http/servers/srv0/routes",
-            self.base_url()
-        );
+        let url = format!("{}/config/apps/http/servers/srv0/routes", self.base_url());
 
-        let response = self
-            .client()
-            .post(&url)
-            .json(&route)
-            .send()
-            .await?;
+        let response = self.client().post(&url).json(&route).send().await?;
 
         if !response.status().is_success() {
             let status = response.status().as_u16();
@@ -189,10 +162,7 @@ impl CaddyClient {
     }
 
     async fn get_routes_raw(&self) -> Result<Vec<CaddyRoute>, CaddyError> {
-        let url = format!(
-            "{}/config/apps/http/servers/srv0/routes",
-            self.base_url()
-        );
+        let url = format!("{}/config/apps/http/servers/srv0/routes", self.base_url());
 
         let response = self.client().get(&url).send().await?;
 

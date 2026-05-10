@@ -18,10 +18,7 @@ pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/apps/{id}/domains", get(list_domains).post(add_domain))
         .route("/apps/{id}/domains/{domain_id}", delete(remove_domain))
-        .route(
-            "/apps/{id}/domains/{domain_id}/verify",
-            post(verify_domain),
-        )
+        .route("/apps/{id}/domains/{domain_id}/verify", post(verify_domain))
         .route("/server/ip", get(get_server_ip))
 }
 
@@ -43,7 +40,10 @@ async fn add_domain(
         return Err(ApiError::BadRequest("domain name is required".into()));
     }
 
-    let path = body.path.map(|p| p.trim().to_string()).filter(|p| !p.is_empty());
+    let path = body
+        .path
+        .map(|p| p.trim().to_string())
+        .filter(|p| !p.is_empty());
     if let Some(ref p) = path {
         if !p.starts_with('/') {
             return Err(ApiError::BadRequest("path must start with /".into()));
@@ -184,6 +184,7 @@ mod tests {
     use crate::api::utils::resolve_domain;
 
     #[tokio::test]
+    #[ignore = "requires network access — run with --include-ignored"]
     async fn resolves_known_domain() {
         let result = resolve_domain("example.com").await;
         assert!(result.is_ok());
@@ -191,9 +192,9 @@ mod tests {
     }
 
     #[tokio::test]
+    #[ignore = "requires network access — run with --include-ignored"]
     async fn fails_on_nonexistent_domain() {
-        let result =
-            resolve_domain("this-domain-does-not-exist-icefall-test.invalid").await;
+        let result = resolve_domain("this-domain-does-not-exist-icefall-test.invalid").await;
         assert!(result.is_err());
     }
 }

@@ -3,7 +3,13 @@ use crate::cli::client::CliClient;
 pub async fn add(app: &str, domain: &str) {
     let client = CliClient::new_or_exit();
 
-    match client.post::<serde_json::Value>(&format!("/apps/{app}/domains"), &serde_json::json!({"domain": domain})).await {
+    match client
+        .post::<serde_json::Value>(
+            &format!("/apps/{app}/domains"),
+            &serde_json::json!({"domain": domain}),
+        )
+        .await
+    {
         Ok(resp) => {
             println!("Domain {domain} added.");
             if let Some(dns) = resp.get("dns_instructions") {
@@ -13,16 +19,26 @@ pub async fn add(app: &str, domain: &str) {
                 }
             }
         }
-        Err(e) => { eprintln!("Error: {e}"); std::process::exit(1); }
+        Err(e) => {
+            eprintln!("Error: {e}");
+            std::process::exit(1);
+        }
     }
 }
 
 pub async fn list(app: &str) {
     let client = CliClient::new_or_exit();
 
-    match client.get::<serde_json::Value>(&format!("/apps/{app}/domains")).await {
+    match client
+        .get::<serde_json::Value>(&format!("/apps/{app}/domains"))
+        .await
+    {
         Ok(resp) => {
-            let domains = resp.get("data").and_then(|v| v.as_array()).cloned().unwrap_or_default();
+            let domains = resp
+                .get("data")
+                .and_then(|v| v.as_array())
+                .cloned()
+                .unwrap_or_default();
             if domains.is_empty() {
                 println!("No domains configured.");
                 return;
@@ -33,9 +49,17 @@ pub async fn list(app: &str) {
                 let domain = d.get("domain").and_then(|v| v.as_str()).unwrap_or("?");
                 let ssl = d.get("ssl_status").and_then(|v| v.as_str()).unwrap_or("-");
                 let verified = d.get("verified").and_then(|v| v.as_bool()).unwrap_or(false);
-                println!("{:<30} {:<10} {}", domain, ssl, if verified { "yes" } else { "no" });
+                println!(
+                    "{:<30} {:<10} {}",
+                    domain,
+                    ssl,
+                    if verified { "yes" } else { "no" }
+                );
             }
         }
-        Err(e) => { eprintln!("Error: {e}"); std::process::exit(1); }
+        Err(e) => {
+            eprintln!("Error: {e}");
+            std::process::exit(1);
+        }
     }
 }

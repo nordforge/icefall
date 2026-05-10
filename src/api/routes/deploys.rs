@@ -13,10 +13,7 @@ use crate::deploy::native::NativeDeployer;
 
 pub fn routes() -> Router<AppState> {
     Router::new()
-        .route(
-            "/apps/{id}/deploys",
-            get(list_deploys).post(create_deploy),
-        )
+        .route("/apps/{id}/deploys", get(list_deploys).post(create_deploy))
         .route(
             "/apps/{id}/deploys/{deploy_id}/rollback",
             post(rollback_deploy),
@@ -81,7 +78,11 @@ async fn create_deploy(
             );
 
             // Resolve env vars from the environment and convert to a HashMap for interpolation
-            let env_vars_list = state.db.get_env_vars(&env_clone.id).await.unwrap_or_default();
+            let env_vars_list = state
+                .db
+                .get_env_vars(&env_clone.id)
+                .await
+                .unwrap_or_default();
             let env_map: std::collections::HashMap<String, String> = env_vars_list
                 .into_iter()
                 .map(|v| (v.key, v.value))
@@ -204,7 +205,7 @@ async fn create_deploy(
                 let detection = crate::build::detect::detect(&work_dir, build_config.as_ref());
                 let use_native = detection
                     .as_ref()
-                    .map(|d| crate::deploy::native::should_use_native(d))
+                    .map(crate::deploy::native::should_use_native)
                     .unwrap_or(false);
 
                 // Clean up the clone — each pipeline will re-clone
@@ -224,7 +225,12 @@ async fn create_deploy(
                     };
 
                     if let Err(e) = deployer
-                        .deploy(&updated_deploy, &app_clone, &env_clone, build_config.clone())
+                        .deploy(
+                            &updated_deploy,
+                            &app_clone,
+                            &env_clone,
+                            build_config.clone(),
+                        )
                         .await
                     {
                         tracing::error!("Native deploy failed for {deploy_id}: {e}");
@@ -240,7 +246,10 @@ async fn create_deploy(
                 state.config.clone(),
             );
 
-            match orchestrator.build(&deploy_id, &app_clone, build_config).await {
+            match orchestrator
+                .build(&deploy_id, &app_clone, build_config)
+                .await
+            {
                 Ok(result) => {
                     let manager = DeployManager::new(
                         state.docker.clone(),
@@ -291,7 +300,9 @@ async fn rollback_deploy(
     let image_ref = target_deploy
         .image_ref
         .as_ref()
-        .ok_or_else(|| ApiError::BadRequest("Target deploy has no image reference — cannot rollback".into()))?
+        .ok_or_else(|| {
+            ApiError::BadRequest("Target deploy has no image reference — cannot rollback".into())
+        })?
         .clone();
 
     let envs = state.db.list_environments(&app_id).await?;

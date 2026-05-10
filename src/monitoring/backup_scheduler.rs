@@ -75,8 +75,7 @@ impl BackupStore {
             }
         }
 
-        std::fs::write(&backup_path, &data)
-            .map_err(|e| format!("failed to write backup: {e}"))?;
+        std::fs::write(&backup_path, &data).map_err(|e| format!("failed to write backup: {e}"))?;
 
         self.cleanup_old(db_id, 7);
 
@@ -124,8 +123,10 @@ impl BackupStore {
                         .ok()
                         .and_then(|t| {
                             let dur = t.duration_since(std::time::UNIX_EPOCH).ok()?;
-                            Some(chrono::DateTime::from_timestamp(dur.as_secs() as i64, 0)?
-                                .to_rfc3339())
+                            Some(
+                                chrono::DateTime::from_timestamp(dur.as_secs() as i64, 0)?
+                                    .to_rfc3339(),
+                            )
                         })
                         .unwrap_or_default(),
                     status: "completed".to_string(),
@@ -140,7 +141,11 @@ impl BackupStore {
     pub fn get_backup_path(&self, db_id: &str, backup_id: &str) -> Option<PathBuf> {
         let dir = self.db_backup_dir(db_id);
         let path = dir.join(format!("{backup_id}.sql.gz"));
-        if path.exists() { Some(path) } else { None }
+        if path.exists() {
+            Some(path)
+        } else {
+            None
+        }
     }
 }
 

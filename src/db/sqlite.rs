@@ -52,11 +52,9 @@ impl Database for SqliteDatabase {
     // --- Projects ---
 
     async fn list_projects(&self) -> Result<Vec<Project>, DbError> {
-        let projects = sqlx::query_as::<_, Project>(
-            "SELECT * FROM projects ORDER BY name ASC",
-        )
-        .fetch_all(&self.pool)
-        .await?;
+        let projects = sqlx::query_as::<_, Project>("SELECT * FROM projects ORDER BY name ASC")
+            .fetch_all(&self.pool)
+            .await?;
         Ok(projects)
     }
 
@@ -229,7 +227,10 @@ impl Database for SqliteDatabase {
         let name = update.name.as_deref().unwrap_or(&existing.name);
         let git_repo = update.git_repo.as_deref().or(existing.git_repo.as_deref());
         let git_branch = update.git_branch.as_deref().unwrap_or(&existing.git_branch);
-        let framework = update.framework.as_deref().or(existing.framework.as_deref());
+        let framework = update
+            .framework
+            .as_deref()
+            .or(existing.framework.as_deref());
         let build_config = update
             .build_config
             .as_deref()
@@ -257,7 +258,10 @@ impl Database for SqliteDatabase {
             Some(v) => v.as_deref(),
             None => existing.project_id.as_deref(),
         };
-        let deploy_mode = update.deploy_mode.as_deref().unwrap_or(&existing.deploy_mode);
+        let deploy_mode = update
+            .deploy_mode
+            .as_deref()
+            .unwrap_or(&existing.deploy_mode);
         let now = now_iso8601();
 
         sqlx::query(
@@ -480,10 +484,7 @@ impl Database for SqliteDatabase {
 
     // --- Managed Databases ---
 
-    async fn create_managed_db(
-        &self,
-        db: &NewManagedDatabase,
-    ) -> Result<ManagedDatabase, DbError> {
+    async fn create_managed_db(&self, db: &NewManagedDatabase) -> Result<ManagedDatabase, DbError> {
         let id = new_id();
         let now = now_iso8601();
         let empty_creds = self.encryptor.encrypt(b"{}")?;
@@ -561,7 +562,10 @@ impl Database for SqliteDatabase {
         Ok(dbs)
     }
 
-    async fn list_managed_dbs_by_project(&self, project_id: &str) -> Result<Vec<ManagedDatabase>, DbError> {
+    async fn list_managed_dbs_by_project(
+        &self,
+        project_id: &str,
+    ) -> Result<Vec<ManagedDatabase>, DbError> {
         let rows = sqlx::query(
             "SELECT id, name, db_type, container_id, credentials_encrypted, backup_schedule, app_id, project_id, created_at
              FROM databases WHERE project_id = ? ORDER BY created_at DESC",
@@ -715,7 +719,11 @@ impl Database for SqliteDatabase {
         Ok(user)
     }
 
-    async fn update_user_totp_secret(&self, user_id: &str, secret: Option<&str>) -> Result<(), DbError> {
+    async fn update_user_totp_secret(
+        &self,
+        user_id: &str,
+        secret: Option<&str>,
+    ) -> Result<(), DbError> {
         sqlx::query("UPDATE users SET totp_secret = ?, updated_at = ? WHERE id = ?")
             .bind(secret)
             .bind(now_iso8601())
@@ -726,12 +734,14 @@ impl Database for SqliteDatabase {
     }
 
     async fn enable_user_totp(&self, user_id: &str, backup_codes: &str) -> Result<(), DbError> {
-        sqlx::query("UPDATE users SET totp_enabled = 1, totp_backup_codes = ?, updated_at = ? WHERE id = ?")
-            .bind(backup_codes)
-            .bind(now_iso8601())
-            .bind(user_id)
-            .execute(&self.pool)
-            .await?;
+        sqlx::query(
+            "UPDATE users SET totp_enabled = 1, totp_backup_codes = ?, updated_at = ? WHERE id = ?",
+        )
+        .bind(backup_codes)
+        .bind(now_iso8601())
+        .bind(user_id)
+        .execute(&self.pool)
+        .await?;
         Ok(())
     }
 
@@ -744,7 +754,11 @@ impl Database for SqliteDatabase {
         Ok(())
     }
 
-    async fn update_user_backup_codes(&self, user_id: &str, backup_codes: &str) -> Result<(), DbError> {
+    async fn update_user_backup_codes(
+        &self,
+        user_id: &str,
+        backup_codes: &str,
+    ) -> Result<(), DbError> {
         sqlx::query("UPDATE users SET totp_backup_codes = ?, updated_at = ? WHERE id = ?")
             .bind(backup_codes)
             .bind(now_iso8601())
@@ -763,7 +777,11 @@ impl Database for SqliteDatabase {
 
     // --- User Profile Updates ---
 
-    async fn update_user_password(&self, user_id: &str, password_hash: &str) -> Result<(), DbError> {
+    async fn update_user_password(
+        &self,
+        user_id: &str,
+        password_hash: &str,
+    ) -> Result<(), DbError> {
         sqlx::query("UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?")
             .bind(password_hash)
             .bind(now_iso8601())
@@ -1008,10 +1026,7 @@ impl Database for SqliteDatabase {
         })
     }
 
-    async fn get_notification_rules(
-        &self,
-        app_id: &str,
-    ) -> Result<Vec<NotificationRule>, DbError> {
+    async fn get_notification_rules(&self, app_id: &str) -> Result<Vec<NotificationRule>, DbError> {
         let rules = sqlx::query_as::<_, NotificationRule>(
             "SELECT * FROM notification_rules WHERE app_id = ? ORDER BY event_type",
         )
@@ -1089,10 +1104,7 @@ impl Database for SqliteDatabase {
 
     // --- Env var extras ---
 
-    async fn delete_env_vars_by_environment(
-        &self,
-        environment_id: &str,
-    ) -> Result<(), DbError> {
+    async fn delete_env_vars_by_environment(&self, environment_id: &str) -> Result<(), DbError> {
         sqlx::query("DELETE FROM env_vars WHERE environment_id = ?")
             .bind(environment_id)
             .execute(&self.pool)
@@ -1105,95 +1117,177 @@ impl Database for SqliteDatabase {
     async fn create_session(&self, user_id: &str, expires_at: &str) -> Result<Session, DbError> {
         let id = new_id();
         let now = now_iso8601();
-        sqlx::query("INSERT INTO sessions (id, user_id, expires_at, created_at) VALUES (?, ?, ?, ?)")
-            .bind(&id).bind(user_id).bind(expires_at).bind(&now)
-            .execute(&self.pool).await?;
-        Ok(Session { id, user_id: user_id.to_string(), expires_at: expires_at.to_string(), created_at: now })
+        sqlx::query(
+            "INSERT INTO sessions (id, user_id, expires_at, created_at) VALUES (?, ?, ?, ?)",
+        )
+        .bind(&id)
+        .bind(user_id)
+        .bind(expires_at)
+        .bind(&now)
+        .execute(&self.pool)
+        .await?;
+        Ok(Session {
+            id,
+            user_id: user_id.to_string(),
+            expires_at: expires_at.to_string(),
+            created_at: now,
+        })
     }
 
     async fn get_session(&self, session_id: &str) -> Result<Option<Session>, DbError> {
-        Ok(sqlx::query_as::<_, Session>("SELECT * FROM sessions WHERE id = ?")
-            .bind(session_id).fetch_optional(&self.pool).await?)
+        Ok(
+            sqlx::query_as::<_, Session>("SELECT * FROM sessions WHERE id = ?")
+                .bind(session_id)
+                .fetch_optional(&self.pool)
+                .await?,
+        )
     }
 
     async fn delete_session(&self, session_id: &str) -> Result<(), DbError> {
-        sqlx::query("DELETE FROM sessions WHERE id = ?").bind(session_id).execute(&self.pool).await?;
+        sqlx::query("DELETE FROM sessions WHERE id = ?")
+            .bind(session_id)
+            .execute(&self.pool)
+            .await?;
         Ok(())
     }
 
     async fn delete_user_sessions(&self, user_id: &str) -> Result<(), DbError> {
-        sqlx::query("DELETE FROM sessions WHERE user_id = ?").bind(user_id).execute(&self.pool).await?;
+        sqlx::query("DELETE FROM sessions WHERE user_id = ?")
+            .bind(user_id)
+            .execute(&self.pool)
+            .await?;
         Ok(())
     }
 
     async fn list_user_sessions(&self, user_id: &str) -> Result<Vec<Session>, DbError> {
-        Ok(sqlx::query_as::<_, Session>("SELECT * FROM sessions WHERE user_id = ? ORDER BY created_at DESC")
-            .bind(user_id).fetch_all(&self.pool).await?)
+        Ok(sqlx::query_as::<_, Session>(
+            "SELECT * FROM sessions WHERE user_id = ? ORDER BY created_at DESC",
+        )
+        .bind(user_id)
+        .fetch_all(&self.pool)
+        .await?)
     }
 
-    async fn delete_user_sessions_except(&self, user_id: &str, keep_session_id: &str) -> Result<(), DbError> {
+    async fn delete_user_sessions_except(
+        &self,
+        user_id: &str,
+        keep_session_id: &str,
+    ) -> Result<(), DbError> {
         sqlx::query("DELETE FROM sessions WHERE user_id = ? AND id != ?")
-            .bind(user_id).bind(keep_session_id)
-            .execute(&self.pool).await?;
+            .bind(user_id)
+            .bind(keep_session_id)
+            .execute(&self.pool)
+            .await?;
         Ok(())
     }
 
     // --- API Tokens ---
 
-    async fn create_api_token(&self, user_id: &str, name: &str, token_hash: &str, expires_at: Option<&str>) -> Result<ApiToken, DbError> {
+    async fn create_api_token(
+        &self,
+        user_id: &str,
+        name: &str,
+        token_hash: &str,
+        expires_at: Option<&str>,
+    ) -> Result<ApiToken, DbError> {
         let id = new_id();
         let now = now_iso8601();
         sqlx::query("INSERT INTO api_tokens (id, user_id, name, token_hash, expires_at, created_at) VALUES (?, ?, ?, ?, ?, ?)")
             .bind(&id).bind(user_id).bind(name).bind(token_hash).bind(expires_at).bind(&now)
             .execute(&self.pool).await?;
-        Ok(ApiToken { id, user_id: user_id.to_string(), name: name.to_string(), token_hash: token_hash.to_string(), last_used_at: None, expires_at: expires_at.map(String::from), created_at: now })
+        Ok(ApiToken {
+            id,
+            user_id: user_id.to_string(),
+            name: name.to_string(),
+            token_hash: token_hash.to_string(),
+            last_used_at: None,
+            expires_at: expires_at.map(String::from),
+            created_at: now,
+        })
     }
 
     async fn get_api_token_by_hash(&self, token_hash: &str) -> Result<Option<ApiToken>, DbError> {
-        Ok(sqlx::query_as::<_, ApiToken>("SELECT * FROM api_tokens WHERE token_hash = ?")
-            .bind(token_hash).fetch_optional(&self.pool).await?)
+        Ok(
+            sqlx::query_as::<_, ApiToken>("SELECT * FROM api_tokens WHERE token_hash = ?")
+                .bind(token_hash)
+                .fetch_optional(&self.pool)
+                .await?,
+        )
     }
 
     async fn list_api_tokens(&self, user_id: &str) -> Result<Vec<ApiToken>, DbError> {
-        Ok(sqlx::query_as::<_, ApiToken>("SELECT * FROM api_tokens WHERE user_id = ? ORDER BY created_at DESC")
-            .bind(user_id).fetch_all(&self.pool).await?)
+        Ok(sqlx::query_as::<_, ApiToken>(
+            "SELECT * FROM api_tokens WHERE user_id = ? ORDER BY created_at DESC",
+        )
+        .bind(user_id)
+        .fetch_all(&self.pool)
+        .await?)
     }
 
     async fn delete_api_token(&self, id: &str) -> Result<(), DbError> {
-        sqlx::query("DELETE FROM api_tokens WHERE id = ?").bind(id).execute(&self.pool).await?;
+        sqlx::query("DELETE FROM api_tokens WHERE id = ?")
+            .bind(id)
+            .execute(&self.pool)
+            .await?;
         Ok(())
     }
 
     async fn update_token_last_used(&self, id: &str) -> Result<(), DbError> {
         let now = now_iso8601();
-        sqlx::query("UPDATE api_tokens SET last_used_at = ? WHERE id = ?").bind(&now).bind(id).execute(&self.pool).await?;
+        sqlx::query("UPDATE api_tokens SET last_used_at = ? WHERE id = ?")
+            .bind(&now)
+            .bind(id)
+            .execute(&self.pool)
+            .await?;
         Ok(())
     }
 
     // --- Invitations ---
 
-    async fn create_invitation(&self, email: &str, role: &str, token: &str, expires_at: &str) -> Result<Invitation, DbError> {
+    async fn create_invitation(
+        &self,
+        email: &str,
+        role: &str,
+        token: &str,
+        expires_at: &str,
+    ) -> Result<Invitation, DbError> {
         let id = new_id();
         let now = now_iso8601();
         sqlx::query("INSERT INTO invitations (id, email, role, token, expires_at, created_at) VALUES (?, ?, ?, ?, ?, ?)")
             .bind(&id).bind(email).bind(role).bind(token).bind(expires_at).bind(&now)
             .execute(&self.pool).await?;
-        Ok(Invitation { id, email: email.to_string(), role: role.to_string(), token: token.to_string(), expires_at: expires_at.to_string(), created_at: now })
+        Ok(Invitation {
+            id,
+            email: email.to_string(),
+            role: role.to_string(),
+            token: token.to_string(),
+            expires_at: expires_at.to_string(),
+            created_at: now,
+        })
     }
 
     async fn get_invitation_by_token(&self, token: &str) -> Result<Option<Invitation>, DbError> {
-        Ok(sqlx::query_as::<_, Invitation>("SELECT * FROM invitations WHERE token = ?")
-            .bind(token).fetch_optional(&self.pool).await?)
+        Ok(
+            sqlx::query_as::<_, Invitation>("SELECT * FROM invitations WHERE token = ?")
+                .bind(token)
+                .fetch_optional(&self.pool)
+                .await?,
+        )
     }
 
     async fn delete_invitation(&self, id: &str) -> Result<(), DbError> {
-        sqlx::query("DELETE FROM invitations WHERE id = ?").bind(id).execute(&self.pool).await?;
+        sqlx::query("DELETE FROM invitations WHERE id = ?")
+            .bind(id)
+            .execute(&self.pool)
+            .await?;
         Ok(())
     }
 
     // --- Onboarding ---
 
-    async fn get_onboarding(&self) -> Result<Option<(String, String, String, Option<String>)>, DbError> {
+    async fn get_onboarding(
+        &self,
+    ) -> Result<Option<(String, String, String, Option<String>)>, DbError> {
         let row = sqlx::query_as::<_, (String, String, String, Option<String>)>(
             "SELECT current_step, completed_steps, started_at, completed_at FROM onboarding WHERE id = 'singleton'",
         )
@@ -1210,7 +1304,12 @@ impl Database for SqliteDatabase {
         Ok(())
     }
 
-    async fn update_onboarding_state(&self, current_step: &str, completed_steps: &str, completed_at: Option<&str>) -> Result<(), DbError> {
+    async fn update_onboarding_state(
+        &self,
+        current_step: &str,
+        completed_steps: &str,
+        completed_at: Option<&str>,
+    ) -> Result<(), DbError> {
         sqlx::query("UPDATE onboarding SET current_step = ?, completed_steps = ?, completed_at = ? WHERE id = 'singleton'")
             .bind(current_step)
             .bind(completed_steps)
@@ -1224,7 +1323,7 @@ impl Database for SqliteDatabase {
 
     async fn get_instance_backup_config(&self) -> Result<Option<InstanceBackupConfig>, DbError> {
         let config = sqlx::query_as::<_, InstanceBackupConfig>(
-            "SELECT * FROM instance_backup_config WHERE id = 'singleton'"
+            "SELECT * FROM instance_backup_config WHERE id = 'singleton'",
         )
         .fetch_optional(&self.pool)
         .await?;
@@ -1306,7 +1405,10 @@ impl Database for SqliteDatabase {
         Ok(())
     }
 
-    async fn list_instance_backup_history(&self, limit: i64) -> Result<Vec<InstanceBackupRecord>, DbError> {
+    async fn list_instance_backup_history(
+        &self,
+        limit: i64,
+    ) -> Result<Vec<InstanceBackupRecord>, DbError> {
         let records = sqlx::query_as::<_, InstanceBackupRecord>(
             "SELECT * FROM instance_backup_history ORDER BY started_at DESC LIMIT ?",
         )
@@ -1560,9 +1662,7 @@ impl Database for SqliteDatabase {
     // --- Migrations ---
 
     async fn run_migrations(&self) -> Result<(), DbError> {
-        sqlx::migrate!("src/db/migrations")
-            .run(&self.pool)
-            .await?;
+        sqlx::migrate!("src/db/migrations").run(&self.pool).await?;
         Ok(())
     }
 }

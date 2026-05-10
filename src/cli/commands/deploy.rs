@@ -4,7 +4,10 @@ pub async fn run() {
     let client = CliClient::new_or_exit();
 
     let config = load_project_config();
-    let app_id = match config.as_ref().and_then(|c| c.get("app_id").and_then(|v| v.as_str())) {
+    let app_id = match config
+        .as_ref()
+        .and_then(|c| c.get("app_id").and_then(|v| v.as_str()))
+    {
         Some(id) => id.to_string(),
         None => {
             eprintln!("No app configured. Create .icefall.toml with app_id or run `icefall deploy --init`");
@@ -13,15 +16,24 @@ pub async fn run() {
     };
 
     println!("Deploying app {app_id}...");
-    match client.post::<serde_json::Value>(&format!("/apps/{app_id}/deploys"), &serde_json::json!({})).await {
+    match client
+        .post::<serde_json::Value>(&format!("/apps/{app_id}/deploys"), &serde_json::json!({}))
+        .await
+    {
         Ok(resp) => {
             if let Some(data) = resp.get("data") {
                 let id = data.get("id").and_then(|v| v.as_str()).unwrap_or("?");
-                let status = data.get("status").and_then(|v| v.as_str()).unwrap_or("pending");
+                let status = data
+                    .get("status")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("pending");
                 println!("Deploy triggered: {id} ({status})");
             }
         }
-        Err(e) => { eprintln!("Deploy failed: {e}"); std::process::exit(1); }
+        Err(e) => {
+            eprintln!("Deploy failed: {e}");
+            std::process::exit(1);
+        }
     }
 }
 

@@ -44,7 +44,8 @@ impl DeployManager {
         env: &Environment,
         image_ref: &str,
     ) -> Result<(), DeployError> {
-        self.deploy_inner(deploy, app, env, image_ref, None, true).await
+        self.deploy_inner(deploy, app, env, image_ref, None, true)
+            .await
     }
 
     pub async fn deploy_with_env(
@@ -55,7 +56,8 @@ impl DeployManager {
         image_ref: &str,
         env_override: Option<Vec<String>>,
     ) -> Result<(), DeployError> {
-        self.deploy_inner(deploy, app, env, image_ref, env_override, true).await
+        self.deploy_inner(deploy, app, env, image_ref, env_override, true)
+            .await
     }
 
     async fn deploy_inner(
@@ -108,15 +110,7 @@ impl DeployManager {
         // the app container.
         let mut app_volumes: Vec<VolumeMount> = local_volumes;
         for (i, s3_cfg) in s3_configs.iter().enumerate() {
-            match s3_mount::create_s3_sidecar(
-                &self.docker,
-                &app.id,
-                &app.name,
-                i,
-                s3_cfg,
-            )
-            .await
-            {
+            match s3_mount::create_s3_sidecar(&self.docker, &app.id, &app.name, i, s3_cfg).await {
                 Ok(sidecar_id) => {
                     tracing::info!(
                         "S3 sidecar {sidecar_id} started for bucket {}",
@@ -171,7 +165,10 @@ impl DeployManager {
         self.db
             .update_deploy_image_ref(&deploy.id, image_ref)
             .await?;
-        let _ = self.db.update_deploy_env_snapshot(&deploy.id, &snapshot).await;
+        let _ = self
+            .db
+            .update_deploy_env_snapshot(&deploy.id, &snapshot)
+            .await;
 
         self.emit_status(app, deploy, "starting");
 
@@ -195,38 +192,50 @@ impl DeployManager {
 
             // Auto-rollback: find the previous successful deploy and redeploy it
             if auto_rollback {
-            if let Ok(deploys) = self.db.list_deploys(&app.id, 10).await {
-                let previous = deploys.iter().find(|d| {
-                    d.id != deploy.id && d.status == "running" && d.image_ref.is_some()
-                });
-                if let Some(prev) = previous {
-                    let prev_image = prev.image_ref.clone().unwrap();
-                    let prev_snapshot: Option<Vec<String>> = prev
-                        .env_snapshot
-                        .as_deref()
-                        .and_then(|s| serde_json::from_str(s).ok());
-                    tracing::info!(
-                        "Auto-rolling back app {} to deploy {} (image: {})",
-                        app.name, prev.id, prev_image
-                    );
-                    self.event_bus.emit(
+                if let Ok(deploys) = self.db.list_deploys(&app.id, 10).await {
+                    let previous = deploys.iter().find(|d| {
+                        d.id != deploy.id && d.status == "running" && d.image_ref.is_some()
+                    });
+                    if let Some(prev) = previous {
+                        let prev_image = prev.image_ref.clone().unwrap();
+                        let prev_snapshot: Option<Vec<String>> = prev
+                            .env_snapshot
+                            .as_deref()
+                            .and_then(|s| serde_json::from_str(s).ok());
+                        tracing::info!(
+                            "Auto-rolling back app {} to deploy {} (image: {})",
+                            app.name,
+                            prev.id,
+                            prev_image
+                        );
+                        self.event_bus.emit(
                         EventType::DeployStatus,
                         Some(&app.id),
                         Some(&deploy.id),
                         serde_json::json!({"status": "auto-rollback", "previous_deploy": prev.id}),
                     );
-                    if let Ok(rollback_deploy) = self.db.create_deploy(&crate::db::models::NewDeploy {
-                        app_id: app.id.clone(),
-                        environment_id: env.id.clone(),
-                        git_sha: prev.git_sha.clone(),
-                    }).await {
-                        let _ = Box::pin(self.deploy_inner(
-                            &rollback_deploy, app, env, &prev_image, prev_snapshot, false,
-                        )).await;
+                        if let Ok(rollback_deploy) = self
+                            .db
+                            .create_deploy(&crate::db::models::NewDeploy {
+                                app_id: app.id.clone(),
+                                environment_id: env.id.clone(),
+                                git_sha: prev.git_sha.clone(),
+                            })
+                            .await
+                        {
+                            let _ = Box::pin(self.deploy_inner(
+                                &rollback_deploy,
+                                app,
+                                env,
+                                &prev_image,
+                                prev_snapshot,
+                                false,
+                            ))
+                            .await;
+                        }
+                        return Err(e);
                     }
-                    return Err(e);
                 }
-            }
             }
 
             return Err(e);
@@ -356,8 +365,7 @@ impl DeployManager {
             if let (Some(ref branch), Some(ref base_domain)) =
                 (&env.branch, &self.config.base_domain)
             {
-                let sanitized =
-                    crate::deploy::preview::sanitize_branch_for_subdomain(branch);
+                let sanitized = crate::deploy::preview::sanitize_branch_for_subdomain(branch);
                 domains.push((format!("{sanitized}--{}.{base_domain}", app.name), None));
             }
         } else {
@@ -402,7 +410,11 @@ impl DeployManager {
                 continue;
             }
 
-            tracing::info!("Stopping old container {} for app {}", container.id, app.name);
+            tracing::info!(
+                "Stopping old container {} for app {}",
+                container.id,
+                app.name
+            );
             let _ = self
                 .docker
                 .stop_container(&container.id, Some(self.config.deploy_stop_timeout_secs))

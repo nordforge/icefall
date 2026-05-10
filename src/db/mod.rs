@@ -61,12 +61,12 @@ pub trait Database: Send + Sync + 'static {
     ) -> Result<(), DbError>;
 
     // Managed Databases
-    async fn create_managed_db(
-        &self,
-        db: &NewManagedDatabase,
-    ) -> Result<ManagedDatabase, DbError>;
+    async fn create_managed_db(&self, db: &NewManagedDatabase) -> Result<ManagedDatabase, DbError>;
     async fn list_managed_dbs(&self) -> Result<Vec<ManagedDatabase>, DbError>;
-    async fn list_managed_dbs_by_project(&self, project_id: &str) -> Result<Vec<ManagedDatabase>, DbError>;
+    async fn list_managed_dbs_by_project(
+        &self,
+        project_id: &str,
+    ) -> Result<Vec<ManagedDatabase>, DbError>;
     async fn update_managed_db_credentials(
         &self,
         id: &str,
@@ -93,14 +93,30 @@ pub trait Database: Send + Sync + 'static {
     async fn list_users(&self) -> Result<Vec<User>, DbError>;
 
     // TOTP / 2FA
-    async fn update_user_totp_secret(&self, user_id: &str, secret: Option<&str>) -> Result<(), DbError>;
+    async fn update_user_totp_secret(
+        &self,
+        user_id: &str,
+        secret: Option<&str>,
+    ) -> Result<(), DbError>;
     async fn enable_user_totp(&self, user_id: &str, backup_codes: &str) -> Result<(), DbError>;
     async fn disable_user_totp(&self, user_id: &str) -> Result<(), DbError>;
-    async fn update_user_backup_codes(&self, user_id: &str, backup_codes: &str) -> Result<(), DbError>;
+    async fn update_user_backup_codes(
+        &self,
+        user_id: &str,
+        backup_codes: &str,
+    ) -> Result<(), DbError>;
 
     // Server Metrics
-    async fn insert_server_metric(&self, snapshot: &crate::api::routes::server::ServerMetricsSnapshot) -> Result<(), DbError>;
-    async fn query_server_metrics(&self, from: &str, to: &str, limit: usize) -> Result<Vec<crate::api::routes::server::ServerMetricsSnapshot>, DbError>;
+    async fn insert_server_metric(
+        &self,
+        snapshot: &crate::api::routes::server::ServerMetricsSnapshot,
+    ) -> Result<(), DbError>;
+    async fn query_server_metrics(
+        &self,
+        from: &str,
+        to: &str,
+        limit: usize,
+    ) -> Result<Vec<crate::api::routes::server::ServerMetricsSnapshot>, DbError>;
     async fn prune_server_metrics(&self, older_than: &str) -> Result<u64, DbError>;
 
     // Health Checks
@@ -123,10 +139,7 @@ pub trait Database: Send + Sync + 'static {
         &self,
         rule: &NewNotificationRule,
     ) -> Result<NotificationRule, DbError>;
-    async fn get_notification_rules(
-        &self,
-        app_id: &str,
-    ) -> Result<Vec<NotificationRule>, DbError>;
+    async fn get_notification_rules(&self, app_id: &str) -> Result<Vec<NotificationRule>, DbError>;
 
     // Lookup helpers
     async fn get_app_by_repo(&self, repo_url: &str) -> Result<Option<App>, DbError>;
@@ -154,7 +167,8 @@ pub trait Database: Send + Sync + 'static {
     ) -> Result<(), DbError>;
 
     // User profile updates
-    async fn update_user_password(&self, user_id: &str, password_hash: &str) -> Result<(), DbError>;
+    async fn update_user_password(&self, user_id: &str, password_hash: &str)
+        -> Result<(), DbError>;
     async fn update_user_email(&self, user_id: &str, email: &str) -> Result<(), DbError>;
 
     // Sessions
@@ -163,37 +177,75 @@ pub trait Database: Send + Sync + 'static {
     async fn delete_session(&self, session_id: &str) -> Result<(), DbError>;
     async fn delete_user_sessions(&self, user_id: &str) -> Result<(), DbError>;
     async fn list_user_sessions(&self, user_id: &str) -> Result<Vec<Session>, DbError>;
-    async fn delete_user_sessions_except(&self, user_id: &str, keep_session_id: &str) -> Result<(), DbError>;
+    async fn delete_user_sessions_except(
+        &self,
+        user_id: &str,
+        keep_session_id: &str,
+    ) -> Result<(), DbError>;
 
     // API Tokens
-    async fn create_api_token(&self, user_id: &str, name: &str, token_hash: &str, expires_at: Option<&str>) -> Result<ApiToken, DbError>;
+    async fn create_api_token(
+        &self,
+        user_id: &str,
+        name: &str,
+        token_hash: &str,
+        expires_at: Option<&str>,
+    ) -> Result<ApiToken, DbError>;
     async fn get_api_token_by_hash(&self, token_hash: &str) -> Result<Option<ApiToken>, DbError>;
     async fn list_api_tokens(&self, user_id: &str) -> Result<Vec<ApiToken>, DbError>;
     async fn delete_api_token(&self, id: &str) -> Result<(), DbError>;
     async fn update_token_last_used(&self, id: &str) -> Result<(), DbError>;
 
     // Invitations
-    async fn create_invitation(&self, email: &str, role: &str, token: &str, expires_at: &str) -> Result<Invitation, DbError>;
+    async fn create_invitation(
+        &self,
+        email: &str,
+        role: &str,
+        token: &str,
+        expires_at: &str,
+    ) -> Result<Invitation, DbError>;
     async fn get_invitation_by_token(&self, token: &str) -> Result<Option<Invitation>, DbError>;
     async fn delete_invitation(&self, id: &str) -> Result<(), DbError>;
 
     // Env var extras
-    async fn delete_env_vars_by_environment(
-        &self,
-        environment_id: &str,
-    ) -> Result<(), DbError>;
+    async fn delete_env_vars_by_environment(&self, environment_id: &str) -> Result<(), DbError>;
 
     // Onboarding
-    async fn get_onboarding(&self) -> Result<Option<(String, String, String, Option<String>)>, DbError>;
+    async fn get_onboarding(
+        &self,
+    ) -> Result<Option<(String, String, String, Option<String>)>, DbError>;
     async fn create_onboarding(&self, started_at: &str) -> Result<(), DbError>;
-    async fn update_onboarding_state(&self, current_step: &str, completed_steps: &str, completed_at: Option<&str>) -> Result<(), DbError>;
+    async fn update_onboarding_state(
+        &self,
+        current_step: &str,
+        completed_steps: &str,
+        completed_at: Option<&str>,
+    ) -> Result<(), DbError>;
 
     // Instance Backup
     async fn get_instance_backup_config(&self) -> Result<Option<InstanceBackupConfig>, DbError>;
-    async fn upsert_instance_backup_config(&self, enabled: bool, cron_schedule: &str, retention_count: i64) -> Result<InstanceBackupConfig, DbError>;
-    async fn create_instance_backup_record(&self, filename: &str, s3_key: Option<&str>) -> Result<InstanceBackupRecord, DbError>;
-    async fn update_instance_backup_record(&self, id: &str, status: &str, size_bytes: i64, error_message: Option<&str>) -> Result<(), DbError>;
-    async fn list_instance_backup_history(&self, limit: i64) -> Result<Vec<InstanceBackupRecord>, DbError>;
+    async fn upsert_instance_backup_config(
+        &self,
+        enabled: bool,
+        cron_schedule: &str,
+        retention_count: i64,
+    ) -> Result<InstanceBackupConfig, DbError>;
+    async fn create_instance_backup_record(
+        &self,
+        filename: &str,
+        s3_key: Option<&str>,
+    ) -> Result<InstanceBackupRecord, DbError>;
+    async fn update_instance_backup_record(
+        &self,
+        id: &str,
+        status: &str,
+        size_bytes: i64,
+        error_message: Option<&str>,
+    ) -> Result<(), DbError>;
+    async fn list_instance_backup_history(
+        &self,
+        limit: i64,
+    ) -> Result<Vec<InstanceBackupRecord>, DbError>;
     async fn delete_instance_backup_record(&self, id: &str) -> Result<(), DbError>;
 
     // OAuth Identities

@@ -51,10 +51,7 @@ pub struct ContainerInfo {
 }
 
 impl DockerClient {
-    pub async fn create_container(
-        &self,
-        config: &ContainerConfig,
-    ) -> Result<String, DockerError> {
+    pub async fn create_container(&self, config: &ContainerConfig) -> Result<String, DockerError> {
         let mut port_bindings: HashMap<String, Option<Vec<PortBinding>>> = HashMap::new();
         let mut exposed_ports: HashMap<String, HashMap<(), ()>> = HashMap::new();
 
@@ -82,17 +79,19 @@ impl DockerClient {
             })
             .collect();
 
-        let restart_policy = config.restart_policy.as_deref().map(|policy| {
-            bollard::models::RestartPolicy {
-                name: Some(match policy {
-                    "always" => bollard::models::RestartPolicyNameEnum::ALWAYS,
-                    "unless-stopped" => bollard::models::RestartPolicyNameEnum::UNLESS_STOPPED,
-                    "on-failure" => bollard::models::RestartPolicyNameEnum::ON_FAILURE,
-                    _ => bollard::models::RestartPolicyNameEnum::NO,
-                }),
-                maximum_retry_count: None,
-            }
-        });
+        let restart_policy =
+            config
+                .restart_policy
+                .as_deref()
+                .map(|policy| bollard::models::RestartPolicy {
+                    name: Some(match policy {
+                        "always" => bollard::models::RestartPolicyNameEnum::ALWAYS,
+                        "unless-stopped" => bollard::models::RestartPolicyNameEnum::UNLESS_STOPPED,
+                        "on-failure" => bollard::models::RestartPolicyNameEnum::ON_FAILURE,
+                        _ => bollard::models::RestartPolicyNameEnum::NO,
+                    }),
+                    maximum_retry_count: None,
+                });
 
         let host_config = HostConfig {
             port_bindings: Some(port_bindings),
@@ -151,17 +150,19 @@ impl DockerClient {
             })
             .collect();
 
-        let restart_policy = config.restart_policy.as_deref().map(|policy| {
-            bollard::models::RestartPolicy {
-                name: Some(match policy {
-                    "always" => bollard::models::RestartPolicyNameEnum::ALWAYS,
-                    "unless-stopped" => bollard::models::RestartPolicyNameEnum::UNLESS_STOPPED,
-                    "on-failure" => bollard::models::RestartPolicyNameEnum::ON_FAILURE,
-                    _ => bollard::models::RestartPolicyNameEnum::NO,
-                }),
-                maximum_retry_count: None,
-            }
-        });
+        let restart_policy =
+            config
+                .restart_policy
+                .as_deref()
+                .map(|policy| bollard::models::RestartPolicy {
+                    name: Some(match policy {
+                        "always" => bollard::models::RestartPolicyNameEnum::ALWAYS,
+                        "unless-stopped" => bollard::models::RestartPolicyNameEnum::UNLESS_STOPPED,
+                        "on-failure" => bollard::models::RestartPolicyNameEnum::ON_FAILURE,
+                        _ => bollard::models::RestartPolicyNameEnum::NO,
+                    }),
+                    maximum_retry_count: None,
+                });
 
         let host_config = HostConfig {
             binds: Some(binds),
@@ -198,9 +199,7 @@ impl DockerClient {
     }
 
     pub async fn start_container(&self, id: &str) -> Result<(), DockerError> {
-        self.inner()
-            .start_container::<String>(id, None)
-            .await?;
+        self.inner().start_container::<String>(id, None).await?;
         Ok(())
     }
 
@@ -222,9 +221,7 @@ impl DockerClient {
             force,
             ..Default::default()
         };
-        self.inner()
-            .remove_container(id, Some(options))
-            .await?;
+        self.inner().remove_container(id, Some(options)).await?;
         Ok(())
     }
 
@@ -243,8 +240,7 @@ impl DockerClient {
             ..Default::default()
         };
 
-        let containers: Vec<ContainerSummary> =
-            self.inner().list_containers(Some(options)).await?;
+        let containers: Vec<ContainerSummary> = self.inner().list_containers(Some(options)).await?;
 
         let infos = containers
             .into_iter()
@@ -296,8 +292,10 @@ impl DockerClient {
             .await?;
 
         let mut output = String::new();
-        if let StartExecResults::Attached { output: mut exec_output, .. } =
-            self.inner().start_exec(&exec.id, None).await?
+        if let StartExecResults::Attached {
+            output: mut exec_output,
+            ..
+        } = self.inner().start_exec(&exec.id, None).await?
         {
             while let Some(Ok(msg)) = exec_output.next().await {
                 use bollard::container::LogOutput;

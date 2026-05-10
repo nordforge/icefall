@@ -38,15 +38,17 @@ async fn list_users(
     let users = state.db.list_users().await?;
     let safe: Vec<serde_json::Value> = users
         .iter()
-        .map(|u| serde_json::json!({
-            "id": u.id,
-            "email": u.email,
-            "role": u.role,
-            "totp_enabled": u.totp_enabled,
-            "is_active": true,
-            "last_login_at": null,
-            "created_at": u.created_at,
-        }))
+        .map(|u| {
+            serde_json::json!({
+                "id": u.id,
+                "email": u.email,
+                "role": u.role,
+                "totp_enabled": u.totp_enabled,
+                "is_active": true,
+                "last_login_at": null,
+                "created_at": u.created_at,
+            })
+        })
         .collect();
 
     Ok(Json(serde_json::json!({ "data": safe })))
@@ -60,7 +62,9 @@ async fn get_me(
         .await?
         .ok_or_else(|| ApiError::BadRequest("Not authenticated".into()))?;
 
-    Ok(Json(serde_json::json!({ "data": { "id": user.id, "email": user.email, "role": user.role, "totp_enabled": user.totp_enabled, "created_at": user.created_at } })))
+    Ok(Json(
+        serde_json::json!({ "data": { "id": user.id, "email": user.email, "role": user.role, "totp_enabled": user.totp_enabled, "created_at": user.created_at } }),
+    ))
 }
 
 #[derive(Deserialize)]
@@ -83,14 +87,19 @@ async fn invite_user(
 
     let role = body.role.unwrap_or_else(|| "viewer".to_string());
     if !["admin", "deployer", "viewer"].contains(&role.as_str()) {
-        return Err(ApiError::BadRequest("Role must be admin, deployer, or viewer".into()));
+        return Err(ApiError::BadRequest(
+            "Role must be admin, deployer, or viewer".into(),
+        ));
     }
 
     let token = generate_random_hex(48);
     let expires_at = (chrono::Utc::now() + chrono::Duration::days(7))
         .to_rfc3339_opts(chrono::SecondsFormat::Millis, true);
 
-    let invitation = state.db.create_invitation(&body.email, &role, &token, &expires_at).await?;
+    let invitation = state
+        .db
+        .create_invitation(&body.email, &role, &token, &expires_at)
+        .await?;
 
     Ok(Json(serde_json::json!({
         "data": invitation,
@@ -108,26 +117,36 @@ async fn accept_invite(
     State(state): State<AppState>,
     Json(body): Json<AcceptInviteRequest>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
-    let invitation = state.db.get_invitation_by_token(&body.token).await?
+    let invitation = state
+        .db
+        .get_invitation_by_token(&body.token)
+        .await?
         .ok_or_else(|| ApiError::NotFound("Invalid or expired invitation".into()))?;
 
     if invitation.expires_at < crate::db::models::now_iso8601() {
         return Err(ApiError::BadRequest("Invitation has expired".into()));
     }
     if body.password.len() < 12 {
-        return Err(ApiError::BadRequest("Password must be at least 12 characters".into()));
+        return Err(ApiError::BadRequest(
+            "Password must be at least 12 characters".into(),
+        ));
     }
 
     let password_hash = hash_password(&body.password)?;
-    let user = state.db.create_user(&NewUser {
-        email: invitation.email,
-        password_hash,
-        role: invitation.role,
-    }).await?;
+    let user = state
+        .db
+        .create_user(&NewUser {
+            email: invitation.email,
+            password_hash,
+            role: invitation.role,
+        })
+        .await?;
 
     state.db.delete_invitation(&invitation.id).await?;
 
-    Ok(Json(serde_json::json!({ "data": { "id": user.id, "email": user.email, "role": user.role } })))
+    Ok(Json(
+        serde_json::json!({ "data": { "id": user.id, "email": user.email, "role": user.role } }),
+    ))
 }
 
 #[derive(Deserialize)]
@@ -141,7 +160,8 @@ async fn change_role(
     headers: HeaderMap,
     Json(body): Json<ChangeRoleRequest>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
-    let caller = authenticate_from_headers(&state, &headers).await?
+    let caller = authenticate_from_headers(&state, &headers)
+        .await?
         .ok_or_else(|| ApiError::BadRequest("Not authenticated".into()))?;
     if caller.role != "admin" {
         return Err(ApiError::BadRequest("Admin access required".into()));
@@ -150,7 +170,9 @@ async fn change_role(
         return Err(ApiError::BadRequest("Invalid role".into()));
     }
 
-    Ok(Json(serde_json::json!({ "message": "role updated", "user_id": id, "new_role": body.role })))
+    Ok(Json(
+        serde_json::json!({ "message": "role updated", "user_id": id, "new_role": body.role }),
+    ))
 }
 
 async fn deactivate_user(
@@ -158,18 +180,29 @@ async fn deactivate_user(
     Path(id): Path<String>,
     headers: HeaderMap,
 ) -> Result<Json<serde_json::Value>, ApiError> {
-    let caller = authenticate_from_headers(&state, &headers).await?
+    let caller = authenticate_from_headers(&state, &headers)
+        .await?
         .ok_or_else(|| ApiError::BadRequest("Not authenticated".into()))?;
     if caller.role != "admin" {
         return Err(ApiError::BadRequest("Admin access required".into()));
     }
     if caller.id == id {
-        return Err(ApiError::BadRequest("Cannot deactivate your own account".into()));
+        return Err(ApiError::BadRequest(
+            "Cannot deactivate your own account".into(),
+        ));
     }
 
-    let admins: Vec<_> = state.db.list_users().await?.into_iter().filter(|u| u.role == "admin").collect();
+    let admins: Vec<_> = state
+        .db
+        .list_users()
+        .await?
+        .into_iter()
+        .filter(|u| u.role == "admin")
+        .collect();
     if admins.len() <= 1 && admins.first().map(|a| &a.id) == Some(&id) {
-        return Err(ApiError::BadRequest("Cannot deactivate the last admin".into()));
+        return Err(ApiError::BadRequest(
+            "Cannot deactivate the last admin".into(),
+        ));
     }
 
     state.db.delete_user_sessions(&id).await?;
@@ -191,7 +224,10 @@ async fn reset_password(
     }
 
     // Verify target user exists
-    let target = state.db.get_user_by_id(&id).await?
+    let target = state
+        .db
+        .get_user_by_id(&id)
+        .await?
         .ok_or_else(|| ApiError::NotFound("User not found".into()))?;
 
     // Generate a secure temporary password (16 chars alphanumeric)
@@ -228,11 +264,16 @@ async fn admin_reset_2fa(
     }
 
     // Verify target user exists
-    let target = state.db.get_user_by_id(&id).await?
+    let target = state
+        .db
+        .get_user_by_id(&id)
+        .await?
         .ok_or_else(|| ApiError::NotFound("User not found".into()))?;
 
     if !target.totp_enabled {
-        return Err(ApiError::BadRequest("2FA is not enabled for this user".into()));
+        return Err(ApiError::BadRequest(
+            "2FA is not enabled for this user".into(),
+        ));
     }
 
     state.db.admin_reset_user_2fa(&id).await?;
@@ -259,7 +300,8 @@ async fn list_tokens(
     State(state): State<AppState>,
     headers: HeaderMap,
 ) -> Result<Json<serde_json::Value>, ApiError> {
-    let user = authenticate_from_headers(&state, &headers).await?
+    let user = authenticate_from_headers(&state, &headers)
+        .await?
         .ok_or_else(|| ApiError::BadRequest("Not authenticated".into()))?;
 
     let tokens = state.db.list_api_tokens(&user.id).await?;
@@ -275,18 +317,22 @@ async fn create_token(
     headers: HeaderMap,
     Json(body): Json<CreateTokenRequest>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
-    let user = authenticate_from_headers(&state, &headers).await?
+    let user = authenticate_from_headers(&state, &headers)
+        .await?
         .ok_or_else(|| ApiError::BadRequest("Not authenticated".into()))?;
 
     let raw_token = format!("icefall_{}", generate_random_hex(48));
     let token_hash = sha256_hex(&raw_token);
 
-    let token = state.db.create_api_token(
-        &user.id,
-        &body.name,
-        &token_hash,
-        body.expires_at.as_deref(),
-    ).await?;
+    let token = state
+        .db
+        .create_api_token(
+            &user.id,
+            &body.name,
+            &token_hash,
+            body.expires_at.as_deref(),
+        )
+        .await?;
 
     Ok(Json(serde_json::json!({
         "data": { "id": token.id, "name": token.name, "token": raw_token },
@@ -299,7 +345,8 @@ async fn revoke_token(
     Path(id): Path<String>,
     headers: HeaderMap,
 ) -> Result<Json<serde_json::Value>, ApiError> {
-    let _user = authenticate_from_headers(&state, &headers).await?
+    let _user = authenticate_from_headers(&state, &headers)
+        .await?
         .ok_or_else(|| ApiError::BadRequest("Not authenticated".into()))?;
 
     state.db.delete_api_token(&id).await?;
@@ -321,7 +368,9 @@ fn generate_temp_password(len: usize) -> String {
 fn generate_random_hex(len: usize) -> String {
     use rand::Rng;
     let mut rng = rand::thread_rng();
-    (0..len).map(|_| format!("{:02x}", rng.gen::<u8>())).collect()
+    (0..len)
+        .map(|_| format!("{:02x}", rng.gen::<u8>()))
+        .collect()
 }
 
 fn hash_password(password: &str) -> Result<String, ApiError> {

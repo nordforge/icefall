@@ -5,10 +5,7 @@ use crate::daemon::DaemonError;
 use crate::docker::DockerClient;
 
 pub async fn check_docker(docker: &DockerClient) -> Result<(), DaemonError> {
-    docker
-        .ping()
-        .await
-        .map_err(DaemonError::Docker)
+    docker.ping().await.map_err(DaemonError::Docker)
 }
 
 pub fn check_data_dir(path: &Path) -> Result<(), DaemonError> {
@@ -21,13 +18,12 @@ pub fn check_data_dir(path: &Path) -> Result<(), DaemonError> {
 
     if path.exists() {
         let test_file = path.join(".icefall-write-test");
-        std::fs::write(&test_file, b"test")
-            .map_err(|e| {
-                DaemonError::Other(format!(
-                    "Data directory {} is not writable: {e}",
-                    path.display()
-                ))
-            })?;
+        std::fs::write(&test_file, b"test").map_err(|e| {
+            DaemonError::Other(format!(
+                "Data directory {} is not writable: {e}",
+                path.display()
+            ))
+        })?;
         std::fs::remove_file(&test_file).ok();
     }
 

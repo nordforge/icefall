@@ -196,10 +196,7 @@ pub async fn create_s3_sidecar(
     let mut labels = HashMap::new();
     labels.insert("icefall.app".to_string(), app_id.to_string());
     labels.insert("icefall.s3-sidecar".to_string(), "true".to_string());
-    labels.insert(
-        "icefall.s3-sidecar-index".to_string(),
-        index.to_string(),
-    );
+    labels.insert("icefall.s3-sidecar-index".to_string(), index.to_string());
 
     // Create the sidecar container with SYS_ADMIN capability and /dev/fuse.
     let sidecar_config = ContainerConfig {

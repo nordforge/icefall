@@ -12,7 +12,10 @@ pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/users/me/password", put(change_password))
         .route("/users/me/email", put(change_email))
-        .route("/users/me/sessions", get(list_sessions).delete(revoke_all_sessions))
+        .route(
+            "/users/me/sessions",
+            get(list_sessions).delete(revoke_all_sessions),
+        )
 }
 
 #[derive(Deserialize)]

@@ -102,8 +102,8 @@ impl IcefallConfig {
         if let Some(ref key) = self.encryption_key {
             let decoded = base64::Engine::decode(&base64::engine::general_purpose::STANDARD, key)
                 .map_err(|_| {
-                    ConfigError::Validation("encryption_key is not valid base64".to_string())
-                })?;
+                ConfigError::Validation("encryption_key is not valid base64".to_string())
+            })?;
             if decoded.len() != 32 {
                 return Err(ConfigError::Validation(
                     "encryption_key must be 32 bytes (256 bits)".to_string(),
