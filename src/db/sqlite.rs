@@ -1842,6 +1842,44 @@ impl Database for SqliteDatabase {
         Ok(())
     }
 
+    async fn set_auto_update_settings(
+        &self,
+        enabled: bool,
+        channel: &str,
+        window_start: &str,
+        window_end: &str,
+        notify_before_minutes: i64,
+    ) -> Result<(), DbError> {
+        sqlx::query(
+            "UPDATE update_state SET auto_update_enabled = ?, auto_update_channel = ?, auto_update_window_start = ?, auto_update_window_end = ?, auto_update_notify_before_minutes = ? WHERE id = 1",
+        )
+        .bind(enabled)
+        .bind(channel)
+        .bind(window_start)
+        .bind(window_end)
+        .bind(notify_before_minutes)
+        .execute(&self.pool)
+        .await?;
+        Ok(())
+    }
+
+    async fn set_auto_update_pre_downloaded(&self, pre_downloaded: bool) -> Result<(), DbError> {
+        sqlx::query("UPDATE update_state SET auto_update_pre_downloaded = ? WHERE id = 1")
+            .bind(pre_downloaded)
+            .execute(&self.pool)
+            .await?;
+        Ok(())
+    }
+
+    async fn has_active_deploys(&self) -> Result<bool, DbError> {
+        let row = sqlx::query(
+            "SELECT id FROM deploys WHERE status IN ('building', 'deploying') LIMIT 1",
+        )
+        .fetch_optional(&self.pool)
+        .await?;
+        Ok(row.is_some())
+    }
+
     // --- Skipped Versions ---
 
     async fn skip_update_version(&self, version: &str) -> Result<(), DbError> {
@@ -2091,6 +2129,15 @@ impl Database for SqliteDatabase {
                 .execute(&self.pool)
                 .await?;
         Ok(result.rows_affected())
+    }
+
+    // --- Backup ---
+
+    async fn vacuum_into(&self, path: &str) -> Result<(), DbError> {
+        sqlx::query(&format!("VACUUM INTO '{}'", path.replace('\'', "''")))
+            .execute(&self.pool)
+            .await?;
+        Ok(())
     }
 
     // --- Migrations ---

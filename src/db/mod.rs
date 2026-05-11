@@ -343,6 +343,16 @@ pub trait Database: Send + Sync + 'static {
 
     // Update preferences
     async fn set_update_channel(&self, channel: &str) -> Result<(), DbError>;
+    async fn set_auto_update_settings(
+        &self,
+        enabled: bool,
+        channel: &str,
+        window_start: &str,
+        window_end: &str,
+        notify_before_minutes: i64,
+    ) -> Result<(), DbError>;
+    async fn set_auto_update_pre_downloaded(&self, pre_downloaded: bool) -> Result<(), DbError>;
+    async fn has_active_deploys(&self) -> Result<bool, DbError>;
 
     // Skipped versions
     async fn skip_update_version(&self, version: &str) -> Result<(), DbError>;
@@ -351,6 +361,9 @@ pub trait Database: Send + Sync + 'static {
     // Update history
     async fn record_update_history(&self, entry: &UpdateHistoryEntry) -> Result<(), DbError>;
     async fn list_update_history(&self, limit: usize) -> Result<Vec<UpdateHistoryEntry>, DbError>;
+
+    // Backup
+    async fn vacuum_into(&self, path: &str) -> Result<(), DbError>;
 
     // Migrations
     async fn run_migrations(&self) -> Result<(), DbError>;

@@ -25,6 +25,8 @@ pub enum EventType {
     DeployStatus,
     HealthStatus,
     UpdateAvailable,
+    UpdateScheduled,
+    UpdateStep,
     ServerConnected,
     ServerDisconnected,
 }
@@ -39,6 +41,8 @@ impl EventType {
             Self::DeployStatus => "deploy.status",
             Self::HealthStatus => "health.status",
             Self::UpdateAvailable => "update.available",
+            Self::UpdateScheduled => "update.scheduled",
+            Self::UpdateStep => "update.step",
             Self::ServerConnected => "server.connected",
             Self::ServerDisconnected => "server.disconnected",
         }
