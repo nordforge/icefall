@@ -11,6 +11,9 @@ const STATUS_LABELS: Record<string, string> = {
   stopped: 'Stopped',
   cancelled: 'Cancelled',
   success: 'Success',
+  offline: 'Offline',
+  enrolling: 'Enrolling',
+  draining: 'Draining',
 };
 
 type Props = {

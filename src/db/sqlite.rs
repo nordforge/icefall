@@ -157,9 +157,14 @@ impl Database for SqliteDatabase {
         let now = now_iso8601();
         let deploy_mode = app.deploy_mode.as_deref().unwrap_or("auto");
 
+        let server_id = app
+            .server_id
+            .as_deref()
+            .unwrap_or(CONTROL_PLANE_SERVER_ID);
+
         sqlx::query(
-            "INSERT INTO apps (id, name, git_repo, git_branch, framework, image_ref, compose_content, deploy_mode, created_at, updated_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO apps (id, name, git_repo, git_branch, framework, image_ref, compose_content, deploy_mode, server_id, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         )
         .bind(&id)
         .bind(&app.name)
@@ -169,6 +174,7 @@ impl Database for SqliteDatabase {
         .bind(&app.image_ref)
         .bind(&app.compose_content)
         .bind(deploy_mode)
+        .bind(server_id)
         .bind(&now)
         .bind(&now)
         .execute(&self.pool)

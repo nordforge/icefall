@@ -255,6 +255,7 @@ async fn create_first_app(
             image_ref: None,
             compose_content: None,
             deploy_mode: None,
+            server_id: None,
         })
         .await?;
 

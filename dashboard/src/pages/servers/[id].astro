@@ -1,0 +1,10 @@
+---
+import DashboardLayout from '@/layouts/DashboardLayout.astro';
+import ServerDetail from '@islands/servers/ServerDetail/ServerDetail';
+
+const { id } = Astro.params;
+---
+
+<DashboardLayout title="Server Detail">
+  <ServerDetail serverId={id!} client:only="preact" />
+</DashboardLayout>

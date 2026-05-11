@@ -25,3 +25,6 @@
 .failed { background: var(--color-error); }
 .stopped { background: var(--color-text-muted); }
 .cancelled { background: var(--color-text-muted); }
+.offline { background: var(--color-error); }
+.enrolling { background: var(--color-warning); }
+.draining { background: oklch(0.65 0.17 50); }

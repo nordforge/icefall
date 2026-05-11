@@ -34,6 +34,7 @@ pub async fn dispatch(ctx: &HandlerContext, id: String, method: &str, params: Va
         "container.stop" => docker::container_stop(ctx, params).await,
         "container.remove" => docker::container_remove(ctx, params).await,
         "container.list" => docker::container_list(ctx, params).await,
+        "container.inspect" => docker::container_inspect(ctx, params).await,
 
         "image.pull" => docker::image_pull(ctx, params).await,
         "image.build" => docker::image_build(ctx, params).await,

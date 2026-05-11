@@ -194,6 +194,19 @@ pub async fn container_remove(ctx: &HandlerContext, params: Value) -> Result<Val
     Ok(serde_json::json!({ "ok": true }))
 }
 
+pub async fn container_inspect(ctx: &HandlerContext, params: Value) -> Result<Value, HandlerError> {
+    let p: ContainerIdParams =
+        serde_json::from_value(params).map_err(|e| HandlerError::InvalidParams(e.to_string()))?;
+
+    let info = ctx.docker.inspect_container(&p.id, None).await?;
+
+    Ok(serde_json::json!({
+        "id": info.id,
+        "state": info.state,
+        "network_settings": info.network_settings,
+    }))
+}
+
 pub async fn container_list(ctx: &HandlerContext, _params: Value) -> Result<Value, HandlerError> {
     let options = ListContainersOptions {
         all: true,
