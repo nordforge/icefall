@@ -2,7 +2,7 @@ use std::path::{Path, PathBuf};
 
 use tracing::{error, info, warn};
 
-use crate::update::apply::PendingUpdate;
+use crate::update::apply::{PendingUpdate, DASHBOARD_DIR};
 use crate::update::UpdateError;
 
 /// Handles automatic and manual rollback of failed updates.
@@ -130,6 +130,26 @@ impl UpdateRollback {
             warn!(path = %db_backup.display(), "database backup not found, skipping database restore");
         }
 
+        // Restore dashboard assets
+        if let Some(ref dashboard_bak) = marker.dashboard_backup {
+            let bak_path = Path::new(dashboard_bak);
+            let dashboard_path = PathBuf::from(DASHBOARD_DIR);
+            if bak_path.exists() {
+                if dashboard_path.exists() {
+                    let _ = std::fs::remove_dir_all(&dashboard_path);
+                }
+                if let Err(e) = std::fs::rename(bak_path, &dashboard_path) {
+                    warn!(error = %e, "failed to restore dashboard assets, trying copy");
+                    if let Err(e2) = crate::update::apply::copy_dir_recursive(bak_path, &dashboard_path) {
+                        error!(error = %e2, "failed to copy dashboard assets during rollback");
+                    }
+                }
+                info!("dashboard assets restored from backup");
+            } else {
+                warn!(path = %bak_path.display(), "dashboard backup not found, skipping dashboard restore");
+            }
+        }
+
         // Remove marker so we don't loop
         if let Err(e) = std::fs::remove_file(&marker_path) {
             warn!(error = %e, "failed to remove pending update marker");
@@ -224,6 +244,7 @@ mod tests {
             to_version: "0.2.0".into(),
             rollback_binary: "/tmp/rollback".into(),
             db_backup: "/tmp/backup.db".into(),
+            dashboard_backup: None,
             started_at: chrono::Utc::now().to_rfc3339(),
         };
         let json = serde_json::to_string_pretty(&marker).unwrap();
@@ -245,6 +266,7 @@ mod tests {
             to_version: "0.2.0".into(),
             rollback_binary: "/tmp/rollback".into(),
             db_backup: "/tmp/backup.db".into(),
+            dashboard_backup: None,
             started_at: old_time.to_rfc3339(),
         };
         let json = serde_json::to_string_pretty(&marker).unwrap();
@@ -318,6 +340,7 @@ mod tests {
             to_version: "0.2.0".into(),
             rollback_binary: rollback_binary.to_string_lossy().to_string(),
             db_backup: db_backup.to_string_lossy().to_string(),
+            dashboard_backup: None,
             started_at: chrono::Utc::now().to_rfc3339(),
         };
         let json = serde_json::to_string_pretty(&marker).unwrap();

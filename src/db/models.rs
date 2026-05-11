@@ -388,6 +388,12 @@ pub struct UpdateState {
     pub last_update_at: Option<String>,
     pub last_update_version: Option<String>,
     pub error_message: Option<String>,
+    pub auto_update_enabled: bool,
+    pub auto_update_channel: String,
+    pub auto_update_window_start: String,
+    pub auto_update_window_end: String,
+    pub auto_update_notify_before_minutes: i64,
+    pub auto_update_pre_downloaded: bool,
 }
 
 // --- Update History ---

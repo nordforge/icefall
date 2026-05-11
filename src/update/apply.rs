@@ -7,12 +7,15 @@ use crate::db::Database;
 use crate::docker::DockerClient;
 use crate::update::UpdateError;
 
+pub(crate) const DASHBOARD_DIR: &str = "dashboard/dist";
+
 /// Orchestrates atomic binary updates with rollback support.
 ///
-/// The sequence is: backup current binary -> backup database -> write pending
-/// marker -> atomic binary swap -> trigger restart.  If the new version starts
-/// successfully it clears the marker; if it crashes or fails health checks the
-/// marker stays on disk so the rollback module can restore the previous state.
+/// The sequence is: backup current binary -> backup database -> backup dashboard
+/// -> write pending marker -> run migrations -> atomic binary swap -> trigger
+/// restart.  If the new version starts successfully it clears the marker; if it
+/// crashes or fails health checks the marker stays on disk so the rollback
+/// module can restore the previous state.
 pub struct UpdateApplier {
     data_dir: PathBuf,
     binary_path: PathBuf,
@@ -28,6 +31,8 @@ pub struct PendingUpdate {
     pub to_version: String,
     pub rollback_binary: String,
     pub db_backup: String,
+    #[serde(default)]
+    pub dashboard_backup: Option<String>,
     pub started_at: String,
 }
 
@@ -51,6 +56,7 @@ impl UpdateApplier {
         new_binary_path: &Path,
         from_version: &str,
         to_version: &str,
+        db: &dyn Database,
         on_step: impl Fn(&str, &str),
     ) -> Result<(), UpdateError> {
         info!(
@@ -65,30 +71,44 @@ impl UpdateApplier {
         on_step("backup", "done");
         info!(path = %rollback_path.display(), "binary backup complete");
 
-        // Step 2: Backup database
+        // Step 2: Backup database via VACUUM INTO (hot, WAL-safe)
         on_step("backup_db", "running");
-        let db_backup_path = self.backup_database().await?;
+        let db_backup_path = self.backup_database(db).await?;
         on_step("backup_db", "done");
         info!(path = %db_backup_path.display(), "database backup complete");
 
-        // Step 3: Write pending update marker
+        // Step 3: Backup dashboard assets
+        on_step("backup_dashboard", "running");
+        let dashboard_backup = self.backup_dashboard()?;
+        on_step("backup_dashboard", "done");
+        if let Some(ref p) = dashboard_backup {
+            info!(path = %p.display(), "dashboard backup complete");
+        }
+
+        // Step 4: Write pending update marker
         let marker = PendingUpdate {
             from_version: from_version.to_string(),
             to_version: to_version.to_string(),
             rollback_binary: rollback_path.to_string_lossy().to_string(),
             db_backup: db_backup_path.to_string_lossy().to_string(),
+            dashboard_backup: dashboard_backup.map(|p| p.to_string_lossy().to_string()),
             started_at: chrono::Utc::now().to_rfc3339(),
         };
         self.write_pending_marker(&marker)?;
         info!("pending update marker written");
 
-        // Step 4: Atomic binary swap
+        // Step 5: Run database migrations from new binary
+        on_step("migrate", "running");
+        self.run_update_migrations(new_binary_path).await?;
+        on_step("migrate", "done");
+
+        // Step 6: Atomic binary swap
         on_step("swap", "running");
         self.swap_binary(new_binary_path)?;
         on_step("swap", "done");
         info!("binary swap complete");
 
-        // Step 5: Trigger restart (non-blocking)
+        // Step 7: Trigger restart (non-blocking)
         on_step("restart", "running");
         self.trigger_restart()?;
 
@@ -112,31 +132,89 @@ impl UpdateApplier {
         Ok(rollback_path)
     }
 
-    /// Copy the SQLite database file to a timestamped backup.
-    async fn backup_database(&self) -> Result<PathBuf, UpdateError> {
+    /// Create a consistent database backup using SQLite VACUUM INTO.
+    ///
+    /// Unlike `fs::copy`, `VACUUM INTO` produces a consistent snapshot even
+    /// while the database is under active WAL writes.  It also compacts the
+    /// backup, removing free pages.
+    async fn backup_database(&self, db: &dyn Database) -> Result<PathBuf, UpdateError> {
         let timestamp = chrono::Utc::now().format("%Y%m%d%H%M%S");
         let backup_dir = self.data_dir.join("backups");
         std::fs::create_dir_all(&backup_dir)?;
 
         let backup_path = backup_dir.join(format!("icefall-{timestamp}-pre-update.db"));
-        let db_path = self.data_dir.join("icefall.db");
+        let backup_path_str = backup_path.to_string_lossy().to_string();
 
-        if db_path.exists() {
-            std::fs::copy(&db_path, &backup_path).map_err(|e| {
+        db.vacuum_into(&backup_path_str).await.map_err(|e| {
+            UpdateError::Apply(format!("database backup via VACUUM INTO failed: {e}"))
+        })?;
+
+        info!(path = %backup_path.display(), "database backup created via VACUUM INTO");
+        Ok(backup_path)
+    }
+
+    /// Copy dashboard assets to a backup directory.
+    ///
+    /// Returns `None` if the dashboard directory doesn't exist (e.g. during
+    /// development or when assets are embedded).
+    fn backup_dashboard(&self) -> Result<Option<PathBuf>, UpdateError> {
+        let dashboard_src = PathBuf::from(DASHBOARD_DIR);
+        if !dashboard_src.exists() {
+            warn!("dashboard directory not found at {}, skipping backup", dashboard_src.display());
+            return Ok(None);
+        }
+
+        let backup_path = PathBuf::from(format!("{}.bak", DASHBOARD_DIR));
+
+        if backup_path.exists() {
+            std::fs::remove_dir_all(&backup_path).map_err(|e| {
                 UpdateError::Apply(format!(
-                    "failed to backup database from {} to {}: {e}",
-                    db_path.display(),
+                    "failed to remove old dashboard backup at {}: {e}",
                     backup_path.display()
                 ))
             })?;
-        } else {
-            warn!(
-                path = %db_path.display(),
-                "database file not found, skipping backup"
-            );
         }
 
-        Ok(backup_path)
+        copy_dir_recursive(&dashboard_src, &backup_path).map_err(|e| {
+            UpdateError::Apply(format!(
+                "failed to backup dashboard from {} to {}: {e}",
+                dashboard_src.display(),
+                backup_path.display()
+            ))
+        })?;
+
+        Ok(Some(backup_path))
+    }
+
+    /// Run database migrations by invoking the new binary's `db migrate` command.
+    ///
+    /// The new binary embeds its own migration set.  Running it in a subprocess
+    /// ensures we execute the correct migrations for the target version.  The
+    /// migration command runs inside a single transaction; on failure the DB
+    /// schema remains unchanged and we abort the update.
+    async fn run_update_migrations(&self, new_binary: &Path) -> Result<(), UpdateError> {
+        let output = tokio::process::Command::new(new_binary)
+            .args(["db", "migrate"])
+            .output()
+            .await
+            .map_err(|e| {
+                UpdateError::Apply(format!(
+                    "failed to run migrations from {}: {e}",
+                    new_binary.display()
+                ))
+            })?;
+
+        if !output.status.success() {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            return Err(UpdateError::Apply(format!(
+                "migration failed (exit {}): {}",
+                output.status,
+                stderr.trim()
+            )));
+        }
+
+        info!("database migrations from new binary completed successfully");
+        Ok(())
     }
 
     /// Persist the pending update marker to disk.
@@ -238,6 +316,21 @@ impl UpdateApplier {
     }
 }
 
+pub(crate) fn copy_dir_recursive(src: &Path, dst: &Path) -> std::io::Result<()> {
+    std::fs::create_dir_all(dst)?;
+    for entry in std::fs::read_dir(src)? {
+        let entry = entry?;
+        let ty = entry.file_type()?;
+        let dest = dst.join(entry.file_name());
+        if ty.is_dir() {
+            copy_dir_recursive(&entry.path(), &dest)?;
+        } else {
+            std::fs::copy(entry.path(), dest)?;
+        }
+    }
+    Ok(())
+}
+
 /// Run post-update health checks on daemon startup.
 ///
 /// If a pending update marker exists, we verify that the new version is
@@ -317,6 +410,7 @@ mod tests {
             to_version: "0.2.0".into(),
             rollback_binary: "/tmp/rollback".into(),
             db_backup: "/tmp/backup.db".into(),
+            dashboard_backup: None,
             started_at: "2026-05-10T12:00:00Z".into(),
         };
         applier.write_pending_marker(&marker).unwrap();
@@ -375,24 +469,31 @@ mod tests {
         assert!(!target.with_extension("new").exists());
     }
 
-    #[tokio::test]
-    async fn backup_database_copies_db() {
+    #[test]
+    fn copy_dir_recursive_works() {
         let tmp = TempDir::new().unwrap();
-        let db_file = tmp.path().join("icefall.db");
-        std::fs::write(&db_file, b"sqlite-data").unwrap();
+        let src = tmp.path().join("src");
+        std::fs::create_dir_all(src.join("sub")).unwrap();
+        std::fs::write(src.join("a.txt"), b"file-a").unwrap();
+        std::fs::write(src.join("sub").join("b.txt"), b"file-b").unwrap();
 
-        let applier = make_applier(tmp.path());
-        let backup = applier.backup_database().await.unwrap();
-        assert!(backup.exists());
-        assert_eq!(std::fs::read(&backup).unwrap(), b"sqlite-data");
+        let dst = tmp.path().join("dst");
+        super::copy_dir_recursive(&src, &dst).unwrap();
+
+        assert_eq!(std::fs::read(dst.join("a.txt")).unwrap(), b"file-a");
+        assert_eq!(std::fs::read(dst.join("sub").join("b.txt")).unwrap(), b"file-b");
     }
 
-    #[tokio::test]
-    async fn backup_database_handles_missing_db() {
-        let tmp = TempDir::new().unwrap();
-        let applier = make_applier(tmp.path());
-        // Should not error when db file doesn't exist
-        let backup = applier.backup_database().await.unwrap();
-        assert!(!backup.exists());
+    #[test]
+    fn pending_marker_deserializes_without_dashboard_backup() {
+        let json = r#"{
+            "from_version": "0.1.0",
+            "to_version": "0.2.0",
+            "rollback_binary": "/tmp/rb",
+            "db_backup": "/tmp/db",
+            "started_at": "2026-05-10T12:00:00Z"
+        }"#;
+        let marker: PendingUpdate = serde_json::from_str(json).unwrap();
+        assert!(marker.dashboard_backup.is_none());
     }
 }

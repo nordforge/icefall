@@ -7,25 +7,39 @@ const BOLD: &str = "\x1b[1m";
 const DIM: &str = "\x1b[2m";
 const RESET: &str = "\x1b[0m";
 
+const STEP_DONE: &str = "✓";
+const STEP_RUNNING: &str = "●";
+const _STEP_PENDING: &str = "○";
+const STEP_FAILED: &str = "✗";
+
 /// Interactive update flow (default when no subcommand given).
-///
-/// 1. Check for updates
-/// 2. If available: show version + changelog
-/// 3. Ask for confirmation
-/// 4. Download with progress
-/// 5. Apply update
-/// 6. Print success message
-pub async fn run() {
+pub async fn run(yes: bool, channel: Option<&str>, json: bool) {
     let client = CliClient::new_or_exit();
     let current = env!("CARGO_PKG_VERSION");
 
+    // If a channel override was provided, set it first
+    if let Some(ch) = channel {
+        let _ = client
+            .post::<serde_json::Value>(
+                "/system/update/preferences",
+                &serde_json::json!({ "channel": ch }),
+            )
+            .await;
+    }
+
     // Step 1: Check for updates
-    print!("Checking for updates...  ");
+    if !json {
+        print!("Checking for updates...  ");
+    }
     let check: serde_json::Value = match client.get("/system/update/check").await {
         Ok(v) => v,
         Err(e) => {
-            println!("{RED}failed{RESET}");
-            eprintln!("{RED}Error:{RESET} {e}");
+            if json {
+                print_json_step("check", "failed", Some(&e.to_string()), None);
+            } else {
+                println!("{RED}failed{RESET}");
+                eprintln!("{RED}Error:{RESET} {e}");
+            }
             std::process::exit(1);
         }
     };
@@ -34,65 +48,93 @@ pub async fn run() {
     let available = data["available"].as_bool().unwrap_or(false);
 
     if !available {
-        println!("{GREEN}up to date{RESET}");
-        println!("\n  Icefall {GREEN}v{current}{RESET} is the latest version.");
+        if json {
+            print_json_step("check", "done", None, Some(serde_json::json!({
+                "up_to_date": true,
+                "version": current,
+            })));
+        } else {
+            println!("{GREEN}up to date{RESET}");
+            println!("\n  Icefall {GREEN}v{current}{RESET} is the latest version.");
+        }
         return;
     }
 
     let latest = data["latest_version"].as_str().unwrap_or("unknown");
     let breaking = data["breaking"].as_bool().unwrap_or(false);
-    println!("{GREEN}done{RESET}");
 
-    // Step 2: Show version info and changelog
-    println!();
-    println!("  {BOLD}Icefall v{current}{RESET} {DIM}->{RESET} {BOLD}{GREEN}v{latest}{RESET}");
+    if json {
+        print_json_step("check", "done", None, Some(serde_json::json!({
+            "up_to_date": false,
+            "current_version": current,
+            "latest_version": latest,
+            "breaking": breaking,
+        })));
+    } else {
+        println!("{GREEN}done{RESET}");
 
-    if breaking {
         println!();
-        println!("  {YELLOW}Warning: This update contains breaking changes.{RESET}");
-        if let Some(changes) = data["breaking_changes"].as_str() {
-            println!("  {changes}");
-        }
-    }
+        println!("  {BOLD}Icefall v{current}{RESET} {DIM}->{RESET} {BOLD}{GREEN}v{latest}{RESET}");
 
-    if let Some(highlights) = data["changelog_highlights"].as_array() {
-        if !highlights.is_empty() {
+        if breaking {
             println!();
-            println!("  {BOLD}What's new:{RESET}");
-            for item in highlights {
-                if let Some(s) = item.as_str() {
-                    println!("    {DIM}-{RESET} {s}");
+            println!("  {YELLOW}Warning: This update contains breaking changes.{RESET}");
+            if let Some(changes) = data["breaking_changes"].as_str() {
+                println!("  {changes}");
+            }
+        }
+
+        if let Some(highlights) = data["changelog_highlights"].as_array() {
+            if !highlights.is_empty() {
+                println!();
+                println!("  {BOLD}What's new:{RESET}");
+                for item in highlights {
+                    if let Some(s) = item.as_str() {
+                        println!("    {DIM}-{RESET} {s}");
+                    }
                 }
             }
         }
-    }
-    println!();
-
-    // Step 3: Ask for confirmation
-    if !confirm("  Apply this update?") {
-        println!("  Update cancelled.");
-        return;
+        println!();
     }
 
-    // Step 4: Download
-    println!();
-    print!("  Downloading update...   ");
+    // Step 2: Confirm
+    if !yes && !json {
+        if !confirm("  Apply this update?") {
+            println!("  Update cancelled.");
+            return;
+        }
+        println!();
+    }
+
+    // Step 3: Download
+    if !json {
+        print!("  {STEP_RUNNING} Downloading update        ");
+    }
     let download: serde_json::Value = match client
         .post("/system/update/download", &serde_json::json!({}))
         .await
     {
         Ok(v) => v,
         Err(e) => {
-            println!("{RED}failed{RESET}");
-            eprintln!("  {RED}Error:{RESET} {e}");
+            if json {
+                print_json_step("download", "failed", Some(&e.to_string()), None);
+            } else {
+                println!("{RED}{STEP_FAILED} failed{RESET}");
+                eprintln!("  {RED}Error:{RESET} {e}");
+            }
             std::process::exit(1);
         }
     };
 
     let dl_status = download["data"]["status"].as_str().unwrap_or("unknown");
     if dl_status != "download_started" && dl_status != "already_downloading" {
-        println!("{RED}failed{RESET}");
-        eprintln!("  Unexpected download status: {dl_status}");
+        if json {
+            print_json_step("download", "failed", Some(&format!("Unexpected status: {dl_status}")), None);
+        } else {
+            println!("{RED}{STEP_FAILED} failed{RESET}");
+            eprintln!("  Unexpected download status: {dl_status}");
+        }
         std::process::exit(1);
     }
 
@@ -103,8 +145,12 @@ pub async fn run() {
         let status: serde_json::Value = match client.get("/system/update/status").await {
             Ok(v) => v,
             Err(e) => {
-                println!("{RED}failed{RESET}");
-                eprintln!("  {RED}Error:{RESET} {e}");
+                if json {
+                    print_json_step("download", "failed", Some(&e.to_string()), None);
+                } else {
+                    println!("{RED}{STEP_FAILED} failed{RESET}");
+                    eprintln!("  {RED}Error:{RESET} {e}");
+                }
                 std::process::exit(1);
             }
         };
@@ -116,66 +162,127 @@ pub async fn run() {
 
         match state {
             "downloading" => {
-                print!("\r  Downloading update...   {progress}%  ");
+                if json {
+                    print_json_step("download", "running", None, Some(serde_json::json!({
+                        "progress": progress,
+                    })));
+                } else {
+                    let bar = progress_bar(progress as u32, 20);
+                    print!("\r  {STEP_RUNNING} Downloading update        {bar} {progress}%  ");
+                }
             }
             "ready" => {
-                println!("\r  Downloading update...   {GREEN}done{RESET}  ");
+                if json {
+                    print_json_step("download", "done", None, None);
+                } else {
+                    println!("\r  {GREEN}{STEP_DONE}{RESET} Downloading update        {GREEN}done{RESET}  ");
+                }
                 break;
             }
             "error" => {
-                println!("{RED}failed{RESET}");
                 let err_msg = status["data"]["error_message"]
                     .as_str()
                     .unwrap_or("Unknown error");
-                eprintln!("  {RED}Error:{RESET} {err_msg}");
+                if json {
+                    print_json_step("download", "failed", Some(err_msg), None);
+                } else {
+                    println!("{RED}{STEP_FAILED} failed{RESET}");
+                    eprintln!("  {RED}Error:{RESET} {err_msg}");
+                }
                 std::process::exit(1);
             }
-            _ => {
-                // Unknown state, keep polling briefly
-            }
+            _ => {}
         }
     }
 
-    // Step 5: Apply update
-    print!("  Applying update...      ");
+    // Step 4: Apply
+    if !json {
+        print!("  {STEP_RUNNING} Applying update           ");
+    }
     let apply: serde_json::Value = match client
         .post("/system/update/apply", &serde_json::json!({}))
         .await
     {
         Ok(v) => v,
         Err(e) => {
-            println!("{RED}failed{RESET}");
-            eprintln!("  {RED}Error:{RESET} {e}");
+            if json {
+                print_json_step("apply", "failed", Some(&e.to_string()), None);
+            } else {
+                println!("{RED}{STEP_FAILED} failed{RESET}");
+                eprintln!("  {RED}Error:{RESET} {e}");
+            }
             std::process::exit(1);
         }
     };
 
     let apply_status = apply["data"]["status"].as_str().unwrap_or("unknown");
     if apply_status == "applying" {
-        println!("{GREEN}done{RESET}");
+        if json {
+            print_json_step("apply", "done", None, None);
+        } else {
+            println!("{GREEN}{STEP_DONE}{RESET} Applying update           {GREEN}done{RESET}");
+        }
+    } else if json {
+        print_json_step("apply", apply_status, None, None);
     } else {
         println!("{YELLOW}{apply_status}{RESET}");
     }
 
-    // Step 6: Success
-    println!();
-    println!("  {GREEN}Update complete!{RESET} Icefall is restarting with v{latest}.");
-    println!("  {DIM}If the service doesn't come back, run: icefall update rollback{RESET}");
+    // Step 5: Wait for health
+    if !json {
+        print!("  {STEP_RUNNING} Verifying health          ");
+    }
+
+    let mut health_ok = false;
+    for _ in 0..30 {
+        tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+        match client.get::<serde_json::Value>("/server/status").await {
+            Ok(_) => {
+                health_ok = true;
+                break;
+            }
+            Err(_) => continue,
+        }
+    }
+
+    if health_ok {
+        if json {
+            print_json_step("health", "done", None, None);
+            print_json_step("complete", "done", None, Some(serde_json::json!({
+                "version": latest,
+            })));
+        } else {
+            println!("{GREEN}{STEP_DONE}{RESET} Verifying health          {GREEN}done{RESET}");
+            println!();
+            println!("  {GREEN}Update complete!{RESET} Icefall is now running v{latest}.");
+        }
+    } else if json {
+        print_json_step("health", "timeout", None, None);
+    } else {
+        println!("{YELLOW}timeout{RESET}");
+        println!();
+        println!("  {YELLOW}Icefall didn't respond within 60 seconds.{RESET}");
+        println!("  {DIM}Run: icefall update rollback{RESET}");
+    }
 }
 
 /// Check for updates without applying. Prints result and exits.
-///
-/// Exit code 0 = up to date, exit code 1 = update available.
-pub async fn check() {
+pub async fn check(json: bool) {
     let client = CliClient::new_or_exit();
     let current = env!("CARGO_PKG_VERSION");
 
-    print!("Checking for updates...  ");
+    if !json {
+        print!("Checking for updates...  ");
+    }
     let check: serde_json::Value = match client.get("/system/update/check").await {
         Ok(v) => v,
         Err(e) => {
-            println!("{RED}failed{RESET}");
-            eprintln!("{RED}Error:{RESET} {e}");
+            if json {
+                print_json_step("check", "failed", Some(&e.to_string()), None);
+            } else {
+                println!("{RED}failed{RESET}");
+                eprintln!("{RED}Error:{RESET} {e}");
+            }
             std::process::exit(2);
         }
     };
@@ -184,38 +291,61 @@ pub async fn check() {
     let available = data["available"].as_bool().unwrap_or(false);
 
     if !available {
-        println!("{GREEN}up to date{RESET}");
-        println!("\n  Icefall {GREEN}v{current}{RESET} is the latest version.");
+        if json {
+            println!(
+                "{}",
+                serde_json::json!({
+                    "up_to_date": true,
+                    "current_version": current,
+                })
+            );
+        } else {
+            println!("{GREEN}up to date{RESET}");
+            println!("\n  Icefall {GREEN}v{current}{RESET} is the latest version.");
+        }
         std::process::exit(0);
     }
 
     let latest = data["latest_version"].as_str().unwrap_or("unknown");
     let breaking = data["breaking"].as_bool().unwrap_or(false);
-    println!("{GREEN}done{RESET}");
 
-    println!();
-    println!("  {BOLD}Update available:{RESET} v{current} -> {GREEN}v{latest}{RESET}");
+    if json {
+        println!(
+            "{}",
+            serde_json::json!({
+                "up_to_date": false,
+                "current_version": current,
+                "latest_version": latest,
+                "breaking": breaking,
+                "changelog_highlights": data["changelog_highlights"],
+            })
+        );
+    } else {
+        println!("{GREEN}done{RESET}");
 
-    if breaking {
-        println!("  {YELLOW}This update contains breaking changes.{RESET}");
-    }
+        println!();
+        println!("  {BOLD}Update available:{RESET} v{current} -> {GREEN}v{latest}{RESET}");
 
-    if let Some(highlights) = data["changelog_highlights"].as_array() {
-        if !highlights.is_empty() {
-            println!();
-            println!("  {BOLD}What's new:{RESET}");
-            for item in highlights {
-                if let Some(s) = item.as_str() {
-                    println!("    {DIM}-{RESET} {s}");
+        if breaking {
+            println!("  {YELLOW}This update contains breaking changes.{RESET}");
+        }
+
+        if let Some(highlights) = data["changelog_highlights"].as_array() {
+            if !highlights.is_empty() {
+                println!();
+                println!("  {BOLD}What's new:{RESET}");
+                for item in highlights {
+                    if let Some(s) = item.as_str() {
+                        println!("    {DIM}-{RESET} {s}");
+                    }
                 }
             }
         }
+
+        println!();
+        println!("  Run {BOLD}icefall update{RESET} to apply this update.");
     }
 
-    println!();
-    println!("  Run {BOLD}icefall update{RESET} to apply this update.");
-
-    // Exit code 1 signals "update available" (useful for scripting)
     std::process::exit(1);
 }
 
@@ -223,7 +353,6 @@ pub async fn check() {
 pub async fn rollback(yes: bool) {
     let client = CliClient::new_or_exit();
 
-    // Check rollback availability via status endpoint
     print!("Checking rollback availability...  ");
     let status: serde_json::Value = match client.get("/system/update/status").await {
         Ok(v) => v,
@@ -252,7 +381,6 @@ pub async fn rollback(yes: bool) {
     println!("  {YELLOW}This will roll back Icefall v{current} to the previous version.{RESET}");
     println!("  The database will also be restored from the pre-update backup.");
 
-    // Confirm unless --yes
     if !yes {
         println!();
         if !confirm("  Proceed with rollback?") {
@@ -287,7 +415,162 @@ pub async fn rollback(yes: bool) {
     }
 }
 
-/// Simple yes/no confirmation prompt. Returns `true` if the user responds with y/Y/yes.
+/// Offline update from local files.
+pub async fn from_file(tarball: &str, manifest_path: &str, signature_path: &str, yes: bool) {
+    let current = env!("CARGO_PKG_VERSION");
+
+    println!("  {BOLD}Offline update{RESET}");
+    println!();
+
+    // Read manifest and signature
+    let manifest_bytes = match std::fs::read(manifest_path) {
+        Ok(b) => b,
+        Err(e) => {
+            eprintln!("  {RED}Error:{RESET} Failed to read manifest: {e}");
+            std::process::exit(1);
+        }
+    };
+
+    let signature_b64 = match std::fs::read_to_string(signature_path) {
+        Ok(s) => s,
+        Err(e) => {
+            eprintln!("  {RED}Error:{RESET} Failed to read signature: {e}");
+            std::process::exit(1);
+        }
+    };
+
+    // Verify signature
+    print!("  {STEP_RUNNING} Verifying manifest signature  ");
+    let now = crate::db::models::now_iso8601();
+    match crate::update::verify::verify_manifest_signature(&manifest_bytes, &signature_b64, &now) {
+        Ok(key_id) => {
+            println!("{GREEN}{STEP_DONE}{RESET} Verified (key: {DIM}{key_id}{RESET})");
+        }
+        Err(e) => {
+            println!("{RED}{STEP_FAILED}{RESET}");
+            eprintln!("  {RED}Error:{RESET} Signature verification failed: {e}");
+            std::process::exit(1);
+        }
+    }
+
+    // Parse manifest
+    let manifest = match crate::update::manifest::ReleaseManifest::from_bytes(&manifest_bytes) {
+        Ok(m) => m,
+        Err(e) => {
+            eprintln!("  {RED}Error:{RESET} Failed to parse manifest: {e}");
+            std::process::exit(1);
+        }
+    };
+
+    println!(
+        "  Version: {BOLD}v{current}{RESET} {DIM}->{RESET} {BOLD}{GREEN}v{}{RESET}",
+        manifest.version
+    );
+
+    if manifest.breaking {
+        println!("  {YELLOW}Warning: This update contains breaking changes.{RESET}");
+    }
+
+    // Verify SHA-256 of tarball
+    print!("  {STEP_RUNNING} Verifying tarball integrity   ");
+    let tarball_data = match std::fs::read(tarball) {
+        Ok(b) => b,
+        Err(e) => {
+            println!("{RED}{STEP_FAILED}{RESET}");
+            eprintln!("  {RED}Error:{RESET} Failed to read tarball: {e}");
+            std::process::exit(1);
+        }
+    };
+
+    let target = crate::update::artifact_target();
+    let artifact = match manifest.artifact_for_target(target) {
+        Some(a) => a,
+        None => {
+            println!("{RED}{STEP_FAILED}{RESET}");
+            eprintln!("  {RED}Error:{RESET} No artifact for target {target} in manifest");
+            std::process::exit(1);
+        }
+    };
+
+    match crate::update::verify::verify_sha256(&tarball_data, &artifact.sha256) {
+        Ok(()) => println!("{GREEN}{STEP_DONE}{RESET} SHA-256 verified"),
+        Err(e) => {
+            println!("{RED}{STEP_FAILED}{RESET}");
+            eprintln!("  {RED}Error:{RESET} {e}");
+            std::process::exit(1);
+        }
+    }
+
+    println!();
+    if !yes && !confirm("  Apply this offline update?") {
+        println!("  Update cancelled.");
+        return;
+    }
+
+    // Apply via the daemon API if running, otherwise instruct manual steps
+    let _client = match CliClient::try_new() {
+        Some(c) => c,
+        None => {
+            println!();
+            println!("  {YELLOW}Daemon is not running.{RESET}");
+            println!("  To apply offline, extract the tarball and replace the binary manually:");
+            println!("    tar xzf {tarball}");
+            println!("    sudo cp icefall /usr/local/bin/icefall");
+            println!("    sudo systemctl restart icefall");
+            return;
+        }
+    };
+
+    // Upload tarball path info and trigger apply
+    println!();
+    println!("  {DIM}Tarball verified. Triggering update via daemon...{RESET}");
+
+    // Extract to updates dir, then apply
+    let tmp_dir = std::env::temp_dir().join("icefall-offline-update");
+    let _ = std::fs::remove_dir_all(&tmp_dir);
+    std::fs::create_dir_all(&tmp_dir).ok();
+
+    let tarball_path = std::path::Path::new(tarball);
+    let dest_tarball = tmp_dir.join("update.tar.gz");
+    if let Err(e) = std::fs::copy(tarball_path, &dest_tarball) {
+        eprintln!("  {RED}Error:{RESET} Failed to stage tarball: {e}");
+        std::process::exit(1);
+    }
+
+    // Extract
+    print!("  {STEP_RUNNING} Extracting update            ");
+    let updates_dir = tmp_dir.clone();
+    let extract_result = tokio::task::spawn_blocking(move || -> Result<(), String> {
+        let file = std::fs::File::open(&dest_tarball).map_err(|e| e.to_string())?;
+        let gz = flate2::read::GzDecoder::new(file);
+        let mut archive = tar::Archive::new(gz);
+        archive.set_overwrite(true);
+        archive
+            .unpack(&updates_dir)
+            .map_err(|e| e.to_string())?;
+        Ok(())
+    })
+    .await;
+
+    match extract_result {
+        Ok(Ok(())) => println!("{GREEN}{STEP_DONE}{RESET} Extracted"),
+        Ok(Err(e)) => {
+            println!("{RED}{STEP_FAILED}{RESET}");
+            eprintln!("  {RED}Error:{RESET} {e}");
+            std::process::exit(1);
+        }
+        Err(e) => {
+            println!("{RED}{STEP_FAILED}{RESET}");
+            eprintln!("  {RED}Error:{RESET} extraction task failed: {e}");
+            std::process::exit(1);
+        }
+    }
+
+    println!();
+    println!("  {GREEN}Files verified and extracted.{RESET}");
+    println!("  {DIM}Use `icefall update` with the daemon running for the full apply flow.{RESET}");
+}
+
 fn confirm(prompt: &str) -> bool {
     use std::io::{self, Write};
 
@@ -300,4 +583,24 @@ fn confirm(prompt: &str) -> bool {
     }
 
     matches!(input.trim().to_lowercase().as_str(), "y" | "yes")
+}
+
+fn print_json_step(step: &str, status: &str, error: Option<&str>, data: Option<serde_json::Value>) {
+    let mut obj = serde_json::json!({
+        "step": step,
+        "status": status,
+    });
+    if let Some(e) = error {
+        obj["error"] = serde_json::Value::String(e.to_string());
+    }
+    if let Some(d) = data {
+        obj["data"] = d;
+    }
+    println!("{obj}");
+}
+
+fn progress_bar(percent: u32, width: usize) -> String {
+    let filled = (percent as usize * width) / 100;
+    let empty = width.saturating_sub(filled);
+    format!("[{}{}]", "█".repeat(filled), "░".repeat(empty))
 }

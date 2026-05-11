@@ -151,8 +151,13 @@ impl DaemonRunner {
         spawn_backup_scheduler(docker.clone(), db.clone(), backup_store.clone());
         spawn_instance_backup_scheduler(db.clone(), instance_backup_handle.clone());
 
-        // Spawn periodic update checker
+        // Spawn periodic update checker + auto-update applier
         crate::update::scheduler::spawn_update_checker(
+            db.clone(),
+            Arc::new(config.clone()),
+            event_bus.clone(),
+        );
+        crate::update::scheduler::spawn_auto_update_applier(
             db.clone(),
             Arc::new(config.clone()),
             event_bus.clone(),

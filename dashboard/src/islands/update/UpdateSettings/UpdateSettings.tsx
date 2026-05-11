@@ -11,9 +11,10 @@ import styles from './update-settings.module.css';
 
 type UpdatePreferences = {
   channel: 'stable' | 'beta';
-  auto_update: boolean;
-  maintenance_window_start: string;
-  maintenance_window_end: string;
+  auto_update_enabled: boolean;
+  auto_update_window_start: string;
+  auto_update_window_end: string;
+  auto_update_notify_before_minutes: number;
 };
 
 type HistoryEntry = {
@@ -50,9 +51,10 @@ export default function UpdateSettings() {
   const [checkResult, setCheckResult] = useState<'up_to_date' | 'available' | null>(null);
   const [prefs, setPrefs] = useState<UpdatePreferences>({
     channel: 'stable',
-    auto_update: false,
-    maintenance_window_start: '03:00',
-    maintenance_window_end: '05:00',
+    auto_update_enabled: false,
+    auto_update_window_start: '03:00',
+    auto_update_window_end: '05:00',
+    auto_update_notify_before_minutes: 30,
   });
   const [saving, setSaving] = useState(false);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
@@ -63,9 +65,10 @@ export default function UpdateSettings() {
         setPrefs((prev) => ({
           ...prev,
           channel: res.data.channel ?? prev.channel,
-          auto_update: res.data.auto_update ?? prev.auto_update,
-          maintenance_window_start: res.data.maintenance_window_start ?? prev.maintenance_window_start,
-          maintenance_window_end: res.data.maintenance_window_end ?? prev.maintenance_window_end,
+          auto_update_enabled: res.data.auto_update_enabled ?? prev.auto_update_enabled,
+          auto_update_window_start: res.data.auto_update_window_start ?? prev.auto_update_window_start,
+          auto_update_window_end: res.data.auto_update_window_end ?? prev.auto_update_window_end,
+          auto_update_notify_before_minutes: res.data.auto_update_notify_before_minutes ?? prev.auto_update_notify_before_minutes,
         }));
       }
     }).catch(() => {});
@@ -130,14 +133,7 @@ export default function UpdateSettings() {
               Version {info?.latest_version} is available.{' '}
               <button
                 type="button"
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: 'inherit',
-                  textDecoration: 'underline',
-                  cursor: 'pointer',
-                  font: 'inherit',
-                }}
+                class={styles.linkButton}
                 onClick={() => $updateDialogOpen.set(true)}
               >
                 View details
@@ -184,21 +180,21 @@ export default function UpdateSettings() {
             id="auto-update-toggle"
             type="button"
             role="switch"
-            aria-checked={prefs.auto_update}
-            class={`${styles.toggle} ${prefs.auto_update ? styles.toggleOn : ''}`}
-            onClick={() => setPrefs((p) => ({ ...p, auto_update: !p.auto_update }))}
+            aria-checked={prefs.auto_update_enabled}
+            class={`${styles.toggle} ${prefs.auto_update_enabled ? styles.toggleOn : ''}`}
+            onClick={() => setPrefs((p) => ({ ...p, auto_update_enabled: !p.auto_update_enabled }))}
           >
             <span class={styles.toggleKnob} />
           </button>
           <span class={styles.toggleLabel}>
-            {prefs.auto_update ? 'On' : 'Off'}
+            {prefs.auto_update_enabled ? 'On' : 'Off'}
           </span>
         </div>
         <p class={formStyles.hint}>
           When enabled, updates are applied automatically during the maintenance window.
         </p>
 
-        {prefs.auto_update && (
+        {prefs.auto_update_enabled && (
           <div class={styles.windowRow}>
             <div>
               <label htmlFor="mw-start" class={formStyles.label}>Start</label>
@@ -206,11 +202,11 @@ export default function UpdateSettings() {
                 id="mw-start"
                 type="time"
                 class={`${formStyles.input} ${styles.timeInput}`}
-                value={prefs.maintenance_window_start}
+                value={prefs.auto_update_window_start}
                 onInput={(e) =>
                   setPrefs((p) => ({
                     ...p,
-                    maintenance_window_start: (e.target as HTMLInputElement).value,
+                    auto_update_window_start: (e.target as HTMLInputElement).value,
                   }))
                 }
               />
@@ -221,11 +217,11 @@ export default function UpdateSettings() {
                 id="mw-end"
                 type="time"
                 class={`${formStyles.input} ${styles.timeInput}`}
-                value={prefs.maintenance_window_end}
+                value={prefs.auto_update_window_end}
                 onInput={(e) =>
                   setPrefs((p) => ({
                     ...p,
-                    maintenance_window_end: (e.target as HTMLInputElement).value,
+                    auto_update_window_end: (e.target as HTMLInputElement).value,
                   }))
                 }
               />
