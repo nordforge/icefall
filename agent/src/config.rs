@@ -30,8 +30,8 @@ impl AgentConfig {
             )
         })?;
 
-        let mut config: AgentConfig = toml::from_str(&contents)
-            .map_err(|e| format!("Invalid config file: {e}"))?;
+        let mut config: AgentConfig =
+            toml::from_str(&contents).map_err(|e| format!("Invalid config file: {e}"))?;
 
         // Environment variable overrides
         if let Ok(url) = std::env::var("ICEFALL_CONTROL_PLANE_URL") {

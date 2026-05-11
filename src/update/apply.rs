@@ -160,7 +160,10 @@ impl UpdateApplier {
     fn backup_dashboard(&self) -> Result<Option<PathBuf>, UpdateError> {
         let dashboard_src = PathBuf::from(DASHBOARD_DIR);
         if !dashboard_src.exists() {
-            warn!("dashboard directory not found at {}, skipping backup", dashboard_src.display());
+            warn!(
+                "dashboard directory not found at {}, skipping backup",
+                dashboard_src.display()
+            );
             return Ok(None);
         }
 
@@ -481,7 +484,10 @@ mod tests {
         super::copy_dir_recursive(&src, &dst).unwrap();
 
         assert_eq!(std::fs::read(dst.join("a.txt")).unwrap(), b"file-a");
-        assert_eq!(std::fs::read(dst.join("sub").join("b.txt")).unwrap(), b"file-b");
+        assert_eq!(
+            std::fs::read(dst.join("sub").join("b.txt")).unwrap(),
+            b"file-b"
+        );
     }
 
     #[test]

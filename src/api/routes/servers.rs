@@ -113,7 +113,10 @@ async fn list_servers(
     let apps = state.db.list_apps().await?;
     let mut server_data: Vec<serde_json::Value> = Vec::new();
     for s in &servers {
-        let app_count = apps.iter().filter(|a| a.server_id.as_deref() == Some(&s.id)).count();
+        let app_count = apps
+            .iter()
+            .filter(|a| a.server_id.as_deref() == Some(&s.id))
+            .count();
         let mut val = serde_json::to_value(s).unwrap_or_default();
         if let Some(obj) = val.as_object_mut() {
             obj.insert("app_count".into(), serde_json::json!(app_count));
@@ -138,7 +141,10 @@ async fn get_server(
         .ok_or_else(|| ApiError::NotFound(format!("Server {id} not found")))?;
 
     let apps = state.db.list_apps().await?;
-    let app_count = apps.iter().filter(|a| a.server_id.as_deref() == Some(&id)).count();
+    let app_count = apps
+        .iter()
+        .filter(|a| a.server_id.as_deref() == Some(&id))
+        .count();
 
     let mut val = serde_json::to_value(&server).unwrap_or_default();
     if let Some(obj) = val.as_object_mut() {
@@ -274,12 +280,13 @@ async fn regenerate_token(
     })))
 }
 
-async fn setup_script(
-    State(state): State<AppState>,
-) -> impl IntoResponse {
+async fn setup_script(State(state): State<AppState>) -> impl IntoResponse {
     let base_url = match state.config.base_domain.as_deref() {
         Some(domain) => format!("https://{domain}"),
-        None => format!("http://{}:{}", state.config.listen_addr, state.config.listen_port),
+        None => format!(
+            "http://{}:{}",
+            state.config.listen_addr, state.config.listen_port
+        ),
     };
 
     let script = format!(
@@ -434,10 +441,7 @@ echo ""
 "#
     );
 
-    (
-        [("content-type", "text/x-shellscript")],
-        script,
-    )
+    ([("content-type", "text/x-shellscript")], script)
 }
 
 async fn download_agent(
@@ -468,22 +472,19 @@ async fn download_agent(
         let content = tokio::fs::read_to_string(&checksum_path)
             .await
             .map_err(|_| {
-                ApiError::NotFound("Checksum file not found. Agent binary may not have been released yet.".into())
+                ApiError::NotFound(
+                    "Checksum file not found. Agent binary may not have been released yet.".into(),
+                )
             })?;
-        Ok((
-            [("content-type", "text/plain")],
-            content.into_bytes(),
-        ))
+        Ok(([("content-type", "text/plain")], content.into_bytes()))
     } else {
         let binary_path = artifacts_dir.join(&binary_name);
         let content = tokio::fs::read(&binary_path).await.map_err(|_| {
             ApiError::NotFound(
-                "Agent binary not found. Build and place it in the agent-releases directory.".into(),
+                "Agent binary not found. Build and place it in the agent-releases directory."
+                    .into(),
             )
         })?;
-        Ok((
-            [("content-type", "application/octet-stream")],
-            content,
-        ))
+        Ok(([("content-type", "application/octet-stream")], content))
     }
 }

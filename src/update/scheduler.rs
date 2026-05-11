@@ -279,7 +279,10 @@ async fn try_auto_apply(
         None => return Err("no download path".into()),
     };
 
-    info!(version, "auto-update: applying update during maintenance window");
+    info!(
+        version,
+        "auto-update: applying update during maintenance window"
+    );
 
     let applier = UpdateApplier::new(&config.data_dir);
 
@@ -344,11 +347,7 @@ async fn try_auto_apply(
     Ok(())
 }
 
-fn is_in_maintenance_window(
-    now: chrono::NaiveTime,
-    window_start: &str,
-    window_end: &str,
-) -> bool {
+fn is_in_maintenance_window(now: chrono::NaiveTime, window_start: &str, window_end: &str) -> bool {
     let start = match chrono::NaiveTime::parse_from_str(window_start, "%H:%M") {
         Ok(t) => t,
         Err(_) => return false,

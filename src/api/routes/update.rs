@@ -560,7 +560,9 @@ async fn update_preferences(
     {
         let current = state.db.get_update_state().await?;
 
-        let enabled = body.auto_update_enabled.unwrap_or(current.auto_update_enabled);
+        let enabled = body
+            .auto_update_enabled
+            .unwrap_or(current.auto_update_enabled);
         let au_channel = body
             .auto_update_channel
             .as_deref()

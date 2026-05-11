@@ -61,8 +61,7 @@ pub async fn run_enrollment(url: &str, token: &str, data_dir: &str) -> Result<()
 
     // Store private key
     let keys_dir = Path::new(data_dir).join("keys");
-    fs::create_dir_all(&keys_dir)
-        .map_err(|e| format!("Failed to create keys directory: {e}"))?;
+    fs::create_dir_all(&keys_dir).map_err(|e| format!("Failed to create keys directory: {e}"))?;
 
     let private_key_path = keys_dir.join("private.key");
     let private_key_b64 = URL_SAFE_NO_PAD.encode(secret_key.to_bytes());
@@ -86,14 +85,16 @@ log_level = "info"
         enroll_resp.data.worker_token, enroll_resp.data.server_id,
     );
 
-    fs::write(&config_path, &config_content)
-        .map_err(|e| format!("Failed to write config: {e}"))?;
+    fs::write(&config_path, &config_content).map_err(|e| format!("Failed to write config: {e}"))?;
     fs::set_permissions(&config_path, fs::Permissions::from_mode(0o600))
         .map_err(|e| format!("Failed to set config permissions: {e}"))?;
 
     info!("Config written to {}", config_path.display());
     info!("Private key stored at {}", private_key_path.display());
-    info!("Enrollment complete. Start the agent with: icefall-agent run --config {}", config_path.display());
+    info!(
+        "Enrollment complete. Start the agent with: icefall-agent run --config {}",
+        config_path.display()
+    );
 
     Ok(())
 }
