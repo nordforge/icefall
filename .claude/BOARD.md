@@ -1,12 +1,48 @@
 # Icefall — Project Board
 
-> Last updated: 2026-05-08
+> Last updated: 2026-05-11
 
 ---
 
 ## Backlog
 
-*No remaining tickets.*
+### Phase 20B — Agent Core
+| Ticket | Title | Size |
+|--------|-------|------|
+| [IF-125](tickets/phase-20-multi-server/IF-125-agent-docker-operations-handler.md) | Agent Docker operations handler | L |
+| [IF-126](tickets/phase-20-multi-server/IF-126-agent-log-streaming.md) | Agent log streaming | M |
+| [IF-127](tickets/phase-20-multi-server/IF-127-agent-metrics-collection.md) | Agent metrics collection | M |
+| [IF-128](tickets/phase-20-multi-server/IF-128-agent-health-check-execution.md) | Agent health check execution | M |
+| [IF-129](tickets/phase-20-multi-server/IF-129-agent-terminal-proxy.md) | Agent terminal proxy | M |
+| [IF-130](tickets/phase-20-multi-server/IF-130-agent-caddy-management.md) | Agent Caddy management | M |
+
+### Phase 20C — Deploy Pipeline
+| Ticket | Title | Size |
+|--------|-------|------|
+| [IF-131](tickets/phase-20-multi-server/IF-131-server-aware-deploy-manager.md) | Server-aware deploy manager | L |
+| [IF-132](tickets/phase-20-multi-server/IF-132-agent-build-pipeline.md) | Agent build pipeline | L |
+| [IF-133](tickets/phase-20-multi-server/IF-133-worker-caddy-route-management.md) | Worker Caddy route management | M |
+| [IF-134](tickets/phase-20-multi-server/IF-134-app-migration-between-servers.md) | App migration between servers | L |
+| [IF-135](tickets/phase-20-multi-server/IF-135-server-selection-app-creation.md) | Server selection in app creation | M |
+
+### Phase 20D — Dashboard UI
+| Ticket | Title | Size |
+|--------|-------|------|
+| [IF-136](tickets/phase-20-multi-server/IF-136-servers-list-page.md) | Servers list page | M |
+| [IF-137](tickets/phase-20-multi-server/IF-137-add-server-flow-dashboard.md) | Add server flow (dashboard) | M |
+| [IF-138](tickets/phase-20-multi-server/IF-138-server-detail-page.md) | Server detail page | M |
+| [IF-139](tickets/phase-20-multi-server/IF-139-app-creation-server-selection.md) | App creation server selection | S |
+| [IF-140](tickets/phase-20-multi-server/IF-140-app-detail-server-indicator.md) | App detail server indicator | S |
+| [IF-141](tickets/phase-20-multi-server/IF-141-dashboard-home-aggregate-metrics.md) | Dashboard home aggregate metrics | M |
+
+### Phase 20E — Polish & Security
+| Ticket | Title | Size |
+|--------|-------|------|
+| [IF-142](tickets/phase-20-multi-server/IF-142-secret-envelope-encrypted-env-vars.md) | Secret envelope encrypted env vars | L |
+| [IF-143](tickets/phase-20-multi-server/IF-143-agent-auto-update.md) | Agent auto-update mechanism | M |
+| [IF-144](tickets/phase-20-multi-server/IF-144-offline-server-handling.md) | Offline server handling | M |
+| [IF-145](tickets/phase-20-multi-server/IF-145-audit-logging-server-operations.md) | Audit logging for server operations | M |
+| [IF-146](tickets/phase-20-multi-server/IF-146-setup-script-hardening.md) | Setup script hardening | S |
 
 ---
 
@@ -212,17 +248,29 @@
 | [IF-095](tickets/phase-18-ux-polish/IF-095-confirmation-dialogs.md) | Consistent confirmation dialogs | — | Shared modal dialog, replace inline confirmations |
 | [IF-096](tickets/phase-18-ux-polish/IF-096-keyboard-shortcuts.md) | Global keyboard shortcuts | — | g+h/d/s/p navigation, shortcut help overlay |
 
+### Phase 20A — Multi-Server Foundation
+| Ticket | Title | Completed | Notes |
+|--------|-------|-----------|-------|
+| [IF-117](tickets/phase-20-multi-server/IF-117-database-migration-servers-table.md) | Database migration — servers table | 2026-05-11 | `servers` + `server_metrics_history` tables, `server_id` FK on apps/deploys, auto-seed control-plane record, 8 CRUD + 3 metrics trait methods |
+| [IF-118](tickets/phase-20-multi-server/IF-118-server-crud-api-endpoints.md) | Server CRUD API endpoints | 2026-05-11 | POST/GET/PUT/DELETE servers, token regeneration, setup script endpoint, `Forbidden` error variant |
+| [IF-119](tickets/phase-20-multi-server/IF-119-agent-websocket-endpoint.md) | Agent WebSocket endpoint on control plane | 2026-05-11 | WS auth via token hash, `AgentRegistry` with connection tracking, heartbeat checker (45s timeout), pending request map with oneshot channels, server.connected/disconnected SSE events |
+| [IF-120](tickets/phase-20-multi-server/IF-120-cargo-workspace-icefall-common.md) | Cargo workspace — icefall-common crate | 2026-05-11 | Workspace with `[workspace.dependencies]`, `common/` crate with shared `AgentMessage` protocol + types, `agent/` crate skeleton, release profile (LTO + strip) |
+| [IF-121](tickets/phase-20-multi-server/IF-121-agent-binary-skeleton.md) | Agent binary skeleton | 2026-05-11 | TOML config + env overrides, WS client with exponential backoff (1s→300s, ±20% jitter), 15s heartbeat/10s pong timeout, SIGTERM/SIGINT graceful shutdown, stub message handlers |
+| [IF-122](tickets/phase-20-multi-server/IF-122-agent-enrollment-flow.md) | Agent enrollment flow | 2026-05-11 | `POST /agent/enroll` with 15-min TTL + single-use validation, `agt_` worker token, X25519 keypair generation, agent writes config + private key (0600) to disk |
+| [IF-123](tickets/phase-20-multi-server/IF-123-install-script-control-plane.md) | Install script served by control plane | 2026-05-11 | Full bash script: Docker/Caddy auto-install, architecture detection, SHA-256 checksum verification, hardened systemd service, colored output with NO_COLOR support, `GET /agent/download/{target}` endpoint |
+| [IF-124](tickets/phase-20-multi-server/IF-124-release-workflow-agent-binary.md) | Release workflow for agent binary | 2026-05-11 | Workspace builds both binaries, agent packaged as separate tarball per arch, `agent_artifacts` in signed manifest, `build.rs` embeds version/commit/target/date |
+
 ---
 
 ## Summary
 
 | Metric | Count |
 |--------|-------|
-| Total tickets | 111 |
-| Done | 88 |
-| Backlog | 23 |
+| Total tickets | 141 |
+| Done | 96 |
+| Backlog | 45 |
 | Superseded | 1 |
-| Phases complete | 15 / 18 |
+| Phases complete | 15 / 19 |
 
 ### Progress
 | Phase | Status | Tickets |
@@ -245,23 +293,38 @@
 | 16 — Self-Update System | Backlog | 0/8 |
 | 17 — v1.1 Fast Follow | Partial | 9/13 |
 | 18 — UX Polish | Backlog | 0/11 |
+| 20 — Multi-Server | **In Progress** | 8/30 |
 
 ### Size breakdown
 | Size | Count | Estimated effort |
 |------|-------|-----------------|
-| S | 16 | 1-2 days each |
-| M | 54 | 3-5 days each |
-| L | 14 | 1-2 weeks each |
+| S | 19 | 1-2 days each |
+| M | 71 | 3-5 days each |
+| L | 18 | 1-2 weeks each |
 
 ### Critical path (must complete in order)
 ```
 Phases 1-15 (done)
-IF-097 (release pipeline) → IF-098 (discovery) → IF-099 (download) → IF-100 (apply) → IF-101 (rollback)
-IF-100 (apply) → IF-102 (dashboard UI)
-IF-100 (apply) → IF-103 (auto-update)
-IF-098 + IF-099 + IF-100 + IF-101 → IF-104 (CLI)
-IF-064 (volumes) → IF-073 (Docker Compose)
-IF-065 (Docker image deploy) → IF-073 (Docker Compose)
-IF-072 (tags) + IF-074 (projects) → IF-078 (command palette)
-IF-075 (2FA) → IF-076 (OAuth)
+
+Self-Update (Phase 16):
+  IF-097 (release pipeline) → IF-098 (discovery) → IF-099 (download) → IF-100 (apply) → IF-101 (rollback)
+  IF-100 (apply) → IF-102 (dashboard UI)
+  IF-100 (apply) → IF-103 (auto-update)
+  IF-098 + IF-099 + IF-100 + IF-101 → IF-104 (CLI)
+
+v1.1 Fast Follow (Phase 17):
+  IF-064 (volumes) → IF-073 (Docker Compose)
+  IF-065 (Docker image deploy) → IF-073 (Docker Compose)
+  IF-072 (tags) + IF-074 (projects) → IF-078 (command palette)
+  IF-075 (2FA) → IF-076 (OAuth)
+
+Multi-Server (Phase 20):
+  IF-117 → IF-118 → IF-119 (done)
+  IF-120 → IF-121 → IF-122 → IF-123 → IF-124 (done)
+  IF-121 → IF-125..IF-130 (agent handlers)
+  IF-117 + IF-118 → IF-131 (server-aware deploys) → IF-132 (agent build) → IF-133 (worker Caddy)
+  IF-131 → IF-134 (app migration) + IF-135 (server selection)
+  IF-118 → IF-136..IF-141 (dashboard UI)
+  IF-122 → IF-142 (secret envelope)
+  IF-124 → IF-143 (agent auto-update)
 ```

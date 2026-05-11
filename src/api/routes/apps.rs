@@ -135,6 +135,7 @@ async fn create_app(
                     compose_content: None,
                     project_id: None,
                     deploy_mode: None,
+                    server_id: None,
                 },
             )
             .await;
@@ -196,6 +197,7 @@ async fn update_app(
                 compose_content: body.compose_content,
                 project_id: body.project_id,
                 deploy_mode: body.deploy_mode,
+                server_id: None,
             },
         )
         .await?;

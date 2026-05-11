@@ -108,7 +108,7 @@ pub trait Database: Send + Sync + 'static {
         backup_codes: &str,
     ) -> Result<(), DbError>;
 
-    // Server Metrics
+    // Server Metrics (legacy single-server)
     async fn insert_server_metric(
         &self,
         snapshot: &crate::api::routes::server::ServerMetricsSnapshot,
@@ -120,6 +120,30 @@ pub trait Database: Send + Sync + 'static {
         limit: usize,
     ) -> Result<Vec<crate::api::routes::server::ServerMetricsSnapshot>, DbError>;
     async fn prune_server_metrics(&self, older_than: &str) -> Result<u64, DbError>;
+
+    // Servers
+    async fn create_server(&self, server: &NewServer) -> Result<Server, DbError>;
+    async fn get_server(&self, id: &str) -> Result<Option<Server>, DbError>;
+    async fn get_server_by_token_hash(&self, hash: &str) -> Result<Option<Server>, DbError>;
+    async fn list_servers(&self) -> Result<Vec<Server>, DbError>;
+    async fn update_server(&self, id: &str, update: &ServerUpdate) -> Result<Server, DbError>;
+    async fn delete_server(&self, id: &str) -> Result<(), DbError>;
+    async fn update_server_heartbeat(&self, id: &str) -> Result<(), DbError>;
+    async fn update_server_status(&self, id: &str, status: &str) -> Result<(), DbError>;
+
+    // Server Metrics History (multi-server)
+    async fn insert_server_metrics_record(
+        &self,
+        record: &NewServerMetricsRecord,
+    ) -> Result<ServerMetricsRecord, DbError>;
+    async fn query_server_metrics_history(
+        &self,
+        server_id: &str,
+        from: &str,
+        to: &str,
+        limit: usize,
+    ) -> Result<Vec<ServerMetricsRecord>, DbError>;
+    async fn prune_server_metrics_history(&self, older_than: &str) -> Result<u64, DbError>;
 
     // Health Checks
     async fn create_health_check(&self, hc: &NewHealthCheck) -> Result<HealthCheck, DbError>;
