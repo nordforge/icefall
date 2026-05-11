@@ -140,7 +140,7 @@ jobs:
         run: python3 scripts/sign-release.py
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@da05d552573ad5aba039eaac05058a918a7bf631 # v2.2.2
+        uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda # v3.0.0
         with:
           generate_release_notes: true
           prerelease: ${{ needs.validate-tag.outputs.prerelease == 'true' }}
