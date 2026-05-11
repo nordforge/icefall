@@ -279,6 +279,7 @@ async fn create_first_app(
                     app_id: app.id.clone(),
                     environment_id: env.id.clone(),
                     git_sha: None,
+                    server_id: None,
                 })
                 .await?,
         )

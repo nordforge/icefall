@@ -220,6 +220,7 @@ impl DeployManager {
                                 app_id: app.id.clone(),
                                 environment_id: env.id.clone(),
                                 git_sha: prev.git_sha.clone(),
+                                server_id: None,
                             })
                             .await
                         {

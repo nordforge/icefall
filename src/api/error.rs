@@ -16,6 +16,8 @@ pub enum ApiError {
     #[error("{0}")]
     BadRequest(String),
     #[error("{0}")]
+    Forbidden(String),
+    #[error("{0}")]
     Conflict(String),
     #[error("internal error")]
     Internal(#[source] Box<dyn std::error::Error + Send + Sync>),
@@ -28,6 +30,7 @@ impl IntoResponse for ApiError {
         let (status, message) = match &self {
             ApiError::NotFound(msg) => (StatusCode::NOT_FOUND, msg.clone()),
             ApiError::BadRequest(msg) => (StatusCode::BAD_REQUEST, msg.clone()),
+            ApiError::Forbidden(msg) => (StatusCode::FORBIDDEN, msg.clone()),
             ApiError::Conflict(msg) => (StatusCode::CONFLICT, msg.clone()),
             ApiError::Internal(_) => (
                 StatusCode::INTERNAL_SERVER_ERROR,

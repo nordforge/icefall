@@ -1,0 +1,59 @@
+[package]
+name = "icefall-agent"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.85"
+description = "Icefall worker agent — runs on remote servers managed by the Icefall control plane"
+license = "MIT"
+
+[[bin]]
+name = "icefall-agent"
+path = "src/main.rs"
+
+[dependencies]
+icefall-common = { path = "../common" }
+
+# Async runtime
+tokio = { workspace = true }
+
+# CLI
+clap = { workspace = true }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+toml = { workspace = true }
+
+# Logging
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+
+# Error handling
+thiserror = { workspace = true }
+
+# HTTP client (for enrollment + WebSocket)
+reqwest = { workspace = true }
+
+# WebSocket client
+tokio-tungstenite = { version = "0.26", features = ["rustls-tls-webpki-roots"] }
+futures-util = { workspace = true }
+
+# Crypto
+sha2 = { workspace = true }
+base64 = { workspace = true }
+rand = { workspace = true }
+hex = { workspace = true }
+x25519-dalek = { workspace = true }
+
+# System info
+sysinfo = { workspace = true }
+
+# Docker
+bollard = { workspace = true }
+
+# Compile-time formatting
+const_format = "0.2"
+
+# Utilities
+chrono = { workspace = true }
+uuid = { workspace = true }

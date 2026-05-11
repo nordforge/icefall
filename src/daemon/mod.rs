@@ -158,6 +158,8 @@ impl DaemonRunner {
             event_bus.clone(),
         );
 
+        let agent_registry = crate::agent::registry::AgentRegistry::new();
+
         // Build app state and router
         let state = AppState {
             db,
@@ -172,7 +174,10 @@ impl DaemonRunner {
             log_store,
             backup_store,
             instance_backup_handle,
+            agent_registry,
         };
+
+        crate::api::routes::agent_ws::spawn_heartbeat_checker(state.clone());
 
         let app = api::build_router(state);
 

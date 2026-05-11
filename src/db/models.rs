@@ -45,6 +45,7 @@ pub struct App {
     pub compose_content: Option<String>,
     pub project_id: Option<String>,
     pub deploy_mode: String,
+    pub server_id: Option<String>,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -74,6 +75,7 @@ pub struct UpdateApp {
     pub compose_content: Option<Option<String>>,
     pub project_id: Option<Option<String>>,
     pub deploy_mode: Option<String>,
+    pub server_id: Option<Option<String>>,
 }
 
 // --- Projects ---
@@ -153,6 +155,7 @@ pub struct Deploy {
     pub image_ref: Option<String>,
     pub container_id: Option<String>,
     pub env_snapshot: Option<String>,
+    pub server_id: Option<String>,
     pub created_at: String,
 }
 
@@ -160,6 +163,7 @@ pub struct NewDeploy {
     pub app_id: String,
     pub environment_id: String,
     pub git_sha: Option<String>,
+    pub server_id: Option<String>,
 }
 
 // --- Managed Databases ---
@@ -398,6 +402,74 @@ pub struct UpdateHistoryEntry {
     pub error: Option<String>,
     pub changelog_url: Option<String>,
     pub applied_at: String,
+}
+
+// --- Servers ---
+
+pub const CONTROL_PLANE_SERVER_ID: &str = "00000000-0000-0000-0000-000000000001";
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
+pub struct Server {
+    pub id: String,
+    pub name: String,
+    pub host: String,
+    pub role: String,
+    pub status: String,
+    pub token_hash: Option<String>,
+    pub agent_version: Option<String>,
+    pub labels: Option<String>,
+    pub resources: Option<String>,
+    pub public_key: Option<String>,
+    pub last_heartbeat_at: Option<String>,
+    pub registered_at: Option<String>,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+pub struct NewServer {
+    pub name: String,
+    pub host: String,
+    pub role: String,
+    pub token_hash: Option<String>,
+    pub labels: Option<String>,
+    pub resources: Option<String>,
+    pub public_key: Option<String>,
+}
+
+pub struct ServerUpdate {
+    pub name: Option<String>,
+    pub host: Option<String>,
+    pub status: Option<String>,
+    pub token_hash: Option<Option<String>>,
+    pub agent_version: Option<Option<String>>,
+    pub labels: Option<Option<String>>,
+    pub resources: Option<Option<String>>,
+    pub public_key: Option<Option<String>>,
+}
+
+// --- Server Metrics History ---
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
+pub struct ServerMetricsRecord {
+    pub id: String,
+    pub server_id: String,
+    pub cpu_percent: Option<f64>,
+    pub ram_used_bytes: Option<i64>,
+    pub ram_total_bytes: Option<i64>,
+    pub disk_used_bytes: Option<i64>,
+    pub disk_total_bytes: Option<i64>,
+    pub load_average: Option<String>,
+    pub recorded_at: String,
+}
+
+pub struct NewServerMetricsRecord {
+    pub server_id: String,
+    pub cpu_percent: Option<f64>,
+    pub ram_used_bytes: Option<i64>,
+    pub ram_total_bytes: Option<i64>,
+    pub disk_used_bytes: Option<i64>,
+    pub disk_total_bytes: Option<i64>,
+    pub load_average: Option<String>,
 }
 
 pub fn now_iso8601() -> String {
