@@ -75,8 +75,13 @@ export default function ServerSelectStep({ servers, selectedId, onSelect }: Prop
                 </span>
               )}
 
+              {/* a11y [WCAG 1.4.1]: checkmark shape distinguishes selected state beyond color */}
               <div class={styles.radioIndicator} aria-hidden="true">
-                {isSelected && <div class={styles.radioFill} />}
+                {isSelected && (
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <path d="M2.5 6 L5 8.5 L9.5 3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                )}
               </div>
             </button>
           );
