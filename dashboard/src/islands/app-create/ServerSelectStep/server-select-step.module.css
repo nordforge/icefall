@@ -133,23 +133,18 @@
   position: absolute;
   top: var(--space-4);
   right: var(--space-4);
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   border-radius: var(--radius-full);
   border: 2px solid var(--color-border);
   display: flex;
   align-items: center;
   justify-content: center;
+  color: var(--color-primary-text);
 }
 
 .cardSelected .radioIndicator {
   border-color: var(--color-primary);
-}
-
-.radioFill {
-  width: 8px;
-  height: 8px;
-  border-radius: var(--radius-full);
   background: var(--color-primary);
 }
 

@@ -600,7 +600,13 @@ export default function SettingsPage() {
                 class={`${styles.toggle} ${ibEnabled ? styles.toggleOn : ''}`}
                 onClick={() => setIbEnabled(!ibEnabled)}
               >
-                <span class={styles.toggleKnob} />
+                <span class={styles.toggleKnob}>
+                  {/* a11y [WCAG 1.4.1]: shape cue inside knob — not color alone */}
+                  <svg class={styles.toggleIcon} width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
+                    <path class={styles.toggleCheck} d="M2.5 5 L4.5 7 L7.5 3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                    <path class={styles.toggleCross} d="M3 3 L7 7 M7 3 L3 7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                  </svg>
+                </span>
               </button>
               <span class={styles.toggleLabel}>{ibEnabled ? 'On' : 'Off'}</span>
             </div>
@@ -687,7 +693,13 @@ export default function SettingsPage() {
               class={`${styles.toggle} ${oauthGithubEnabled ? styles.toggleOn : ''}`}
               onClick={() => setOauthGithubEnabled(!oauthGithubEnabled)}
             >
-              <span class={styles.toggleKnob} />
+              <span class={styles.toggleKnob}>
+                  {/* a11y [WCAG 1.4.1]: shape cue inside knob — not color alone */}
+                  <svg class={styles.toggleIcon} width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
+                    <path class={styles.toggleCheck} d="M2.5 5 L4.5 7 L7.5 3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                    <path class={styles.toggleCross} d="M3 3 L7 7 M7 3 L3 7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                  </svg>
+                </span>
             </button>
           </div>
           <div class={formStyles.fieldRow}>
@@ -749,7 +761,13 @@ export default function SettingsPage() {
               class={`${styles.toggle} ${oauthGoogleEnabled ? styles.toggleOn : ''}`}
               onClick={() => setOauthGoogleEnabled(!oauthGoogleEnabled)}
             >
-              <span class={styles.toggleKnob} />
+              <span class={styles.toggleKnob}>
+                  {/* a11y [WCAG 1.4.1]: shape cue inside knob — not color alone */}
+                  <svg class={styles.toggleIcon} width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
+                    <path class={styles.toggleCheck} d="M2.5 5 L4.5 7 L7.5 3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                    <path class={styles.toggleCross} d="M3 3 L7 7 M7 3 L3 7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                  </svg>
+                </span>
             </button>
           </div>
           <div class={formStyles.fieldRow}>

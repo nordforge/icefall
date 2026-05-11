@@ -414,7 +414,7 @@ pub struct UpdateHistoryEntry {
 
 // --- Servers ---
 
-pub const CONTROL_PLANE_SERVER_ID: &str = "00000000-0000-0000-0000-000000000001";
+pub const CONTROL_PLANE_SERVER_ID: &str = "cp_ctrl_0000000001";
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct Server {
@@ -485,5 +485,8 @@ pub fn now_iso8601() -> String {
 }
 
 pub fn new_id() -> String {
-    uuid::Uuid::now_v7().to_string()
+    use rand::Rng;
+    let mut rng = rand::rng();
+    let chars: &[u8] = b"abcdefghijklmnopqrstuvwxyz0123456789";
+    (0..20).map(|_| chars[rng.random_range(0..chars.len())] as char).collect()
 }
