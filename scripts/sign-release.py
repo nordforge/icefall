@@ -110,6 +110,7 @@ def main():
         channel = "nightly"
 
     artifacts = {}
+    agent_artifacts = {}
     for arch_label, artifact_suffix in [
         ("x86_64-linux", "x86_64-linux"),
         ("aarch64-linux", "aarch64-linux"),
@@ -123,7 +124,19 @@ def main():
                 "size_bytes": size,
             }
         except SystemExit:
-            print(f"WARNING: Skipping {arch_label} (artifact not found)")
+            print(f"WARNING: Skipping control plane {arch_label} (artifact not found)")
+            continue
+
+        agent_tarball = f"icefall-agent-v{version}-{artifact_suffix}.tar.gz"
+        try:
+            agent_sha256, agent_size = read_checksum(agent_tarball)
+            agent_artifacts[arch_label] = {
+                "url": f"{base_url}/{agent_tarball}",
+                "sha256": agent_sha256,
+                "size_bytes": agent_size,
+            }
+        except SystemExit:
+            print(f"WARNING: Skipping agent {arch_label} (artifact not found)")
             continue
 
     if not artifacts:
@@ -141,6 +154,7 @@ def main():
         "breaking_changes": None,
         "changelog_url": f"https://github.com/{repo}/releases/tag/v{version}",
         "artifacts": dict(sorted(artifacts.items())),
+        "agent_artifacts": dict(sorted(agent_artifacts.items())),
         "signed_by": fingerprint,
         "signature_timestamp": now,
     }
@@ -166,7 +180,8 @@ def main():
     print(f"Manifest written to {manifest_file}")
     print(f"Signature written to {sig_file}")
     print(f"Signed by key: {fingerprint}")
-    print(f"Artifacts: {', '.join(artifacts.keys())}")
+    print(f"Control plane artifacts: {', '.join(artifacts.keys())}")
+    print(f"Agent artifacts: {', '.join(agent_artifacts.keys())}")
 
 
 if __name__ == "__main__":

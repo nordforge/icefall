@@ -79,6 +79,18 @@ pub enum Commands {
     Update {
         #[command(subcommand)]
         command: Option<UpdateCommands>,
+
+        /// Skip confirmation prompt
+        #[arg(long, global = true)]
+        yes: bool,
+
+        /// Override the update channel (stable, beta)
+        #[arg(long, global = true)]
+        channel: Option<String>,
+
+        /// Output structured JSON per step (for scripting)
+        #[arg(long, global = true)]
+        json: bool,
     },
     /// Show server status overview
     Status,
@@ -93,6 +105,17 @@ pub enum UpdateCommands {
         /// Skip confirmation prompt
         #[arg(long)]
         yes: bool,
+    },
+    /// Update from a local file (air-gapped / offline)
+    FromFile {
+        /// Path to the tarball
+        file: String,
+        /// Path to the release manifest
+        #[arg(long)]
+        manifest: String,
+        /// Path to the manifest signature
+        #[arg(long)]
+        signature: String,
     },
 }
 

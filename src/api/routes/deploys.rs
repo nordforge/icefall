@@ -80,6 +80,7 @@ async fn create_deploy(
             app_id: id.clone(),
             environment_id: env.id.clone(),
             git_sha: None,
+            server_id: None,
         })
         .await?;
 
@@ -337,6 +338,7 @@ async fn rollback_deploy(
             app_id: app_id.clone(),
             environment_id: env.id.clone(),
             git_sha: target_deploy.git_sha.clone(),
+            server_id: None,
         })
         .await?;
 

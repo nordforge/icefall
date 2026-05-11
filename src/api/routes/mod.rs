@@ -1,3 +1,4 @@
+pub mod agent_ws;
 pub mod apps;
 pub mod auth;
 pub mod backups;
@@ -19,6 +20,7 @@ pub mod openapi;
 pub mod profile;
 pub mod projects;
 pub mod server;
+pub mod servers;
 pub mod settings;
 pub mod terminal;
 pub mod two_factor;
@@ -33,6 +35,7 @@ use crate::api::AppState;
 
 pub fn api_routes() -> Router<AppState> {
     Router::new()
+        .merge(agent_ws::routes())
         .merge(apps::routes())
         .merge(auth::routes())
         .merge(backups::routes())
@@ -48,6 +51,7 @@ pub fn api_routes() -> Router<AppState> {
         .merge(users::routes())
         .merge(settings::routes())
         .merge(server::routes())
+        .merge(servers::routes())
         .merge(events::routes())
         .merge(webhooks::routes())
         .merge(notifications::routes())

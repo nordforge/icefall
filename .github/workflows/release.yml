@@ -85,12 +85,12 @@ jobs:
       - name: Build dashboard
         run: cd dashboard && bun install --frozen-lockfile && bun run build
 
-      - name: Build binary
+      - name: Build binaries
         run: cross build --release --target ${{ matrix.target }}
         env:
           SOURCE_DATE_EPOCH: "0"
 
-      - name: Package release tarball
+      - name: Package control plane tarball
         run: |
           VERSION="${{ needs.validate-tag.outputs.version }}"
           ARTIFACT="icefall-v${VERSION}-${{ matrix.artifact_name }}"
@@ -102,6 +102,17 @@ jobs:
           cd ..
           sha256sum "${ARTIFACT}.tar.gz" > "${ARTIFACT}.tar.gz.sha256"
 
+      - name: Package agent tarball
+        run: |
+          VERSION="${{ needs.validate-tag.outputs.version }}"
+          ARTIFACT="icefall-agent-v${VERSION}-${{ matrix.artifact_name }}"
+          mkdir -p staging-agent
+          cp "target/${{ matrix.target }}/release/icefall-agent" staging-agent/
+          cd staging-agent
+          tar czf "../${ARTIFACT}.tar.gz" .
+          cd ..
+          sha256sum "${ARTIFACT}.tar.gz" > "${ARTIFACT}.tar.gz.sha256"
+
       - name: Upload build artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
@@ -109,6 +120,8 @@ jobs:
           path: |
             icefall-v*.tar.gz
             icefall-v*.tar.gz.sha256
+            icefall-agent-v*.tar.gz
+            icefall-agent-v*.tar.gz.sha256
 
   sign-and-release:
     name: Sign manifest & create release
@@ -145,7 +158,9 @@ jobs:
           generate_release_notes: true
           prerelease: ${{ needs.validate-tag.outputs.prerelease == 'true' }}
           files: |
-            artifacts/release-*/*.tar.gz
-            artifacts/release-*/*.tar.gz.sha256
+            artifacts/release-*/icefall-v*.tar.gz
+            artifacts/release-*/icefall-v*.tar.gz.sha256
+            artifacts/release-*/icefall-agent-v*.tar.gz
+            artifacts/release-*/icefall-agent-v*.tar.gz.sha256
             icefall-v${{ needs.validate-tag.outputs.version }}-manifest.json
             icefall-v${{ needs.validate-tag.outputs.version }}-manifest.json.sig

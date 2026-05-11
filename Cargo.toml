@@ -1,16 +1,13 @@
-[package]
-name = "icefall"
-version = "0.1.0"
-edition = "2021"
-rust-version = "1.85"
-description = "A fast, simple, self-hosted deployment platform"
-license = "MIT"
+[workspace]
+members = [".", "common", "agent"]
+resolver = "2"
 
-[[bin]]
-name = "icefall"
-path = "src/main.rs"
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true
 
-[dependencies]
+[workspace.dependencies]
 # Async runtime
 tokio = { version = "1", features = ["full"] }
 tokio-stream = { version = "0.1", features = ["sync"] }
@@ -36,7 +33,7 @@ sqlx = { version = "0.8", features = ["runtime-tokio", "sqlite", "migrate", "chr
 # Docker
 bollard = "0.21"
 
-# HTTP client (for Caddy admin API)
+# HTTP client
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "stream"] }
 
 # Email
@@ -60,6 +57,7 @@ hex = "0.4"
 
 # Self-update & release verification
 ed25519-dalek = { version = "2", features = ["pkcs8", "pem"] }
+x25519-dalek = { version = "2", features = ["static_secrets"] }
 semver = { version = "1", features = ["serde"] }
 
 # Error handling
@@ -90,5 +88,102 @@ dirs = "6"
 futures-util = "0.3"
 tempfile = "3"
 
+# Internal crates
+icefall-common = { path = "common" }
+
+[package]
+name = "icefall"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.85"
+description = "A fast, simple, self-hosted deployment platform"
+license = "MIT"
+
+[[bin]]
+name = "icefall"
+path = "src/main.rs"
+
+[dependencies]
+icefall-common = { workspace = true }
+
+# Async runtime
+tokio = { workspace = true }
+tokio-stream = { workspace = true }
+
+# HTTP framework
+axum = { workspace = true }
+tower = { workspace = true }
+tower-http = { workspace = true }
+
+# CLI
+clap = { workspace = true }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+serde_yaml = { workspace = true }
+indexmap = { workspace = true }
+toml = { workspace = true }
+
+# Database
+sqlx = { workspace = true }
+
+# Docker
+bollard = { workspace = true }
+
+# HTTP client (for Caddy admin API)
+reqwest = { workspace = true }
+
+# Email
+lettre = { workspace = true }
+
+# Encryption
+aes-gcm = { workspace = true }
+rand = { workspace = true }
+base64 = { workspace = true }
+argon2 = { workspace = true }
+
+# TOTP / 2FA
+totp-rs = { workspace = true }
+qrcode = { workspace = true }
+data-encoding = { workspace = true }
+
+# Webhook signature validation
+hmac = { workspace = true }
+sha2 = { workspace = true }
+hex = { workspace = true }
+
+# Self-update & release verification
+ed25519-dalek = { workspace = true }
+semver = { workspace = true }
+
+# Error handling
+thiserror = { workspace = true }
+
+# Logging / tracing
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+
+# OpenAPI
+utoipa = { workspace = true }
+utoipa-swagger-ui = { workspace = true }
+
+# Build context (tar archives for Docker image builds)
+tar = { workspace = true }
+flate2 = { workspace = true }
+bytes = { workspace = true }
+
+# System info
+sysinfo = { workspace = true }
+
+# Utilities
+uuid = { workspace = true }
+chrono = { workspace = true }
+async-trait = { workspace = true }
+nix = { workspace = true }
+dirs = { workspace = true }
+futures-util = { workspace = true }
+tempfile = { workspace = true }
+
 [dev-dependencies]
-tempfile = "3"
+tempfile = { workspace = true }

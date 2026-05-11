@@ -50,6 +50,10 @@ impl CliClient {
         })
     }
 
+    pub fn try_new() -> Option<Self> {
+        Self::new().ok()
+    }
+
     pub fn new_or_exit() -> Self {
         match Self::new() {
             Ok(c) => c,

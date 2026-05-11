@@ -51,11 +51,23 @@ async fn main() {
                 icefall::cli::commands::migrate::import(&from, dry_run).await;
             }
         },
-        Commands::Update { command } => match command {
-            None => icefall::cli::commands::update::run().await,
-            Some(UpdateCommands::Check) => icefall::cli::commands::update::check().await,
-            Some(UpdateCommands::Rollback { yes }) => {
-                icefall::cli::commands::update::rollback(yes).await
+        Commands::Update {
+            command,
+            yes,
+            channel,
+            json,
+        } => match command {
+            None => icefall::cli::commands::update::run(yes, channel.as_deref(), json).await,
+            Some(UpdateCommands::Check) => icefall::cli::commands::update::check(json).await,
+            Some(UpdateCommands::Rollback { yes: rb_yes }) => {
+                icefall::cli::commands::update::rollback(yes || rb_yes).await
+            }
+            Some(UpdateCommands::FromFile {
+                file,
+                manifest,
+                signature,
+            }) => {
+                icefall::cli::commands::update::from_file(&file, &manifest, &signature, yes).await
             }
         },
         Commands::Status => icefall::cli::commands::server::status().await,

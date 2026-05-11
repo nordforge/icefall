@@ -151,12 +151,19 @@ impl DaemonRunner {
         spawn_backup_scheduler(docker.clone(), db.clone(), backup_store.clone());
         spawn_instance_backup_scheduler(db.clone(), instance_backup_handle.clone());
 
-        // Spawn periodic update checker
+        // Spawn periodic update checker + auto-update applier
         crate::update::scheduler::spawn_update_checker(
             db.clone(),
             Arc::new(config.clone()),
             event_bus.clone(),
         );
+        crate::update::scheduler::spawn_auto_update_applier(
+            db.clone(),
+            Arc::new(config.clone()),
+            event_bus.clone(),
+        );
+
+        let agent_registry = crate::agent::registry::AgentRegistry::new();
 
         // Build app state and router
         let state = AppState {
@@ -172,7 +179,10 @@ impl DaemonRunner {
             log_store,
             backup_store,
             instance_backup_handle,
+            agent_registry,
         };
+
+        crate::api::routes::agent_ws::spawn_heartbeat_checker(state.clone());
 
         let app = api::build_router(state);
 
