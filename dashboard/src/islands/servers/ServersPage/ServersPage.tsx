@@ -22,13 +22,25 @@ export default function ServersPage() {
       try {
         const { data } = await api.listServers();
         if (!active) return;
+
+        const cp = data.find((s) => s.role === 'control-plane');
+        if (cp && !cp.resources) {
+          try {
+            const status = await api.getServerStatus();
+            cp.resources = JSON.stringify({
+              cpu_percent: status.cpu_percent,
+              cpu_cores: 1,
+              ram_used_bytes: status.memory_used_bytes,
+              ram_total_bytes: status.memory_total_bytes,
+              disk_used_bytes: status.disk_used_bytes,
+              disk_total_bytes: status.disk_total_bytes,
+              load_average: [],
+            });
+          } catch {}
+        }
+
         $servers.set(data);
         $serverCount.set(data.length);
-
-        if (data.length === 1) {
-          window.location.href = `/servers/${data[0].id}`;
-          return;
-        }
       } catch {}
       if (active) $serversLoading.set(false);
     }
@@ -63,8 +75,6 @@ export default function ServersPage() {
     $serverCount.set($servers.get().length);
   }
 
-  const hasWorkers = servers.some((s) => s.role !== 'control-plane');
-
   if (loading) {
     return (
       <div>
@@ -96,12 +106,12 @@ export default function ServersPage() {
         />
       )}
 
-      {!hasWorkers && !showAddPanel && (
+      {servers.length === 0 && !showAddPanel && (
         <div class={styles.empty}>
           <ServerIcon size={32} aria-hidden="true" />
-          <p class={styles.emptyTitle}>Single-server setup</p>
+          <p class={styles.emptyTitle}>No servers registered</p>
           <p class={styles.emptyDescription}>
-            Add a server to distribute your workload across multiple machines.
+            Add a server to get started.
           </p>
           <Button variant="primary" onClick={() => setShowAddPanel(true)}>
             <Plus size={14} /> Add your first server

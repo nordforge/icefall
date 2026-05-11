@@ -14,9 +14,10 @@ import { Cpu, MemoryStick, HardDrive, Server as ServerIcon, Globe, Hash, Clock, 
 import formStyles from '@styles/form.module.css';
 import styles from './server-detail.module.css';
 
-type Props = {
-  serverId: string;
-};
+function getServerIdFromUrl(): string {
+  const segments = window.location.pathname.replace('/servers/', '').split('/').filter(Boolean);
+  return segments[0] || '';
+}
 
 type Tab = 'overview' | 'apps' | 'metrics' | 'settings';
 
@@ -36,13 +37,15 @@ function parseResources(raw: string | null): ServerResources | null {
   }
 }
 
-export default function ServerDetail({ serverId }: Props) {
+export default function ServerDetail() {
+  const serverId = getServerIdFromUrl();
   const [server, setServer] = useState<Server | null>(null);
   const [apps, setApps] = useState<App[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<Tab>('overview');
   const [metricsHistory, setMetricsHistory] = useState<ServerMetricsSnapshot[]>([]);
   const [metricsRange, setMetricsRange] = useState<'1h' | '6h' | '24h' | '7d'>('1h');
+  const [localStatus, setLocalStatus] = useState<ServerResources | null>(null);
 
   // Settings state
   const [editName, setEditName] = useState('');
@@ -54,6 +57,8 @@ export default function ServerDetail({ serverId }: Props) {
   const [showForceRemove, setShowForceRemove] = useState(false);
   const [confirmName, setConfirmName] = useState('');
   const [deleting, setDeleting] = useState(false);
+
+  const isControlPlane = server?.role === 'control-plane';
 
   useEffect(() => {
     let active = true;
@@ -69,6 +74,23 @@ export default function ServerDetail({ serverId }: Props) {
         setEditName(serverRes.data.name);
         setEditLabels(serverRes.data.labels || '');
         setApps(appsRes.data.filter((a) => a.server_id === serverId));
+
+        if (serverRes.data.role === 'control-plane') {
+          try {
+            const status = await api.getServerStatus();
+            if (active) {
+              setLocalStatus({
+                cpu_percent: status.cpu_percent,
+                cpu_cores: 1,
+                ram_used_bytes: status.memory_used_bytes,
+                ram_total_bytes: status.memory_total_bytes,
+                disk_used_bytes: status.disk_used_bytes,
+                disk_total_bytes: status.disk_total_bytes,
+                load_average: [],
+              });
+            }
+          } catch {}
+        }
       } catch {}
       if (active) setLoading(false);
     }
@@ -92,6 +114,20 @@ export default function ServerDetail({ serverId }: Props) {
       try {
         const res = await api.getServer(serverId);
         if (active) setServer(res.data);
+        if (res.data.role === 'control-plane') {
+          const status = await api.getServerStatus();
+          if (active) {
+            setLocalStatus({
+              cpu_percent: status.cpu_percent,
+              cpu_cores: 1,
+              ram_used_bytes: status.memory_used_bytes,
+              ram_total_bytes: status.memory_total_bytes,
+              disk_used_bytes: status.disk_used_bytes,
+              disk_total_bytes: status.disk_total_bytes,
+              load_average: [],
+            });
+          }
+        }
       } catch {}
     }, 10_000);
 
@@ -108,17 +144,30 @@ export default function ServerDetail({ serverId }: Props) {
 
     async function loadMetrics() {
       try {
-        const { data } = await api.getServerMetrics(serverId, metricsRange);
-        if (active) setMetricsHistory(data);
+        if (isControlPlane) {
+          const rangeMs: Record<string, number> = {
+            '1h': 60 * 60 * 1000,
+            '6h': 6 * 60 * 60 * 1000,
+            '24h': 24 * 60 * 60 * 1000,
+            '7d': 7 * 24 * 60 * 60 * 1000,
+          };
+          const now = new Date();
+          const from = new Date(now.getTime() - (rangeMs[metricsRange] || rangeMs['1h']));
+          const { data } = await api.getServerMetricsRange(from.toISOString(), now.toISOString(), 500);
+          if (active) setMetricsHistory(data);
+        } else {
+          const { data } = await api.getServerMetrics(serverId, metricsRange);
+          if (active) setMetricsHistory(data);
+        }
       } catch {}
     }
 
     loadMetrics();
     return () => { active = false; };
-  }, [serverId, activeTab, metricsRange]);
+  }, [serverId, activeTab, metricsRange, isControlPlane]);
 
-  const resources = server ? parseResources(server.resources) : null;
-  const isControlPlane = server?.role === 'control-plane';
+  const agentResources = server ? parseResources(server.resources) : null;
+  const resources = agentResources || localStatus;
 
   const cpuHistory = useMemo(() =>
     metricsHistory.map((s) => ({ timestamp: s.timestamp, value: s.cpu_percent })),
@@ -327,12 +376,15 @@ export default function ServerDetail({ serverId }: Props) {
 
           <div class={styles.chartsGrid}>
             <div class={styles.chartCard}>
+              <h3 class={styles.chartTitle}>CPU</h3>
               <MetricsChart data={cpuHistory} label="CPU" formatValue={(v) => formatPercent(v)} min={0} max={100} color="var(--color-primary)" />
             </div>
             <div class={styles.chartCard}>
+              <h3 class={styles.chartTitle}>Memory</h3>
               <MetricsChart data={memHistory} label="Memory" formatValue={(v) => `${Math.round(v)}%`} min={0} max={100} color="var(--color-info)" />
             </div>
             <div class={styles.chartCard}>
+              <h3 class={styles.chartTitle}>Disk</h3>
               <MetricsChart data={diskHistory} label="Disk" formatValue={(v) => `${Math.round(v)}%`} min={0} max={100} color="var(--color-warning)" />
             </div>
           </div>
