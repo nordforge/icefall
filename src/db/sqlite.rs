@@ -1872,11 +1872,10 @@ impl Database for SqliteDatabase {
     }
 
     async fn has_active_deploys(&self) -> Result<bool, DbError> {
-        let row = sqlx::query(
-            "SELECT id FROM deploys WHERE status IN ('building', 'deploying') LIMIT 1",
-        )
-        .fetch_optional(&self.pool)
-        .await?;
+        let row =
+            sqlx::query("SELECT id FROM deploys WHERE status IN ('building', 'deploying') LIMIT 1")
+                .fetch_optional(&self.pool)
+                .await?;
         Ok(row.is_some())
     }
 
@@ -1967,19 +1966,17 @@ impl Database for SqliteDatabase {
     }
 
     async fn get_server_by_token_hash(&self, hash: &str) -> Result<Option<Server>, DbError> {
-        let server =
-            sqlx::query_as::<_, Server>("SELECT * FROM servers WHERE token_hash = ?")
-                .bind(hash)
-                .fetch_optional(&self.pool)
-                .await?;
+        let server = sqlx::query_as::<_, Server>("SELECT * FROM servers WHERE token_hash = ?")
+            .bind(hash)
+            .fetch_optional(&self.pool)
+            .await?;
         Ok(server)
     }
 
     async fn list_servers(&self) -> Result<Vec<Server>, DbError> {
-        let servers =
-            sqlx::query_as::<_, Server>("SELECT * FROM servers ORDER BY created_at ASC")
-                .fetch_all(&self.pool)
-                .await?;
+        let servers = sqlx::query_as::<_, Server>("SELECT * FROM servers ORDER BY created_at ASC")
+            .fetch_all(&self.pool)
+            .await?;
         Ok(servers)
     }
 
@@ -2123,11 +2120,10 @@ impl Database for SqliteDatabase {
     }
 
     async fn prune_server_metrics_history(&self, older_than: &str) -> Result<u64, DbError> {
-        let result =
-            sqlx::query("DELETE FROM server_metrics_history WHERE recorded_at < ?")
-                .bind(older_than)
-                .execute(&self.pool)
-                .await?;
+        let result = sqlx::query("DELETE FROM server_metrics_history WHERE recorded_at < ?")
+            .bind(older_than)
+            .execute(&self.pool)
+            .await?;
         Ok(result.rows_affected())
     }
 

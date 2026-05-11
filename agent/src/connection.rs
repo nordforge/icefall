@@ -70,13 +70,10 @@ async fn connect(
     let mut request = url.into_client_request().map_err(|e| e.to_string())?;
     request.headers_mut().insert(
         "Authorization",
-        HeaderValue::from_str(&format!("Bearer {}", config.token))
-            .map_err(|e| e.to_string())?,
+        HeaderValue::from_str(&format!("Bearer {}", config.token)).map_err(|e| e.to_string())?,
     );
 
-    let (ws, _response) = connect_async(request)
-        .await
-        .map_err(|e| e.to_string())?;
+    let (ws, _response) = connect_async(request).await.map_err(|e| e.to_string())?;
 
     Ok(ws)
 }
@@ -149,13 +146,14 @@ async fn run_session(
 
 async fn handle_text_message(
     text: &str,
-    sink: &mut futures_util::stream::SplitSink<
-        WebSocketStream<MaybeTlsStream<TcpStream>>,
-        Message,
-    >,
+    sink: &mut futures_util::stream::SplitSink<WebSocketStream<MaybeTlsStream<TcpStream>>, Message>,
 ) {
     match serde_json::from_str::<AgentMessage>(text) {
-        Ok(AgentMessage::Request { id, method, params: _ }) => {
+        Ok(AgentMessage::Request {
+            id,
+            method,
+            params: _,
+        }) => {
             warn!("Unhandled method: {method}");
             let response = AgentMessage::Response {
                 id,

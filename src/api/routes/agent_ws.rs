@@ -52,9 +52,7 @@ async fn agent_ws(
     let server_id = server.id.clone();
     let server_name = server.name.clone();
 
-    Ok(ws.on_upgrade(move |socket| {
-        handle_agent_connection(socket, state, server_id, server_name)
-    }))
+    Ok(ws.on_upgrade(move |socket| handle_agent_connection(socket, state, server_id, server_name)))
 }
 
 async fn handle_agent_connection(

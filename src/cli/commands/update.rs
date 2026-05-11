@@ -49,10 +49,15 @@ pub async fn run(yes: bool, channel: Option<&str>, json: bool) {
 
     if !available {
         if json {
-            print_json_step("check", "done", None, Some(serde_json::json!({
-                "up_to_date": true,
-                "version": current,
-            })));
+            print_json_step(
+                "check",
+                "done",
+                None,
+                Some(serde_json::json!({
+                    "up_to_date": true,
+                    "version": current,
+                })),
+            );
         } else {
             println!("{GREEN}up to date{RESET}");
             println!("\n  Icefall {GREEN}v{current}{RESET} is the latest version.");
@@ -64,12 +69,17 @@ pub async fn run(yes: bool, channel: Option<&str>, json: bool) {
     let breaking = data["breaking"].as_bool().unwrap_or(false);
 
     if json {
-        print_json_step("check", "done", None, Some(serde_json::json!({
-            "up_to_date": false,
-            "current_version": current,
-            "latest_version": latest,
-            "breaking": breaking,
-        })));
+        print_json_step(
+            "check",
+            "done",
+            None,
+            Some(serde_json::json!({
+                "up_to_date": false,
+                "current_version": current,
+                "latest_version": latest,
+                "breaking": breaking,
+            })),
+        );
     } else {
         println!("{GREEN}done{RESET}");
 
@@ -130,7 +140,12 @@ pub async fn run(yes: bool, channel: Option<&str>, json: bool) {
     let dl_status = download["data"]["status"].as_str().unwrap_or("unknown");
     if dl_status != "download_started" && dl_status != "already_downloading" {
         if json {
-            print_json_step("download", "failed", Some(&format!("Unexpected status: {dl_status}")), None);
+            print_json_step(
+                "download",
+                "failed",
+                Some(&format!("Unexpected status: {dl_status}")),
+                None,
+            );
         } else {
             println!("{RED}{STEP_FAILED} failed{RESET}");
             eprintln!("  Unexpected download status: {dl_status}");
@@ -163,9 +178,14 @@ pub async fn run(yes: bool, channel: Option<&str>, json: bool) {
         match state {
             "downloading" => {
                 if json {
-                    print_json_step("download", "running", None, Some(serde_json::json!({
-                        "progress": progress,
-                    })));
+                    print_json_step(
+                        "download",
+                        "running",
+                        None,
+                        Some(serde_json::json!({
+                            "progress": progress,
+                        })),
+                    );
                 } else {
                     let bar = progress_bar(progress as u32, 20);
                     print!("\r  {STEP_RUNNING} Downloading update        {bar} {progress}%  ");
@@ -248,9 +268,14 @@ pub async fn run(yes: bool, channel: Option<&str>, json: bool) {
     if health_ok {
         if json {
             print_json_step("health", "done", None, None);
-            print_json_step("complete", "done", None, Some(serde_json::json!({
-                "version": latest,
-            })));
+            print_json_step(
+                "complete",
+                "done",
+                None,
+                Some(serde_json::json!({
+                    "version": latest,
+                })),
+            );
         } else {
             println!("{GREEN}{STEP_DONE}{RESET} Verifying health          {GREEN}done{RESET}");
             println!();
@@ -545,9 +570,7 @@ pub async fn from_file(tarball: &str, manifest_path: &str, signature_path: &str,
         let gz = flate2::read::GzDecoder::new(file);
         let mut archive = tar::Archive::new(gz);
         archive.set_overwrite(true);
-        archive
-            .unpack(&updates_dir)
-            .map_err(|e| e.to_string())?;
+        archive.unpack(&updates_dir).map_err(|e| e.to_string())?;
         Ok(())
     })
     .await;

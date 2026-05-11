@@ -57,12 +57,8 @@ async fn main() {
             channel,
             json,
         } => match command {
-            None => {
-                icefall::cli::commands::update::run(yes, channel.as_deref(), json).await
-            }
-            Some(UpdateCommands::Check) => {
-                icefall::cli::commands::update::check(json).await
-            }
+            None => icefall::cli::commands::update::run(yes, channel.as_deref(), json).await,
+            Some(UpdateCommands::Check) => icefall::cli::commands::update::check(json).await,
             Some(UpdateCommands::Rollback { yes: rb_yes }) => {
                 icefall::cli::commands::update::rollback(yes || rb_yes).await
             }
@@ -71,8 +67,7 @@ async fn main() {
                 manifest,
                 signature,
             }) => {
-                icefall::cli::commands::update::from_file(&file, &manifest, &signature, yes)
-                    .await
+                icefall::cli::commands::update::from_file(&file, &manifest, &signature, yes).await
             }
         },
         Commands::Status => icefall::cli::commands::server::status().await,

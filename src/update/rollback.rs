@@ -140,7 +140,9 @@ impl UpdateRollback {
                 }
                 if let Err(e) = std::fs::rename(bak_path, &dashboard_path) {
                     warn!(error = %e, "failed to restore dashboard assets, trying copy");
-                    if let Err(e2) = crate::update::apply::copy_dir_recursive(bak_path, &dashboard_path) {
+                    if let Err(e2) =
+                        crate::update::apply::copy_dir_recursive(bak_path, &dashboard_path)
+                    {
                         error!(error = %e2, "failed to copy dashboard assets during rollback");
                     }
                 }
