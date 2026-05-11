@@ -1344,9 +1344,11 @@ version = "0.1.0"
 dependencies = [
  "base64",
  "bollard",
+ "bytes",
  "chrono",
  "clap",
  "const_format",
+ "flate2",
  "futures-util",
  "hex",
  "icefall-common",
@@ -1356,8 +1358,11 @@ dependencies = [
  "serde_json",
  "sha2 0.11.0",
  "sysinfo",
+ "tar",
+ "tempfile",
  "thiserror",
  "tokio",
+ "tokio-stream",
  "tokio-tungstenite 0.26.2",
  "toml",
  "tracing",
@@ -1373,6 +1378,8 @@ dependencies = [
  "chrono",
  "serde",
  "serde_json",
+ "tempfile",
+ "thiserror",
  "uuid",
 ]
 
