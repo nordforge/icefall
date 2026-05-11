@@ -1,14 +1,17 @@
 import { useEffect, useState, useRef } from 'preact/hooks';
-import type { App, Project, DeployMode } from '@lib/types';
+import type { App, Project, Server, DeployMode } from '@lib/types';
 import { api } from '@lib/api';
+import { addToast } from '@stores/toast';
 import Button from '@islands/shared/Button/Button';
-import { Save, AlertTriangle, Square, Play, RotateCw, Trash2, Webhook, Copy, Check, X, Plus, HardDrive, FolderOpen, Cloud, Search, Zap } from 'lucide-preact';
+import ConfirmDialog from '@islands/shared/ConfirmDialog/ConfirmDialog';
+import { Save, AlertTriangle, Square, Play, RotateCw, Trash2, Webhook, Copy, Check, X, Plus, HardDrive, FolderOpen, Cloud, Search, Zap, ArrowRightLeft } from 'lucide-preact';
 import VolumeBrowser from '@islands/app-detail/VolumeBrowser/VolumeBrowser';
 import styles from './settings-tab.module.css';
 import formStyles from '@styles/form.module.css';
 
 type Props = {
   app: App;
+  servers?: Server[];
 }
 
 const TAG_PATTERN = /^[a-z0-9][a-z0-9-]*$/;
@@ -78,7 +81,7 @@ function parseResourceLimits(raw: string | null): { memoryMb: string; cpuShares:
   } catch { return { memoryMb: '', cpuShares: '' }; }
 }
 
-export default function SettingsTab({ app }: Props) {
+export default function SettingsTab({ app, servers = [] }: Props) {
   const [form, setForm] = useState(() => {
     let buildCommand = '';
     try {
@@ -116,7 +119,15 @@ export default function SettingsTab({ app }: Props) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<string>(app.project_id || '');
   const [browsingVolume, setBrowsingVolume] = useState<number | null>(null);
+  const [migrateTarget, setMigrateTarget] = useState('');
+  const [showMigrateDialog, setShowMigrateDialog] = useState(false);
+  const [migrateAck, setMigrateAck] = useState(false);
+  const [migrating, setMigrating] = useState(false);
   const copiedTimeoutRef = useRef<number>();
+
+  const multiServer = servers.length >= 2;
+  const currentServer = servers.find((s) => s.id === app.server_id);
+  const availableTargets = servers.filter((s) => s.id !== app.server_id && s.status === 'online');
 
   useEffect(() => {
     api.listProjects().then(({ data }) => setProjects(data)).catch(() => {});
@@ -166,6 +177,20 @@ export default function SettingsTab({ app }: Props) {
     } catch {
       setDeleting(false);
     }
+  }
+
+  async function handleMigrate() {
+    if (!migrateTarget || !migrateAck) return;
+    setMigrating(true);
+    try {
+      await api.migrateApp(app.id, migrateTarget, migrateAck);
+      addToast('success', `Migration to ${availableTargets.find(s => s.id === migrateTarget)?.name || 'server'} started`);
+      setShowMigrateDialog(false);
+      window.location.href = `/apps/${app.id}/deploys`;
+    } catch (err: any) {
+      addToast('error', err.message || 'Migration failed');
+    }
+    setMigrating(false);
   }
 
   function copyToClipboard(text: string, label: string) {
@@ -715,6 +740,80 @@ export default function SettingsTab({ app }: Props) {
         {/* a11y [WCAG 4.1.3]: announce save result to AT */}
         <span role="status" aria-live="polite">{saveMessage}</span>
       </div>
+
+      {/* Server Placement — only in multi-server mode */}
+      {multiServer && (
+        <div class={styles.card}>
+          <h2 class={styles.sectionTitle}>
+            <ArrowRightLeft size={18} aria-hidden="true" /> Server placement
+          </h2>
+          <div class={styles.serverPlacement}>
+            <div class={styles.currentServer}>
+              <span class={styles.serverLabel}>Current server</span>
+              <a href={`/servers/${app.server_id}`} class={styles.serverValue}>
+                {currentServer?.name || app.server_id || 'Control plane'}
+              </a>
+            </div>
+            {availableTargets.length > 0 && (
+              <div class={styles.migrateRow}>
+                <div>
+                  <label htmlFor="migrate-target" class={formStyles.label}>Migrate to</label>
+                  <select
+                    id="migrate-target"
+                    class={formStyles.input}
+                    value={migrateTarget}
+                    onChange={(e) => setMigrateTarget((e.target as HTMLSelectElement).value)}
+                  >
+                    <option value="">Select a server...</option>
+                    {availableTargets.map((s) => (
+                      <option key={s.id} value={s.id}>{s.name} ({s.host})</option>
+                    ))}
+                  </select>
+                </div>
+                <Button
+                  variant="secondary"
+                  onClick={() => setShowMigrateDialog(true)}
+                  disabled={!migrateTarget}
+                >
+                  <ArrowRightLeft size={14} /> Migrate app
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {showMigrateDialog && (
+        <div class={styles.migrateDialogBackdrop} onClick={() => setShowMigrateDialog(false)}>
+          <div
+            class={styles.migrateDialog}
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="migrate-title"
+            aria-describedby="migrate-desc"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 id="migrate-title" class={styles.migrateDialogTitle}>Migrate app?</h2>
+            <p id="migrate-desc" class={styles.migrateDialogDesc}>
+              This will redeploy "{app.name}" from <strong>{currentServer?.name || 'current server'}</strong> to <strong>{availableTargets.find(s => s.id === migrateTarget)?.name}</strong>.
+            </p>
+            <label class={styles.migrateCheckbox}>
+              <input
+                type="checkbox"
+                checked={migrateAck}
+                onChange={(e) => setMigrateAck((e.target as HTMLInputElement).checked)}
+              />
+              I understand that volume data will not be migrated
+            </label>
+            <div class={styles.migrateDialogActions}>
+              <Button variant="ghost" onClick={() => { setShowMigrateDialog(false); setMigrateAck(false); }}>Cancel</Button>
+              <Button variant="primary" onClick={handleMigrate} loading={migrating} disabled={!migrateAck}>
+                Migrate
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Danger Zone */}
       <div class={styles.dangerCard}>

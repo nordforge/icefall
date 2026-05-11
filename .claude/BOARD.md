@@ -6,35 +6,6 @@
 
 ## Backlog
 
-### Phase 20B — Agent Core
-| Ticket | Title | Size |
-|--------|-------|------|
-| [IF-125](tickets/phase-20-multi-server/IF-125-agent-docker-operations-handler.md) | Agent Docker operations handler | L |
-| [IF-126](tickets/phase-20-multi-server/IF-126-agent-log-streaming.md) | Agent log streaming | M |
-| [IF-127](tickets/phase-20-multi-server/IF-127-agent-metrics-collection.md) | Agent metrics collection | M |
-| [IF-128](tickets/phase-20-multi-server/IF-128-agent-health-check-execution.md) | Agent health check execution | M |
-| [IF-129](tickets/phase-20-multi-server/IF-129-agent-terminal-proxy.md) | Agent terminal proxy | M |
-| [IF-130](tickets/phase-20-multi-server/IF-130-agent-caddy-management.md) | Agent Caddy management | M |
-
-### Phase 20C — Deploy Pipeline
-| Ticket | Title | Size |
-|--------|-------|------|
-| [IF-131](tickets/phase-20-multi-server/IF-131-server-aware-deploy-manager.md) | Server-aware deploy manager | L |
-| [IF-132](tickets/phase-20-multi-server/IF-132-agent-build-pipeline.md) | Agent build pipeline | L |
-| [IF-133](tickets/phase-20-multi-server/IF-133-worker-caddy-route-management.md) | Worker Caddy route management | M |
-| [IF-134](tickets/phase-20-multi-server/IF-134-app-migration-between-servers.md) | App migration between servers | L |
-| [IF-135](tickets/phase-20-multi-server/IF-135-server-selection-app-creation.md) | Server selection in app creation | M |
-
-### Phase 20D — Dashboard UI
-| Ticket | Title | Size |
-|--------|-------|------|
-| [IF-136](tickets/phase-20-multi-server/IF-136-servers-list-page.md) | Servers list page | M |
-| [IF-137](tickets/phase-20-multi-server/IF-137-add-server-flow-dashboard.md) | Add server flow (dashboard) | M |
-| [IF-138](tickets/phase-20-multi-server/IF-138-server-detail-page.md) | Server detail page | M |
-| [IF-139](tickets/phase-20-multi-server/IF-139-app-creation-server-selection.md) | App creation server selection | S |
-| [IF-140](tickets/phase-20-multi-server/IF-140-app-detail-server-indicator.md) | App detail server indicator | S |
-| [IF-141](tickets/phase-20-multi-server/IF-141-dashboard-home-aggregate-metrics.md) | Dashboard home aggregate metrics | M |
-
 ### Phase 20E — Polish & Security
 | Ticket | Title | Size |
 |--------|-------|------|
@@ -260,6 +231,35 @@
 | [IF-123](tickets/phase-20-multi-server/IF-123-install-script-control-plane.md) | Install script served by control plane | 2026-05-11 | Full bash script: Docker/Caddy auto-install, architecture detection, SHA-256 checksum verification, hardened systemd service, colored output with NO_COLOR support, `GET /agent/download/{target}` endpoint |
 | [IF-124](tickets/phase-20-multi-server/IF-124-release-workflow-agent-binary.md) | Release workflow for agent binary | 2026-05-11 | Workspace builds both binaries, agent packaged as separate tarball per arch, `agent_artifacts` in signed manifest, `build.rs` embeds version/commit/target/date |
 
+### Phase 20B — Agent Core
+| Ticket | Title | Completed | Notes |
+|--------|-------|-----------|-------|
+| [IF-125](tickets/phase-20-multi-server/IF-125-agent-docker-operations-handler.md) | Agent Docker operations handler | 2026-05-11 | Container CRUD + inspect + list, image pull/build, volume CRUD, network create/remove via bollard |
+| [IF-126](tickets/phase-20-multi-server/IF-126-agent-log-streaming.md) | Agent log streaming | 2026-05-11 | Subscribe/unsubscribe handlers, event streaming via `container.log` events |
+| [IF-127](tickets/phase-20-multi-server/IF-127-agent-metrics-collection.md) | Agent metrics collection | 2026-05-11 | 10s interval, sysinfo (CPU/RAM/disk/load), per-container Docker stats, `metrics.system` + `metrics.container` events |
+| [IF-128](tickets/phase-20-multi-server/IF-128-agent-health-check-execution.md) | Agent health check execution | 2026-05-11 | HTTP health checks with configurable port/path/attempts/interval/timeout, retry logic |
+| [IF-129](tickets/phase-20-multi-server/IF-129-agent-terminal-proxy.md) | Agent terminal proxy | 2026-05-11 | Terminal open/input/resize/close via Docker exec TTY, base64 data, `terminal.output` events |
+| [IF-130](tickets/phase-20-multi-server/IF-130-agent-caddy-management.md) | Agent Caddy management | 2026-05-11 | Caddy route add/update/remove via admin API at localhost:2019 |
+
+### Phase 20C — Deploy Pipeline
+| Ticket | Title | Completed | Notes |
+|--------|-------|-----------|-------|
+| [IF-131](tickets/phase-20-multi-server/IF-131-server-aware-deploy-manager.md) | Server-aware deploy manager | 2026-05-11 | `resolve_target()` + `make_remote_executor()`, remote blue-green deploy via RemoteExecutor, backward-compatible local path |
+| [IF-132](tickets/phase-20-multi-server/IF-132-agent-build-pipeline.md) | Agent build pipeline | 2026-05-11 | `build.run` via RemoteExecutor, git clone + detect + Dockerfile gen + docker build on worker, streamed output |
+| [IF-133](tickets/phase-20-multi-server/IF-133-worker-caddy-route-management.md) | Worker Caddy route management | 2026-05-11 | Caddy route add/update/remove delegated to agent on deploy, TLS via ACME on worker |
+| [IF-134](tickets/phase-20-multi-server/IF-134-app-migration-between-servers.md) | App migration between servers | 2026-05-11 | `PUT /apps/{id}/migrate`, validation (server exists/connected/not draining), volume loss acknowledgment, 202 with migration deploy |
+| [IF-135](tickets/phase-20-multi-server/IF-135-server-selection-app-creation.md) | Server selection in app creation | 2026-05-11 | `server_id` on create, validation (exists/connected/not draining), `recommendation_score` on server list, weighted composite scoring |
+
+### Phase 20D — Dashboard UI
+| Ticket | Title | Completed | Notes |
+|--------|-------|-----------|-------|
+| [IF-136](tickets/phase-20-multi-server/IF-136-servers-list-page.md) | Servers list page | 2026-05-11 | `/servers` page with ServerCard grid, SSE real-time status, single-server redirect, sidebar updated |
+| [IF-137](tickets/phase-20-multi-server/IF-137-add-server-flow-dashboard.md) | Add server flow (dashboard) | 2026-05-11 | Inline AddServerPanel: name/host inputs, setup command with copy, token countdown, 4-step SSE enrollment progress |
+| [IF-138](tickets/phase-20-multi-server/IF-138-server-detail-page.md) | Server detail page | 2026-05-11 | `/servers/[id]` with 4 tabs (Overview/Apps/Metrics/Settings), metric cards, charts, danger zone for workers |
+| [IF-139](tickets/phase-20-multi-server/IF-139-app-creation-server-selection.md) | App creation server selection | 2026-05-11 | Radio-card ServerSelectStep in wizard (2+ servers only), recommendation badge, resource bars, `server_id` in create API |
+| [IF-140](tickets/phase-20-multi-server/IF-140-app-detail-server-indicator.md) | App detail server indicator | 2026-05-11 | "on {server}" in AppHeader, server label on AppCard, migration UI in SettingsTab with volume-loss acknowledgment |
+| [IF-141](tickets/phase-20-multi-server/IF-141-dashboard-home-aggregate-metrics.md) | Dashboard home aggregate metrics | 2026-05-11 | Weighted CPU avg, total RAM/Disk across servers, ServerHealthStrip with status dots, single-server unchanged |
+
 ---
 
 ## Summary
@@ -267,8 +267,8 @@
 | Metric | Count |
 |--------|-------|
 | Total tickets | 141 |
-| Done | 96 |
-| Backlog | 45 |
+| Done | 113 |
+| Backlog | 27 |
 | Superseded | 1 |
 | Phases complete | 15 / 19 |
 
@@ -293,7 +293,7 @@
 | 16 — Self-Update System | Backlog | 0/8 |
 | 17 — v1.1 Fast Follow | Partial | 9/13 |
 | 18 — UX Polish | Backlog | 0/11 |
-| 20 — Multi-Server | **In Progress** | 8/30 |
+| 20 — Multi-Server | **In Progress** | 25/30 |
 
 ### Size breakdown
 | Size | Count | Estimated effort |
@@ -321,10 +321,10 @@ v1.1 Fast Follow (Phase 17):
 Multi-Server (Phase 20):
   IF-117 → IF-118 → IF-119 (done)
   IF-120 → IF-121 → IF-122 → IF-123 → IF-124 (done)
-  IF-121 → IF-125..IF-130 (agent handlers)
-  IF-117 + IF-118 → IF-131 (server-aware deploys) → IF-132 (agent build) → IF-133 (worker Caddy)
-  IF-131 → IF-134 (app migration) + IF-135 (server selection)
-  IF-118 → IF-136..IF-141 (dashboard UI)
+  IF-121 → IF-125..IF-130 (done)
+  IF-117 + IF-118 → IF-131 → IF-132 → IF-133 (done)
+  IF-131 → IF-134 + IF-135 (done)
+  IF-118 → IF-136..IF-141 (done)
   IF-122 → IF-142 (secret envelope)
   IF-124 → IF-143 (agent auto-update)
 ```

@@ -1,21 +1,22 @@
 import { useState, useRef, useEffect, useMemo } from 'preact/hooks';
 import { api } from '@lib/api';
+import type { Server } from '@lib/types';
 import Button from '@islands/shared/Button/Button';
+import ServerSelectStep from '@islands/app-create/ServerSelectStep/ServerSelectStep';
 import { ArrowLeft, ArrowRight, Rocket, GitBranch, Container, Layers } from 'lucide-preact';
 import styles from './app-create.module.css';
 import formStyles from '@styles/form.module.css';
 
 type DeploySource = 'git' | 'image' | 'compose';
 
-const GIT_STEPS = ['Source', 'Repository', 'Build Settings', 'Environment', 'Review'];
-const IMAGE_STEPS = ['Source', 'Docker Image', 'Environment', 'Review'];
-const COMPOSE_STEPS = ['Source', 'Compose File', 'Environment', 'Review'];
-
 export default function AppCreateWizard() {
   const [step, setStep] = useState(0);
   const [deploySource, setDeploySource] = useState<DeploySource | null>(null);
   const [deploying, setDeploying] = useState(false);
   const [composeError, setComposeError] = useState('');
+  const [servers, setServers] = useState<Server[]>([]);
+  const [selectedServerId, setSelectedServerId] = useState<string | null>(null);
+  const hasMultipleServers = servers.length >= 2;
   const [form, setForm] = useState({
     name: '',
     git_repo: '',
@@ -30,12 +31,29 @@ export default function AppCreateWizard() {
     compose_content: '',
   });
 
+  useEffect(() => {
+    api.listServers().then(({ data }) => {
+      setServers(data);
+      const recommended = data.find((s) => s.recommended && s.status === 'online');
+      if (recommended) setSelectedServerId(recommended.id);
+      else {
+        const firstOnline = data.find((s) => s.status === 'online' && s.role !== 'control-plane') || data.find((s) => s.status === 'online');
+        if (firstOnline) setSelectedServerId(firstOnline.id);
+      }
+    }).catch(() => {});
+  }, []);
+
   const steps = useMemo(() => {
     if (!deploySource) return ['Source'];
-    if (deploySource === 'git') return GIT_STEPS;
-    if (deploySource === 'compose') return COMPOSE_STEPS;
-    return IMAGE_STEPS;
-  }, [deploySource]);
+    const base = deploySource === 'git'
+      ? ['Source', 'Repository', 'Build Settings']
+      : deploySource === 'compose'
+        ? ['Source', 'Compose File']
+        : ['Source', 'Docker Image'];
+    if (hasMultipleServers) base.push('Server');
+    base.push('Environment', 'Review');
+    return base;
+  }, [deploySource, hasMultipleServers]);
 
   const lastStep = steps.length - 1;
   const isReviewStep = step === lastStep;
@@ -104,35 +122,34 @@ export default function AppCreateWizard() {
     }
   }
 
+  const currentStepName = steps[step] || '';
+
   function canAdvance(): boolean {
-    if (step === 0) return false; // Must pick a source
-    if (deploySource === 'git') {
-      if (step === 1) return !!form.name.trim(); // Repository step needs a name
-    }
-    if (deploySource === 'image') {
-      if (step === 1) return !!form.name.trim() && !!form.image_ref.trim() && !!form.port.trim();
-    }
-    if (deploySource === 'compose') {
-      if (step === 1) return !!form.name.trim() && !!form.compose_content.trim();
-    }
+    if (step === 0) return false;
+    if (currentStepName === 'Repository') return !!form.name.trim();
+    if (currentStepName === 'Docker Image') return !!form.name.trim() && !!form.image_ref.trim() && !!form.port.trim();
+    if (currentStepName === 'Compose File') return !!form.name.trim() && !!form.compose_content.trim();
+    if (currentStepName === 'Server') return !!selectedServerId;
     return true;
   }
 
-  /** Validate current step and either advance or show inline errors. */
   function validateAndAdvance() {
     const errors: Record<string, string> = {};
 
-    if (deploySource === 'git' && step === 1) {
+    if (currentStepName === 'Repository') {
       if (!form.name.trim()) errors.name = 'App name is required';
     }
-    if (deploySource === 'image' && step === 1) {
+    if (currentStepName === 'Docker Image') {
       if (!form.name.trim()) errors.name = 'App name is required';
       if (!form.image_ref.trim()) errors.image_ref = 'Docker image is required';
       if (!form.port.trim()) errors.port = 'Container port is required';
     }
-    if (deploySource === 'compose' && step === 1) {
+    if (currentStepName === 'Compose File') {
       if (!form.name.trim()) errors.name = 'Stack name is required';
       if (!form.compose_content.trim()) errors.compose_content = 'Compose file content is required';
+    }
+    if (currentStepName === 'Server' && !selectedServerId) {
+      errors.server = 'Select a server';
     }
 
     if (Object.keys(errors).length > 0) {
@@ -162,6 +179,10 @@ export default function AppCreateWizard() {
       } else {
         createBody.git_repo = form.git_repo || undefined;
         createBody.git_branch = form.git_branch;
+      }
+
+      if (hasMultipleServers && selectedServerId) {
+        createBody.server_id = selectedServerId;
       }
 
       const { data: app } = await api.createApp(createBody);
@@ -456,6 +477,13 @@ export default function AppCreateWizard() {
             </>
           )}
 
+          {hasMultipleServers && selectedServerId && <>
+            <span class={styles.reviewLabel}>Server</span>
+            <span class={styles.reviewValue}>
+              {servers.find((s) => s.id === selectedServerId)?.name || selectedServerId}
+            </span>
+          </>}
+
           {form.envContent && <>
             <span class={styles.reviewLabel}>Env vars</span>
             <span>{form.envContent.split('\n').filter((l) => l.trim() && !l.startsWith('#')).length} variable(s)</span>
@@ -467,29 +495,29 @@ export default function AppCreateWizard() {
 
   // --- Determine which content to render for the current step ---
 
+  function renderServerStep() {
+    return (
+      <ServerSelectStep
+        servers={servers}
+        selectedId={selectedServerId}
+        onSelect={setSelectedServerId}
+      />
+    );
+  }
+
   function renderStepContent() {
     if (step === 0) return renderSourceStep();
 
-    if (deploySource === 'git') {
-      if (step === 1) return renderGitRepoStep();
-      if (step === 2) return renderBuildSettingsStep();
-      if (step === 3) return renderEnvStep();
-      if (step === 4) return renderReviewStep();
+    switch (currentStepName) {
+      case 'Repository': return renderGitRepoStep();
+      case 'Build Settings': return renderBuildSettingsStep();
+      case 'Docker Image': return renderImageStep();
+      case 'Compose File': return renderComposeStep();
+      case 'Server': return renderServerStep();
+      case 'Environment': return renderEnvStep();
+      case 'Review': return renderReviewStep();
+      default: return null;
     }
-
-    if (deploySource === 'image') {
-      if (step === 1) return renderImageStep();
-      if (step === 2) return renderEnvStep();
-      if (step === 3) return renderReviewStep();
-    }
-
-    if (deploySource === 'compose') {
-      if (step === 1) return renderComposeStep();
-      if (step === 2) return renderEnvStep();
-      if (step === 3) return renderReviewStep();
-    }
-
-    return null;
   }
 
   return (

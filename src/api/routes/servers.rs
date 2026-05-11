@@ -102,6 +102,25 @@ async fn create_server(
     })))
 }
 
+fn compute_recommendation_score(resources_json: Option<&str>, app_count: usize) -> f64 {
+    let metrics: serde_json::Value = resources_json
+        .and_then(|s| serde_json::from_str(s).ok())
+        .unwrap_or(serde_json::json!({}));
+
+    let cpu_pct = metrics["cpu_percent"].as_f64().unwrap_or(50.0);
+    let ram_used = metrics["ram_used_bytes"].as_f64().unwrap_or(0.0);
+    let ram_total = metrics["ram_total_bytes"].as_f64().unwrap_or(1.0).max(1.0);
+    let disk_used = metrics["disk_used_bytes"].as_f64().unwrap_or(0.0);
+    let disk_total = metrics["disk_total_bytes"].as_f64().unwrap_or(1.0).max(1.0);
+
+    let cpu_avail = (100.0 - cpu_pct) / 100.0;
+    let ram_avail = 1.0 - (ram_used / ram_total);
+    let disk_avail = 1.0 - (disk_used / disk_total);
+    let app_factor = 1.0 / (app_count as f64 + 1.0);
+
+    (cpu_avail + ram_avail + disk_avail + app_factor) / 4.0
+}
+
 async fn list_servers(
     State(state): State<AppState>,
     headers: HeaderMap,
@@ -111,17 +130,38 @@ async fn list_servers(
     let servers = state.db.list_servers().await?;
 
     let apps = state.db.list_apps().await?;
+
+    let mut best_score: Option<(usize, f64)> = None;
     let mut server_data: Vec<serde_json::Value> = Vec::new();
-    for s in &servers {
+
+    for (i, s) in servers.iter().enumerate() {
         let app_count = apps
             .iter()
             .filter(|a| a.server_id.as_deref() == Some(&s.id))
             .count();
+
+        let score = compute_recommendation_score(s.resources.as_deref(), app_count);
+
         let mut val = serde_json::to_value(s).unwrap_or_default();
         if let Some(obj) = val.as_object_mut() {
             obj.insert("app_count".into(), serde_json::json!(app_count));
+            obj.insert("recommendation_score".into(), serde_json::json!(score));
         }
         server_data.push(val);
+
+        if s.status == "online" {
+            match best_score {
+                Some((_, best)) if score > best => best_score = Some((i, score)),
+                None => best_score = Some((i, score)),
+                _ => {}
+            }
+        }
+    }
+
+    if let Some((idx, _)) = best_score {
+        if let Some(obj) = server_data[idx].as_object_mut() {
+            obj.insert("recommended".into(), serde_json::json!(true));
+        }
     }
 
     Ok(Json(serde_json::json!({ "data": server_data })))

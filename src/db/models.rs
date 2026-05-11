@@ -58,8 +58,10 @@ pub struct NewApp {
     pub image_ref: Option<String>,
     pub compose_content: Option<String>,
     pub deploy_mode: Option<String>,
+    pub server_id: Option<String>,
 }
 
+#[derive(Default)]
 pub struct UpdateApp {
     pub name: Option<String>,
     pub git_repo: Option<String>,

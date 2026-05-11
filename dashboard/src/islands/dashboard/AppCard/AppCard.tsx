@@ -12,9 +12,10 @@ type Props = {
   app: App;
   latestDeployStatus?: string;
   latestDeployTime?: string;
+  serverName?: string;
 }
 
-export default function AppCard({ app, latestDeployStatus, latestDeployTime }: Props) {
+export default function AppCard({ app, latestDeployStatus, latestDeployTime, serverName }: Props) {
   const [deploying, setDeploying] = useState(false);
   const [optimisticStatus, setOptimisticStatus] = useState<string | null>(null);
   const status = optimisticStatus || latestDeployStatus || 'stopped';
@@ -66,6 +67,10 @@ export default function AppCard({ app, latestDeployStatus, latestDeployTime }: P
               <span key={tag} class={styles.tag}>{tag}</span>
             ))}
           </div>
+        )}
+
+        {serverName && (
+          <span class={styles.serverLabel}>{serverName}</span>
         )}
       </a>
 
