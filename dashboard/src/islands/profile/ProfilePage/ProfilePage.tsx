@@ -354,7 +354,7 @@ export default function ProfilePage() {
           <Link2 size={18} aria-hidden="true" /> Connected Accounts
         </h2>
         <p class={styles.sectionDescription}>
-          Link third-party accounts for faster sign-in.
+          Link third-party accounts for faster sign-in. Providers can be configured in <a href="/settings#oauth" class={styles.inlineLink}>Settings</a>.
         </p>
 
         <div class={styles.providerList}>
@@ -417,7 +417,7 @@ export default function ProfilePage() {
 
         {newTokenValue && (
           <div class={styles.tokenBanner} role="alert">
-            <p class={styles.tokenBannerLabel}>Copy your new token — it won't be shown again:</p>
+            <p class={styles.tokenBannerLabel}>Copy your new token. It won't be shown again:</p>
             <div class={styles.tokenRow}>
               <code class={styles.tokenValue}>{newTokenValue}</code>
               <button

@@ -685,7 +685,7 @@ export default function SettingsPage() {
         )}
       </div>
 
-      <div class={styles.section}>
+      <div id="oauth" class={styles.section}>
         <h2 class={styles.sectionHeading}><Key size={18} aria-hidden="true" /> OAuth Providers</h2>
         <p class={styles.hint} style={{ marginTop: 0, marginBottom: 'var(--space-4)' }}>
           Allow users to sign in with GitHub or Google. Create an OAuth App with each provider and enter the credentials below.
