@@ -443,7 +443,7 @@ export default function AppCreateWizard() {
         <h3 class={styles.reviewTitle}>Review</h3>
         <div class={styles.reviewGrid}>
           <span class={styles.reviewLabel}>Name</span>
-          <span class={styles.reviewValue}>{form.name || '—'}</span>
+          <span class={styles.reviewValue}>{form.name || '-'}</span>
 
           <span class={styles.reviewLabel}>Deploy Type</span>
           <span class={styles.reviewValue}>
@@ -454,7 +454,7 @@ export default function AppCreateWizard() {
             <>
               <span class={styles.reviewLabel}>Services</span>
               <span class={styles.reviewValue}>
-                {services.length > 0 ? services.join(', ') : '—'}
+                {services.length > 0 ? services.join(', ') : '-'}
               </span>
             </>
           ) : isImage ? (
@@ -467,7 +467,7 @@ export default function AppCreateWizard() {
           ) : (
             <>
               <span class={styles.reviewLabel}>Repository</span>
-              <span class={styles.reviewMono}>{form.git_repo || '—'}</span>
+              <span class={styles.reviewMono}>{form.git_repo || '-'}</span>
               <span class={styles.reviewLabel}>Branch</span>
               <span class={styles.reviewMono}>{form.git_branch}</span>
               {form.build_command && <>

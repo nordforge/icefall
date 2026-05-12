@@ -158,7 +158,7 @@ export default function DatabasesPage() {
             <h3 class={styles.cardTitle}>Connection</h3>
             <div class={styles.connectionRow}>
               <code class={showCredentials ? styles.connectionStringRevealed : styles.connectionStringHidden}>
-                {showCredentials ? (connStr || 'No credentials stored — recreate the database to generate new credentials') : '••••••••••••••••••••••••'}
+                {showCredentials ? (connStr || 'No credentials stored. Recreate the database to generate new credentials') : '••••••••••••••••••••••••'}
               </code>
               {/* a11y [4.1.2]: aria-label on icon-only button */}
               <button onClick={() => setShowCredentials(!showCredentials)} class={styles.iconButton} aria-label={showCredentials ? 'Hide credentials' : 'Show credentials'}>
@@ -194,7 +194,7 @@ export default function DatabasesPage() {
                     <tr key={b.id} class={styles.tableRow}>
                       <td class={styles.tdMono}>{b.filename}</td>
                       <td class={styles.tdSecondary}>{formatBytes(b.size_bytes)}</td>
-                      <td class={styles.tdMuted}>{b.created_at ? formatRelativeTime(b.created_at) : '—'}</td>
+                      <td class={styles.tdMuted}>{b.created_at ? formatRelativeTime(b.created_at) : '-'}</td>
                       <td class={styles.td}><StatusDot status={b.status === 'completed' ? 'success' : 'failed'} /></td>
                       <td class={styles.tdActions}>
                         {b.status === 'completed' && (

@@ -353,7 +353,7 @@ export default function SettingsTab({ app, servers = [] }: Props) {
           <Zap size={18} /> Deploy Mode
         </h2>
         <p class={styles.settingsDescription}>
-          Controls how this app is built and served. Native mode builds on the host and serves static files directly through Caddy — no container overhead. Container mode uses Docker for apps that need a running server.
+          Controls how this app is built and served. Native mode builds on the host and serves static files directly through Caddy without container overhead. Container mode uses Docker for apps that need a running server.
         </p>
         <div class={formStyles.fieldRow}>
           <div>
