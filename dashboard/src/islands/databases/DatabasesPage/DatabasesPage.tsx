@@ -3,6 +3,7 @@ import { useStore } from '@nanostores/preact';
 import { $databases, $databasesLoaded } from '@stores/databases';
 import type { ManagedDb } from '@stores/databases';
 import Button from '@islands/shared/Button/Button';
+import Select from '@islands/shared/Select/Select';
 import StatusDot from '@islands/shared/StatusDot/StatusDot';
 import DatabaseBrowser from '@islands/databases/DatabaseBrowser/DatabaseBrowser';
 import { formatRelativeTime, formatBytes } from '@lib/format';
@@ -290,12 +291,18 @@ export default function DatabasesPage() {
             </div>
             <div>
               <label htmlFor="db-create-type" class={formStyles.label}>Type</label>
-              <select id="db-create-type" class={formStyles.select} value={newDb.db_type} onChange={(e) => setNewDb({ ...newDb, db_type: (e.target as HTMLSelectElement).value })}>
-                <option value="postgres">PostgreSQL</option>
-                <option value="mysql">MySQL</option>
-                <option value="redis">Redis</option>
-                <option value="mongo">MongoDB</option>
-              </select>
+              <Select
+                id="db-create-type"
+                options={[
+                  { value: 'postgres', label: 'PostgreSQL' },
+                  { value: 'mysql', label: 'MySQL' },
+                  { value: 'redis', label: 'Redis' },
+                  { value: 'mongo', label: 'MongoDB' },
+                ]}
+                value={newDb.db_type}
+                onChange={(v) => setNewDb({ ...newDb, db_type: v })}
+                fullWidth
+              />
             </div>
           </div>
           <div class={styles.createActions}>

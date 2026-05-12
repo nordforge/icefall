@@ -156,6 +156,19 @@
   margin-top: var(--space-2);
 }
 
+.hint a,
+.inlineLink {
+  color: var(--color-primary);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+.hint a:hover,
+.inlineLink:hover {
+  color: var(--color-primary-hover);
+}
+
 .mcpDescription {
   font-size: var(--text-sm);
   color: var(--color-text-secondary);

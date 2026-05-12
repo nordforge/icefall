@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'preact/hooks';
 import Button from '@islands/shared/Button/Button';
+import Select from '@islands/shared/Select/Select';
 import { Save, Globe, Bell, Database, Shield, Plus, Trash2, Send, Filter, HardDrive, Play, CheckCircle, XCircle, Clock, Key, Copy } from 'lucide-preact';
 import { useStore } from '@nanostores/preact';
 import { $settings, $channels, $settingsLoaded } from '@stores/settings';
@@ -392,9 +393,13 @@ export default function SettingsPage() {
           </div>
           <div>
             <label htmlFor="sp-timezone" class={formStyles.label}>Timezone</label>
-            <select id="sp-timezone" class={formStyles.select} value={timezone} onChange={e => setTimezone((e.target as HTMLSelectElement).value)}>
-              {TIMEZONES.map(tz => <option key={tz} value={tz}>{tz.replace(/_/g, ' ')}</option>)}
-            </select>
+            <Select
+              id="sp-timezone"
+              options={TIMEZONES.map(tz => ({ value: tz, label: tz.replace(/_/g, ' ') }))}
+              value={timezone}
+              onChange={setTimezone}
+              fullWidth
+            />
             <p class={formStyles.hint}>Used for log timestamps, backup schedules, and notifications.</p>
           </div>
         </div>
@@ -418,9 +423,13 @@ export default function SettingsPage() {
             <div class={formStyles.fieldRow}>
               <div>
                 <label htmlFor="channel-type" class={formStyles.label}>Channel Type</label>
-                <select id="channel-type" class={formStyles.select} value={newChannelType} onChange={e => { setNewChannelType((e.target as HTMLSelectElement).value); setNewChannelConfig({}); }}>
-                  {CHANNEL_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-                </select>
+                <Select
+                  id="channel-type"
+                  options={CHANNEL_TYPES}
+                  value={newChannelType}
+                  onChange={(v) => { setNewChannelType(v); setNewChannelConfig({}); }}
+                  fullWidth
+                />
               </div>
             </div>
             <div class={formStyles.fieldRow}>
@@ -613,16 +622,17 @@ export default function SettingsPage() {
           </div>
           <div>
             <label htmlFor="ib-schedule" class={formStyles.label}>Schedule</label>
-            <select
+            <Select
               id="ib-schedule"
-              class={formStyles.select}
+              options={[
+                { value: 'daily', label: 'Daily' },
+                { value: 'weekly', label: 'Weekly' },
+                { value: 'monthly', label: 'Monthly' },
+              ]}
               value={ibSchedule}
-              onChange={e => setIbSchedule((e.target as HTMLSelectElement).value)}
-            >
-              <option value="daily">Daily</option>
-              <option value="weekly">Weekly</option>
-              <option value="monthly">Monthly</option>
-            </select>
+              onChange={setIbSchedule}
+              fullWidth
+            />
           </div>
           <div>
             <label htmlFor="ib-retention" class={formStyles.label}>Retention Count</label>
@@ -844,7 +854,7 @@ export default function SettingsPage() {
 }`}
         </div>
         <p class={styles.hint}>
-          Generate an API token on the Users page to use as the Bearer token.
+          Generate an API token on the <a href="/users" class={styles.inlineLink} data-astro-prefetch="hover">Users page</a> to use as the Bearer token.
         </p>
       </div>
 

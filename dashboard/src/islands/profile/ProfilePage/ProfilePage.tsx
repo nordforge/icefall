@@ -3,6 +3,7 @@ import { api } from '@lib/api';
 import type { User, ApiToken } from '@lib/types';
 import { formatRelativeTime } from '@lib/format';
 import Button from '@islands/shared/Button/Button';
+import Select from '@islands/shared/Select/Select';
 import TwoFactorSection from '@islands/settings/TwoFactorSection/TwoFactorSection';
 import {
   User as UserIcon,
@@ -549,12 +550,15 @@ export default function ProfilePage() {
         <div class={formStyles.fieldGroup}>
           <div>
             <label htmlFor="pref-theme" class={formStyles.label}>Theme</label>
-            <select
+            <Select
               id="pref-theme"
-              class={formStyles.input}
+              options={[
+                { value: 'light', label: 'Light' },
+                { value: 'dark', label: 'Dark' },
+                { value: 'system', label: 'System' },
+              ]}
               value={(preferences.theme as string) || 'system'}
-              onChange={async (e) => {
-                const theme = (e.target as HTMLSelectElement).value;
+              onChange={async (theme) => {
                 const updated = { ...preferences, theme };
                 setPreferences(updated);
                 document.documentElement.setAttribute('data-theme', theme === 'system'
@@ -565,30 +569,23 @@ export default function ProfilePage() {
                 try { await api.updatePreferences({ theme }); } catch {}
                 setPrefSaving(false);
               }}
-            >
-              <option value="light">Light</option>
-              <option value="dark">Dark</option>
-              <option value="system">System</option>
-            </select>
+              fullWidth
+            />
           </div>
           <div>
             <label htmlFor="pref-timezone" class={formStyles.label}>Timezone</label>
-            <select
+            <Select
               id="pref-timezone"
-              class={formStyles.input}
+              options={Intl.supportedValuesOf('timeZone').map(tz => ({ value: tz, label: tz.replace(/_/g, ' ') }))}
               value={(preferences.timezone as string) || Intl.DateTimeFormat().resolvedOptions().timeZone}
-              onChange={async (e) => {
-                const timezone = (e.target as HTMLSelectElement).value;
+              onChange={async (timezone) => {
                 setPreferences(prev => ({ ...prev, timezone }));
                 setPrefSaving(true);
                 try { await api.updatePreferences({ timezone }); } catch {}
                 setPrefSaving(false);
               }}
-            >
-              {Intl.supportedValuesOf('timeZone').map(tz => (
-                <option key={tz} value={tz}>{tz.replace(/_/g, ' ')}</option>
-              ))}
-            </select>
+              fullWidth
+            />
           </div>
           <div>
             <label class={formStyles.label}>
