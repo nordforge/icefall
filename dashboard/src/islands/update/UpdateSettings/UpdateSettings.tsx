@@ -76,6 +76,12 @@ export default function UpdateSettings() {
     api.getUpdateHistory().then((res) => {
       setHistory(res.data || []);
     }).catch(() => {});
+
+    if (!info) {
+      api.checkForUpdate().then((res) => {
+        $updateInfo.set(res.data as UpdateInfo);
+      }).catch(() => {});
+    }
   }, []);
 
   async function handleCheck() {

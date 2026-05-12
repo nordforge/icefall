@@ -5,11 +5,18 @@ import { api } from '@lib/api';
 import type { User, ApiToken, RegistrationSettings } from '@lib/types';
 import { formatRelativeTime } from '@lib/format';
 import Button from '@islands/shared/Button/Button';
+import Select from '@islands/shared/Select/Select';
 import StatusDot from '@islands/shared/StatusDot/StatusDot';
 import { UserPlus, Key, Trash2, Copy, ShieldCheck, ShieldOff, RotateCcw, KeyRound } from 'lucide-preact';
 import { SkeletonTable } from '@islands/shared/Skeleton/Skeleton';
 import styles from './users-page.module.css';
 import formStyles from '@styles/form.module.css';
+
+const ROLE_OPTIONS = [
+  { value: 'admin', label: 'Admin' },
+  { value: 'deployer', label: 'Deployer' },
+  { value: 'viewer', label: 'Viewer' },
+];
 
 export default function UsersPage() {
   const cachedUsers = useStore($users);
@@ -219,9 +226,9 @@ export default function UsersPage() {
               <p class={styles.loadingText}>Loading settings...</p>
             ) : (
               <div class={styles.card}>
-                <div class={styles.settingsGrid}>
-                  <div class={styles.settingRow}>
-                    <label htmlFor="allow-registration" class={formStyles.label}>
+                <div class={styles.regGrid}>
+                  <div class={styles.regRow}>
+                    <label htmlFor="allow-registration" class={styles.regLabel}>
                       Allow public registration
                     </label>
                     <button
@@ -247,13 +254,13 @@ export default function UsersPage() {
                   </div>
 
                   {regSettings.allow_registration && (
-                    <div class={styles.settingRow}>
-                      <label htmlFor="allowed-domains" class={formStyles.label}>
-                        Allowed email domains
+                    <div class={styles.regRow}>
+                      <label htmlFor="allowed-domains" class={styles.regLabel}>
+                        Allowed domains
                       </label>
                       <input
                         id="allowed-domains"
-                        class={formStyles.input}
+                        class={`${formStyles.input} ${styles.regInput}`}
                         type="text"
                         value={domainsInput}
                         onInput={e =>
@@ -261,31 +268,25 @@ export default function UsersPage() {
                         }
                         placeholder="company.com, example.org"
                       />
-                      <p class={styles.settingHint}>
-                        Comma-separated list. Leave empty to allow any domain.
-                      </p>
                     </div>
                   )}
 
-                  <div class={styles.settingRow}>
-                    <label htmlFor="default-role" class={formStyles.label}>
-                      Default role for new users
+                  <div class={styles.regRow}>
+                    <label htmlFor="default-role" class={styles.regLabel}>
+                      Default role
                     </label>
-                    <select
+                    <Select
                       id="default-role"
-                      class={formStyles.select}
+                      options={ROLE_OPTIONS}
                       value={regSettings.default_role}
-                      onChange={e =>
+                      onChange={(role) =>
                         setRegSettings(prev => ({
                           ...prev,
-                          default_role: (e.target as HTMLSelectElement).value,
+                          default_role: role,
                         }))
                       }
-                    >
-                      <option value="viewer">Viewer</option>
-                      <option value="deployer">Deployer</option>
-                      <option value="admin">Admin</option>
-                    </select>
+                      size="sm"
+                    />
                   </div>
                 </div>
 
@@ -294,6 +295,7 @@ export default function UsersPage() {
                     variant="primary"
                     onClick={handleSaveRegSettings}
                     loading={regSaving}
+                    size="sm"
                   >
                     Save Settings
                   </Button>
@@ -320,11 +322,13 @@ export default function UsersPage() {
                   </div>
                   <div>
                     <label htmlFor="invite-role" class={formStyles.label}>Role</label>
-                    <select id="invite-role" class={formStyles.select} value={inviteRole} onChange={e => setInviteRole((e.target as HTMLSelectElement).value)}>
-                      <option value="admin">Admin</option>
-                      <option value="deployer">Deployer</option>
-                      <option value="viewer">Viewer</option>
-                    </select>
+                    <Select
+                      id="invite-role"
+                      options={ROLE_OPTIONS}
+                      value={inviteRole}
+                      onChange={setInviteRole}
+                      fullWidth
+                    />
                   </div>
                 </div>
                 <div class={styles.cardActions}>
@@ -351,16 +355,14 @@ export default function UsersPage() {
                     <tr key={u.id} class={styles.tableRow}>
                       <td class={styles.td}>{u.email}</td>
                       <td class={styles.td}>
-                        <select
-                          class={styles.roleSelect}
+                        <Select
+                          options={ROLE_OPTIONS}
                           value={u.role}
-                          onChange={e => handleChangeRole(u.id, (e.target as HTMLSelectElement).value)}
+                          onChange={(role) => handleChangeRole(u.id, role)}
                           aria-label={`Role for ${u.email}`}
-                        >
-                          <option value="admin">Admin</option>
-                          <option value="deployer">Deployer</option>
-                          <option value="viewer">Viewer</option>
-                        </select>
+                          size="sm"
+                          id={`role-${u.id}`}
+                        />
                       </td>
                       <td class={styles.td}>
                         {/* a11y [1.1.1]: non-text content has accessible name via aria-label */}

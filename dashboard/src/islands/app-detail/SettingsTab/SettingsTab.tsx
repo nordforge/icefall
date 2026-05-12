@@ -3,6 +3,7 @@ import type { App, Project, Server, DeployMode } from '@lib/types';
 import { api } from '@lib/api';
 import { addToast } from '@stores/toast';
 import Button from '@islands/shared/Button/Button';
+import Select from '@islands/shared/Select/Select';
 import ConfirmDialog from '@islands/shared/ConfirmDialog/ConfirmDialog';
 import { Save, AlertTriangle, Square, Play, RotateCw, Trash2, Webhook, Copy, Check, X, Plus, HardDrive, FolderOpen, Cloud, Search, Zap, ArrowRightLeft } from 'lucide-preact';
 import VolumeBrowser from '@islands/app-detail/VolumeBrowser/VolumeBrowser';
@@ -334,17 +335,13 @@ export default function SettingsTab({ app, servers = [] }: Props) {
               Project
             </label>
             {/* a11y [WCAG 4.1.2]: select has associated label via htmlFor/id */}
-            <select
+            <Select
               id="settings-project"
-              class={formStyles.select}
+              options={[{ value: '', label: 'Unassigned' }, ...projects.map((p) => ({ value: p.id, label: p.name }))]}
               value={selectedProjectId}
-              onChange={(e) => setSelectedProjectId((e.target as HTMLSelectElement).value)}
-            >
-              <option value="">Unassigned</option>
-              {projects.map((p) => (
-                <option key={p.id} value={p.id}>{p.name}</option>
-              ))}
-            </select>
+              onChange={setSelectedProjectId}
+              fullWidth
+            />
             <span class={styles.fieldHint}>Group this app with others in a project.</span>
           </div>
         </div>
@@ -362,16 +359,17 @@ export default function SettingsTab({ app, servers = [] }: Props) {
           <div>
             {/* a11y [WCAG 4.1.2]: select has associated label via htmlFor/id */}
             <label htmlFor="settings-deploy-mode" class={formStyles.label}>Deploy Mode</label>
-            <select
+            <Select
               id="settings-deploy-mode"
-              class={formStyles.select}
+              options={[
+                { value: 'auto', label: 'Auto (recommended)' },
+                { value: 'native', label: 'Native (static)' },
+                { value: 'container', label: 'Container' },
+              ]}
               value={deployMode}
-              onChange={(e) => setDeployMode((e.target as HTMLSelectElement).value as DeployMode)}
-            >
-              <option value="auto">Auto (recommended)</option>
-              <option value="native">Native (static)</option>
-              <option value="container">Container</option>
-            </select>
+              onChange={(v) => setDeployMode(v as DeployMode)}
+              fullWidth
+            />
             <span class={styles.fieldHint}>
               {deployMode === 'auto' && 'Icefall detects whether your app is static or needs a server, then picks the fastest deploy method.'}
               {deployMode === 'native' && 'Build output is served directly by Caddy. Best for static sites (React, Vue, Astro static, plain HTML). No container overhead.'}
@@ -473,7 +471,7 @@ export default function SettingsTab({ app, servers = [] }: Props) {
           <Webhook size={18} /> Auto-Deploy
         </h2>
         <p class={styles.settingsDescription}>
-          Automatically deploy when you push to the configured branch. Configure the webhook URL in your Git provider.
+          Automatically deploy when you push to the configured branch. Configure the webhook URL in your Git provider's <a href="/settings" data-astro-prefetch="hover">settings</a>.
         </p>
 
         {hasWebhookSecret ? (
@@ -565,15 +563,16 @@ export default function SettingsTab({ app, servers = [] }: Props) {
                   {/* a11y [WCAG 4.1.2]: select has associated label via htmlFor/id */}
                   <div class={styles.volumeTypeRow}>
                     <label htmlFor={`vol-type-${index}`} class={formStyles.label}>Type</label>
-                    <select
+                    <Select
                       id={`vol-type-${index}`}
-                      class={formStyles.select}
+                      options={[
+                        { value: 'local', label: 'Local Volume' },
+                        { value: 's3', label: 'S3 Mount' },
+                      ]}
                       value={vol.type}
-                      onChange={(e) => switchVolumeType(index, (e.target as HTMLSelectElement).value as 'local' | 's3')}
-                    >
-                      <option value="local">Local Volume</option>
-                      <option value="s3">S3 Mount</option>
-                    </select>
+                      onChange={(v) => switchVolumeType(index, v as 'local' | 's3')}
+                      fullWidth
+                    />
                   </div>
 
                   {vol.type === 'local' ? (
@@ -758,17 +757,14 @@ export default function SettingsTab({ app, servers = [] }: Props) {
               <div class={styles.migrateRow}>
                 <div>
                   <label htmlFor="migrate-target" class={formStyles.label}>Migrate to</label>
-                  <select
+                  <Select
                     id="migrate-target"
-                    class={formStyles.input}
+                    options={availableTargets.map((s) => ({ value: s.id, label: `${s.name} (${s.host})` }))}
                     value={migrateTarget}
-                    onChange={(e) => setMigrateTarget((e.target as HTMLSelectElement).value)}
-                  >
-                    <option value="">Select a server...</option>
-                    {availableTargets.map((s) => (
-                      <option key={s.id} value={s.id}>{s.name} ({s.host})</option>
-                    ))}
-                  </select>
+                    onChange={setMigrateTarget}
+                    placeholder="Select a server..."
+                    fullWidth
+                  />
                 </div>
                 <Button
                   variant="secondary"
