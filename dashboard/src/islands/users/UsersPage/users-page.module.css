@@ -48,6 +48,11 @@
   gap: var(--space-4);
 }
 
+.cardCompact {
+  padding: var(--space-3) var(--space-4);
+  gap: var(--space-2);
+}
+
 .cardActions {
   display: flex;
   gap: var(--space-2);
@@ -281,7 +286,7 @@
 .regGrid {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-2);
 }
 
 .regRow {
